@@ -1,5 +1,6 @@
 package com.spartanlabs.generaltools
 
+import org.slf4j.Logger
 import java.util.function.Predicate
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
@@ -33,3 +34,5 @@ fun <T>evaluateList(list:Iterable<T>, validator: Predicate<T>):Boolean{
  */
 @OptIn(ExperimentalTime::class)
 fun profile(nameOfAction:String, action:()->Unit) = "$nameOfAction took ${measureTime(action).inWholeMilliseconds}ms"
+/** Logs the action name and how long it took to execute it*/
+fun Logger.time(actionName:String,action:()->Unit) = info(actionName,action)

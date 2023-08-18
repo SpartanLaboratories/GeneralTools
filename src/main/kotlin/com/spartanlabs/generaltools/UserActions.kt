@@ -1,5 +1,6 @@
 package com.spartanlabs.generaltools
 
+import org.apache.commons.io.FileUtils
 import java.awt.Desktop
 import java.awt.Rectangle
 import java.awt.Robot
@@ -15,9 +16,11 @@ fun cropImage(image: BufferedImage, x: Int, y: Int, width: Int, height: Int) =
     BufferedImage(width,height, BufferedImage.TYPE_INT_ARGB).apply{
         graphics.drawImage(image,0,0,width,height,x,y,x+width,y+height,null)
     }
-fun saveImage(image: BufferedImage, filePath:String) = File("$filePath.png").apply{
+private fun saveImage(image: BufferedImage, filePath:String) = File("$filePath.png").apply{
     ImageIO.write(image, "png", this)
 }
+infix fun BufferedImage.to(fileName:String) = saveImage(this, fileName)
+infix fun File.saveTo(fileName:String) = FileUtils.copyFile(this, File("$fileName.png"))
 fun screenshotBrowser(address:String): BufferedImage {
     openInBrowser(address)
     Thread.sleep(1600)

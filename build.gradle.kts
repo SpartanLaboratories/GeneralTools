@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.spartanlabs"
-version = "1.0.8"
+version = "1.0.9"
 
 repositories {
     mavenCentral()
@@ -14,6 +14,7 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
     api("ch.qos.logback:logback-classic:1.3.0-alpha13")
+    implementation("org.apache.directory.studio:org.apache.commons.io:2.4")          // Files Utility
 }
 
 tasks.test {

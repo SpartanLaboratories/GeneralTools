@@ -1,6 +1,8 @@
 package com.spartanlabs.generaltools
 
 import org.slf4j.Logger
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.function.Predicate
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
@@ -12,7 +14,11 @@ fun String.capitalizeEveryWord() =
     split(' ').map{it.capitalize()} .toString().let {
         it.substring(1,it.length-1).replace(",","")
     }
-
+/**
+ * Takes a String that is supposed to be a valid URL and returns a URL
+ * Throws a MalformedURLException if a String that is not a valid URL is given
+ */
+@Throws(MalformedURLException::class) fun String.asURL(): URL = URL(this)
 /**
  * Takes in a list of objects of a specified type as well as
  * a predicate that takes one of those objects and return a boolean

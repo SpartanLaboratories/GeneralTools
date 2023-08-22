@@ -1,6 +1,9 @@
 package com.spartanlabs.generaltools
 
 import org.slf4j.Logger
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileReader
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.function.Predicate
@@ -19,6 +22,11 @@ fun String.capitalizeEveryWord() =
  * Throws a MalformedURLException if a String that is not a valid URL is given
  */
 @Throws(MalformedURLException::class) fun String.asURL(): URL = URL(this)
+/**
+ * Reads the text file at the specified location and returns a list of
+ * Strings designating each line in the file which was read
+ */
+fun read(textFile:String) = BufferedReader(FileReader(File(textFile))).readLines()
 /**
  * Takes in a list of objects of a specified type as well as
  * a predicate that takes one of those objects and return a boolean

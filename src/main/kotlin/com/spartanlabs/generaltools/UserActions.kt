@@ -12,6 +12,9 @@ import java.io.File
 import java.net.URL
 import javax.imageio.ImageIO
 
+/**
+ * Crops the specified image to the desired dimensions
+ */
 fun cropImage(image: BufferedImage, x: Int, y: Int, width: Int, height: Int) =
     BufferedImage(width,height, BufferedImage.TYPE_INT_ARGB).apply{
         graphics.drawImage(image,0,0,width,height,x,y,x+width,y+height,null)
@@ -19,6 +22,10 @@ fun cropImage(image: BufferedImage, x: Int, y: Int, width: Int, height: Int) =
 private fun saveImage(image: BufferedImage, filePath:String) = File("$filePath.png").apply{
     ImageIO.write(image, "png", this)
 }
+
+/**
+ * Saves the receiver image to the specified file location
+ */
 infix fun BufferedImage.to(fileName:String) = saveImage(this, fileName)
 infix fun File.saveTo(fileName:String) = FileUtils.copyFile(this, File("$fileName.png"))
 fun screenshotBrowser(address:String): BufferedImage {

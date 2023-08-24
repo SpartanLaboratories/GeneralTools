@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.spartanlabs"
-version = "1.0.11"
+version = "1.0.12"
 
 repositories {
     mavenCentral()
@@ -32,6 +32,9 @@ java{
 publishing{
     publications{
         create<MavenPublication>("generaltools").from(components["java"])
+        create<MavenPublication>("generaltools-snapshot"){
+            version = "LATEST"
+        }.from(components["java"])
     }
     repositories{
         maven("C:/Users/spartak/Documents/Programming/libraries")

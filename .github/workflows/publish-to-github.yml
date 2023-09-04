@@ -1,4 +1,4 @@
-name: Gradle Package
+name: Publish to GitHub
 
 on:
   release:

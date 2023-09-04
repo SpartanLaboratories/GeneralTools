@@ -38,5 +38,5 @@ jobs:
       with:
         arguments: publish
       env:
-        USERNAME: ${{ github.actor }}
-        TOKEN: ${{ secrets.GRADLE_GITHUB_TOKEN }}
+        GITHUB_USER: ${{ github.actor }}
+        GITHUB_TOKEN: ${{ secrets.GRADLE_GITHUB_TOKEN }}

@@ -40,7 +40,7 @@ publishing{
         maven("C:/Users/spartak/Documents/Programming/libraries")
         maven{
             name = "GeneralTools"
-            url= uri("https://maven.pkg.github.com/SpartanLabs/GeneralTools")
+            url= uri("https://maven.pkg.github.com/Spartan-Laboratories/GeneralTools")
             credentials{
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")

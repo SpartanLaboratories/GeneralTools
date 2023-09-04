@@ -31,12 +31,20 @@ java{
 
 publishing{
     publications{
-        create<MavenPublication>("generaltools").from(components["java"])
+        //create<MavenPublication>("generaltools").from(components["java"])
         create<MavenPublication>("generaltools-snapshot"){
             version = "LATEST"
         }.from(components["java"])
     }
     repositories{
         maven("C:/Users/spartak/Documents/Programming/libraries")
+        maven{
+            name = "GeneralTools"
+            url= uri("https://maven.pkg.github.com/SpartanLabs/GeneralTools")
+            credentials{
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
     }
 }

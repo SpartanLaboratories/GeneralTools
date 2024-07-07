@@ -7,6 +7,7 @@ import java.io.FileReader
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.function.Predicate
+import kotlin.reflect.KClass
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -50,3 +51,32 @@ fun <T>evaluateList(list:Iterable<T>, validator: Predicate<T>):Boolean{
 fun profile(nameOfAction:String, action:()->Unit) = "$nameOfAction took ${measureTime(action).inWholeMilliseconds}ms"
 /** Logs the action name and how long it took to execute it*/
 fun Logger.time(actionName:String,action:()->Unit) = info(profile(actionName,action))
+
+/**
+ * allows catching multiple exceptions following a runCatching
+ */
+inline fun <R, T : R> Result<T>.onException(
+    vararg exceptions: KClass<out Throwable>,
+    transform: (exception: Throwable) -> T
+) = recoverCatching { ex ->
+    if (ex::class in exceptions) {
+        transform(ex)
+    } else throw ex
+}
+/**
+ * Infix version of forEachIndexed
+ */
+infix fun <T> Collection<T>.forEveryIndexed(consume:(Int,T)->Unit) =
+    forEachIndexed { index,item->
+        consume(index,item)
+    }
+/**
+ * Infix version of forEach
+ */
+infix fun <T> Collection<T>.forEvery(consume:(T)->Unit) = forEach { consume(it) }
+/**
+ * Checks if the receiver's length is greater than the given length,
+ * if it is then it trims the receiver to the given length,
+ * if it is not then it returns the receiver
+ */
+infix fun String.trimIfLongerThan(length:Int) = if(this.length > length) substring(0,length) else this

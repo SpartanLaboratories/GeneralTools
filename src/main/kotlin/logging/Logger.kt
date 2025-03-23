@@ -1,3 +1,5 @@
+package com.spartanlabs.logging
+
 fun main(){
     val log = Logger()
     log info "test"

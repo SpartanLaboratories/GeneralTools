@@ -4,7 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="849860a8-4f64-4533-9f18-a0fc7cf323e1" name="Changes" comment="" />
+    <list default="true" id="849860a8-4f64-4533-9f18-a0fc7cf323e1" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Logging/Logger.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/logging/Logger.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Logging/MessageBuilder.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/logging/MessageBuilder.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/geometry/Location.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/geometry/Location.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/geometry/Square.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/geometry/Square.kt" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -75,17 +82,19 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Gradle.GeneralTools [build].executor": "Run",
-    "Gradle.GeneralTools [publish].executor": "Run",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/Documents/Programming/Dohta4",
-    "onboarding.tips.debug.path": "D:/Documents/Programming/GeneralTools/src/main/kotlin/Main.kt"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Gradle.GeneralTools [build].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.GeneralTools [publish].executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_directory_selection&quot;: &quot;D:/Documents/Programming/GeneralTools/src/main/kotlin&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/Documents/Programming/GeneralTools&quot;,
+    &quot;onboarding.tips.debug.path&quot;: &quot;D:/Documents/Programming/GeneralTools/src/main/kotlin/Main.kt&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\Documents\Programming\GeneralTools\src\main\kotlin" />

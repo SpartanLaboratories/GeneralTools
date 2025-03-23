@@ -1,10 +1,10 @@
 plugins {
-    kotlin("jvm") version "2.1.10"
+    `kotlin-dsl`
     `java-library`
     `maven-publish`
 }
 group = "com.spartanlabs"
-version = "1.2.0"
+version = "1.2.0a"
 
 repositories {
     mavenCentral()

@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    api("ch.qos.logback:logback-classic:1.4.12")
+    api("ch.qos.logback:logback-classic:1.5.13")
     implementation("org.apache.directory.studio:org.apache.commons.io:2.4")          // Files Utility
 }
 

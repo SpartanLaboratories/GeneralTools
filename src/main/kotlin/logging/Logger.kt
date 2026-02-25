@@ -1,12 +1,11 @@
 package com.spartanlabs.logging
 
 fun main(){
-    val log = Logger()
-    log info "test"
+    Logger() info "test"
 }
 class Logger{
     var printToConsole = true
-    val info = MessageBuilder()
+    val info = MessageBuilder(color = IJColor.INFO)
     infix fun info(message : String) {
         if(printToConsole) println(info modify message)
     }

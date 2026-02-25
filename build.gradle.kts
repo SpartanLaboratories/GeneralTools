@@ -4,7 +4,7 @@ plugins {
     `maven-publish`
 }
 group = "com.spartanlabs"
-version = "1.2.0b"
+version = "1.2.0c"
 
 repositories {
     mavenCentral()

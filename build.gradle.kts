@@ -1,10 +1,11 @@
 plugins {
     `kotlin-dsl`
     `java-library`
-    `maven-publish`
+    id("com.vanniktech.maven.publish") version "0.36.0"
 }
-group = "com.spartanlabs"
-version = "1.2.0c"
+
+group = "io.github.spartanlaboratories"
+version = "1.0"
 
 repositories {
     mavenCentral()
@@ -16,37 +17,42 @@ dependencies {
     implementation("org.apache.directory.studio:org.apache.commons.io:2.4")          // Files Utility
 }
 
-
-tasks.test {
-    useJUnitPlatform()
-}
-
 kotlin {
     jvmToolchain(23)
 }
-java{
-    withJavadocJar()
-    withSourcesJar()
-}
 
-publishing{
-    publications{
-        create<MavenPublication>("generaltools").from(components["java"])
-        create<MavenPublication>("generaltools-snapshot"){
-            version = "LATEST"
-        }.from(components["java"])
-    }
-    repositories{
-        maven("D:/Documents/Programming")
-        /*
-        maven{
-            name = "generaltools"
-            url= uri("https://maven.pkg.github.com/Spartan-Laboratories/GeneralTools")
-            credentials{
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0")
+
+    pom {
+        name.set("General Tools")
+        description.set("A set of generic functions.")
+        inceptionYear.set("2026")
+        url.set("https://github.com/SpartanLaboratories/GeneralTools")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
             }
         }
-         */
+        developers {
+            developer {
+                id.set("SpaSinghOut")
+                name.set("Spartak Singh")
+                url.set("https://github.com/SpaSinghOut")
+            }
+        }
+        scm {
+            url.set("https://github.com/SpartanLaboratories/GeneralTools/")
+            connection.set("scm:git:git://github.com/SpartanLaboratories/GeneralTools.git")
+            developerConnection.set("scm:git:ssh://git@github.com/SpartanLaboratories/GeneralTools.git")
+        }
     }
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

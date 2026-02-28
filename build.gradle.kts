@@ -5,7 +5,6 @@ plugins {
 }
 
 group = "io.github.spartanlaboratories"
-version = "1.0"
 
 repositories {
     mavenCentral()
@@ -24,7 +23,7 @@ kotlin {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0")
+    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0.1")
 
     pom {
         name.set("General Tools")

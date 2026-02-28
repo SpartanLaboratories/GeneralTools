@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
+    testApi(kotlin("test"))
     api("ch.qos.logback:logback-classic:1.5.13")
     implementation("org.apache.directory.studio:org.apache.commons.io:2.4")          // Files Utility
 }
@@ -23,7 +23,7 @@ kotlin {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0.2")
+    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0.3")
 
     pom {
         name.set("General Tools")

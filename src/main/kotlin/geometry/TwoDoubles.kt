@@ -1,6 +1,6 @@
 package com.spartanlabs.geometry
 
-sealed abstract class TwoDoubles(var first: Double = 0.0, var second:Double = 0.0){
+sealed class TwoDoubles(var first: Double = 0.0, var second:Double = 0.0){
     constructor(doubles: TwoDoubles): this(doubles.first, doubles.second)
     fun setTo(first: Double, second: Double) = with(this){
         this.first = first
@@ -16,5 +16,8 @@ sealed abstract class TwoDoubles(var first: Double = 0.0, var second:Double = 0.
         if(other==null || other.javaClass != this.javaClass) return false
         other as TwoDoubles
         return first == other.first && second == other.second
+    }
+    override fun toString(): String {
+        return "$first, $second"
     }
 }

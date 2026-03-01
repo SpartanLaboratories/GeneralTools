@@ -23,7 +23,7 @@ kotlin {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0.3")
+    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0.4")
 
     pom {
         name.set("General Tools")

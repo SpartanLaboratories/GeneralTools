@@ -2,6 +2,7 @@ package com.spartanlabs.geometry
 
 sealed class TwoDoubles(var first: Double = 0.0, var second:Double = 0.0){
     constructor(doubles: TwoDoubles): this(doubles.first, doubles.second)
+    val containsNaN get() = first.isNaN() || second.isNaN()
     fun setTo(first: Double, second: Double) = with(this){
         this.first = first
         this.second = second

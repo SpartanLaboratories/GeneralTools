@@ -18,12 +18,15 @@ dependencies {
 
 kotlin {
     jvmToolchain(23)
+    sourceSets.all {
+        languageSettings.enableLanguageFeature("UnionTypes")
+    }
 }
 
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0.4")
+    coordinates("io.github.spartanlaboratories", "GeneralTools", "1.0.5")
 
     pom {
         name.set("General Tools")

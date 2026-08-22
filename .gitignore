@@ -45,3 +45,5 @@ bin/
 .DS_Store
 .idea/gradle.xml
 /.idea
+.idea/gradle.xml
+.idea/workspace.xml

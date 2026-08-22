@@ -17,10 +17,13 @@ sealed class TwoDoubles(var first: Double = 0.0, var second:Double = 0.0){
         first *= magnitude
         second *= magnitude
     }
+    infix fun divideBy(magnitude: Double) =
+        if (magnitude == 0.0) throw IllegalArgumentException("Cannot divide by zero")
+        else amplifyBy(1/magnitude)
     operator fun plusAssign(doubles: TwoDoubles) = modBy(doubles)
     operator fun minusAssign(doubles: TwoDoubles) = modBy(-doubles.first, -doubles.second)
     operator fun timesAssign(magnitude: Double) = amplifyBy(magnitude)
-    operator fun divAssign(magnitude: Double) = amplifyBy(1/magnitude)
+    operator fun divAssign(magnitude: Double) = divideBy(magnitude)
     override operator fun equals(other: Any?):Boolean {
         if(other==null || other.javaClass != this.javaClass) return false
         other as TwoDoubles

@@ -1,15 +1,25 @@
 package com.spartanlabs.generaltools
 
-import org.slf4j.Logger
+// Intended Function
+//      Java Standard Library
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.function.Predicate
+//      Kotlin Standard Library
 import kotlin.reflect.KClass
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
+
+// Programming Generics
+//      Logging
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+/** Logger used for diagnostic output from this file's functions. */
+private val log: Logger = LoggerFactory.getLogger("com.spartanlabs.generaltools.Misc")
 
 /**
  * Will capitalize the first letter of each word in this String
@@ -22,12 +32,20 @@ fun String.capitalizeEveryWord() =
  * Takes a String that is supposed to be a valid URL and returns a URL
  * Throws a MalformedURLException if a String that is not a valid URL is given
  */
-@Throws(MalformedURLException::class) fun String.asURL(): URL = URL(this)
+@Throws(MalformedURLException::class) fun String.asURL(): URL {
+    log.debug("Parsing '{}' as a URL", this)
+    return URL(this)
+}
 /**
  * Reads the text file at the specified location and returns a list of
  * Strings designating each line in the file which was read
  */
-fun read(textFile:String) = BufferedReader(FileReader(File(textFile))).readLines()
+fun read(textFile:String): List<String> {
+    log.debug("Reading file at path '{}'", textFile)
+    val lines = BufferedReader(FileReader(File(textFile))).readLines()
+    log.debug("Read {} line(s) from '{}'", lines.size, textFile)
+    return lines
+}
 /**
  * Takes in a list of objects of a specified type as well as
  * a predicate that takes one of those objects and return a boolean
@@ -37,7 +55,11 @@ fun read(textFile:String) = BufferedReader(FileReader(File(textFile))).readLines
  * If no items return true then the function will return false
  */
 fun <T>evaluateList(list:Iterable<T>, validator: Predicate<T>):Boolean{
-    for(t in list)if(validator.test(t))return true
+    for(t in list)if(validator.test(t)){
+        log.trace("Item '{}' satisfied the predicate", t)
+        return true
+    }
+    log.trace("No items satisfied the predicate")
     return false
 }
 
@@ -54,6 +76,10 @@ fun Logger.time(actionName:String,action:()->Unit) = info(profile(actionName,act
 
 /**
  * allows catching multiple exceptions following a runCatching
+ * <br>
+ * Note: this function is inline and public, so it can't reference the file's
+ * private [log] instance directly - logging around exception recovery is left
+ * to the caller.
  */
 inline fun <R, T : R> Result<T>.onException(
     vararg exceptions: KClass<out Throwable>,

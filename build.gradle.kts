@@ -29,7 +29,7 @@ dependencies {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GeneralTools", "2.0.0")
+    coordinates("io.github.spartanlaboratories", "GeneralTools", "2.0.1")
 
     pom {
         name.set("General Tools")

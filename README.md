@@ -53,6 +53,21 @@ Maven:
 
 Tests run on the JUnit 5 platform with `kotlin.test`.
 
+## Releasing
+
+Releases are published to Maven Central **manually** by a maintainer — there is
+no CI publish workflow. With Sonatype (Central Portal) credentials and a GPG
+signing key configured as Gradle properties (`mavenCentralUsername` /
+`mavenCentralPassword`, `signingInMemoryKey` / `signingInMemoryKeyPassword`),
+bump the version in `build.gradle.kts`, then:
+
+```sh
+./gradlew publishAndReleaseToMavenCentral
+```
+
+Tag the released commit `X.Y.Z` and create a matching GitHub release for the
+record.
+
 ## `Color` quick reference
 
 Constants: `WHITE`, `BLACK`, `RED`, `GREEN`, `BLUE`, `YELLOW`, `CYAN`,

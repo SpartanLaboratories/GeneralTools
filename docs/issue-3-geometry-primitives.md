@@ -12,10 +12,10 @@
   private `com.spartanlabs.gaming.world.geometry` stopgap it wants to delete once
   this lands.
 - **Branch:** `issue-3-geometry-primitives` (off updated `master`).
-- **Commit:** implemented in commits `01b3c8d..5eb0043` on branch
-  `issue-3-geometry-primitives` (commits 1–6 in §9); the `master` merge-commit
-  SHA is appended by the manager after the PR merges.
-- **PR:** `SpartanLaboratories/GeneralTools#5` —
+- **Commit:** implemented in commits `01b3c8d..855f10a` on branch
+  `issue-3-geometry-primitives` (commits 1–6 in §9 + a header touch-up); merged
+  to `master` as merge commit `fc2635f` on 2026-09-08.
+- **PR:** `SpartanLaboratories/GeneralTools#5` (merged) —
   <https://github.com/SpartanLaboratories/GeneralTools/pull/5>.
 - **Plan/impl linkage:** this document is committed **in the same commit as the
   first implementation stage** (commit 1 in §9) so `git log --follow` binds plan

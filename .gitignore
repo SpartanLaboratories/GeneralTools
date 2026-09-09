@@ -5,16 +5,16 @@ build/
 !**/src/test/**/build/
 
 ### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+
+### JetBrains Fleet ###
+.fleet/
 
 ### Kotlin ###
 .kotlin
@@ -24,7 +24,7 @@ out/
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
 bin/
@@ -32,7 +32,7 @@ bin/
 !**/src/test/**/bin/
 
 ### NetBeans ###
-/nbproject/private/
+.nbproject/
 /nbbuild/
 /dist/
 /nbdist/
@@ -41,9 +41,11 @@ bin/
 ### VS Code ###
 .vscode/
 
+### Editor swap / backup files ###
+*.swp
+*.swo
+*~
+*.bak
+
 ### Mac OS ###
 .DS_Store
-.idea/gradle.xml
-/.idea
-.idea/gradle.xml
-.idea/workspace.xml

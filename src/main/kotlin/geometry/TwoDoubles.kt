@@ -55,13 +55,22 @@ sealed class TwoDoubles(var first: Double = 0.0, var second:Double = 0.0){
     operator fun divAssign(magnitude: Double) = divideBy(magnitude)
     /**
      * Two [TwoDoubles] are equal if they are the same concrete type and their
-     * [first] and [second] values match
+     * [first] and [second] values match. Paired with [hashCode], which folds in
+     * the same concrete type.
      */
     override operator fun equals(other: Any?):Boolean {
         if(other==null || other.javaClass != this.javaClass) return false
         other as TwoDoubles
         return first == other.first && second == other.second
     }
+    /**
+     * Hash code consistent with [equals]: folds in the concrete class (so a
+     * [Point] and a [Dimensions] holding the same values hash differently)
+     * along with [first] and [second]. Makes subclasses usable as keys in
+     * hash-based collections.
+     */
+    override fun hashCode(): Int =
+        31 * (31 * javaClass.hashCode() + first.hashCode()) + second.hashCode()
     /** Returns "first, second" */
     override fun toString(): String {
         return "$first, $second"

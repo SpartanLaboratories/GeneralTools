@@ -29,7 +29,7 @@
 - **Target version:** `2.2.0` (minor — purely additive over the published
   `2.1.0`). Published to Maven Central as
   `io.github.spartanlaboratories:GeneralTools`. See Open decisions **D8**.
-- **Related docs:** `docs/issue-1-color-methods.md` (precedent for the
+- **Related docs:** `docs/plans/1-color-methods/plan.md` (precedent for the
   `testing.*` layout, `X.of(...)` clean-break factory, and version-bump
   handling); `SpartanLabsGaming/MyGameTools/docs/phase-1-map-and-space-plan.md`
   §10.
@@ -691,7 +691,7 @@ intersection functions.)
   segment vs segment). Note the `EPSILON` constant and the
   non-unit-`direction` / `t`-units convention.
 
-### New — `docs/issue-3-geometry-primitives.md`
+### New — `docs/plans/3-geometry-primitives/plan.md`
 
 - This document. Committed in commit 1 (§9).
 
@@ -903,7 +903,7 @@ bump to `2.2.0`.
   1. **`feat: add Point vector algebra and TwoDoubles hashCode`**
      - `src/main/kotlin/geometry/Vectors.kt` (new)
      - `src/main/kotlin/geometry/TwoDoubles.kt` (hashCode + equals KDoc)
-     - `docs/issue-3-geometry-primitives.md` (this plan — **same commit**, per
+     - `docs/plans/3-geometry-primitives/plan.md` (this plan — **same commit**, per
        the linkage convention)
   2. **`feat: add AxisAlignedBox, Segment, Ray and CenteredBox geometry primitives`**
      - `AxisAlignedBox.kt`, `Segment.kt`, `Ray.kt`, `CenteredBox.kt` (new);

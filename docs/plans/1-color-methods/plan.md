@@ -340,7 +340,7 @@ Short, proportional:
 - Required by the "Repository READMEs — keep current" rule: new public API on a
   Maven Central library, and no README exists.
 
-### `docs/issue-1-color-methods.md` (this file)
+### `docs/plans/1-color-methods/plan.md` (this file)
 
 - Committed in the **same commit as the first code change** so `git log
   --follow` binds plan to implementation.
@@ -575,7 +575,7 @@ deterministic and covered.
      - `Color.kt`: `isFinite()` guards in `lightened`, `darkened`, `lerp`,
        `fromNormalized`; `.toInt()` → `.roundToInt()` in `lightened` / `darkened`;
        restored class KDoc; trailing newline
-     - `docs/issue-1-color-methods.md` (this plan — same commit, per convention)
+     - `docs/plans/1-color-methods/plan.md` (this plan — same commit, per convention)
   2. **`fix: align Color.toHex(includeAlpha) to ARGB so hex round-trips`**
      - `Color.kt`: `toHex` byte order + KDoc; `fromHex` KDoc
   3. **`feat: add Color.of clamping factory`**

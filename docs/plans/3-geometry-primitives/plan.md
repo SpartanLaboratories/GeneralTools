@@ -12,24 +12,16 @@
   private `com.spartanlabs.gaming.world.geometry` stopgap it wants to delete once
   this lands.
 - **Branch:** `issue-3-geometry-primitives` (off updated `master`).
-- **Commit:** implemented in commits `01b3c8d..855f10a` on branch
-  `issue-3-geometry-primitives` (commits 1–6 in §9 + a header touch-up); merged
-  to `master` as merge commit `fc2635f` on 2026-09-08.
-- **PR:** `SpartanLaboratories/GeneralTools#5` (merged) —
-  <https://github.com/SpartanLaboratories/GeneralTools/pull/5>.
+- **Commit:** as-built record moved to [final-implementation.md](final-implementation.md).
+- **PR:** as-built record moved to [final-implementation.md](final-implementation.md).
 - **Plan/impl linkage:** this document is committed **in the same commit as the
   first implementation stage** (commit 1 in §9) so `git log --follow` binds plan
   to code.
-- **Status:** implemented on branch `issue-3-geometry-primitives` (working tree,
-  uncommitted); `./gradlew build` + full test suite green (70 new geometry
-  component tests). Pending version-control handling (commits, PR, release) and
-  README/version already applied on the branch. Two slab-algorithm deviations
-  from the original pseudocode were made to satisfy §6 — see §2.1 / §3.5 (now
-  updated) and the notes below.
+- **Status:** as-built record moved to [final-implementation.md](final-implementation.md).
 - **Target version:** `2.2.0` (minor — purely additive over the published
   `2.1.0`). Published to Maven Central as
   `io.github.spartanlaboratories:GeneralTools`. See Open decisions **D8**.
-- **Related docs:** `docs/issue-1-color-methods.md` (precedent for the
+- **Related docs:** `docs/plans/1-color-methods/plan.md` (precedent for the
   `testing.*` layout, `X.of(...)` clean-break factory, and version-bump
   handling); `SpartanLabsGaming/MyGameTools/docs/phase-1-map-and-space-plan.md`
   §10.
@@ -691,7 +683,7 @@ intersection functions.)
   segment vs segment). Note the `EPSILON` constant and the
   non-unit-`direction` / `t`-units convention.
 
-### New — `docs/issue-3-geometry-primitives.md`
+### New — `docs/plans/3-geometry-primitives/plan.md`
 
 - This document. Committed in commit 1 (§9).
 
@@ -903,7 +895,7 @@ bump to `2.2.0`.
   1. **`feat: add Point vector algebra and TwoDoubles hashCode`**
      - `src/main/kotlin/geometry/Vectors.kt` (new)
      - `src/main/kotlin/geometry/TwoDoubles.kt` (hashCode + equals KDoc)
-     - `docs/issue-3-geometry-primitives.md` (this plan — **same commit**, per
+     - `docs/plans/3-geometry-primitives/plan.md` (this plan — **same commit**, per
        the linkage convention)
   2. **`feat: add AxisAlignedBox, Segment, Ray and CenteredBox geometry primitives`**
      - `AxisAlignedBox.kt`, `Segment.kt`, `Ray.kt`, `CenteredBox.kt` (new);

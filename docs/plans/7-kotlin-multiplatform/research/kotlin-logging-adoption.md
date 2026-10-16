@@ -1,22 +1,33 @@
-# kotlin-logging adoption for GeneralTools 3.0.0 (R3, decision D3)
+# kotlin-logging adoption for GeneralTools 3.0.0
 
-Researcher R3. Date of research: 2026-10-12. Repo baseline: `master` @ `6926069`.
-Primary sources were fetched on 2026-10-12: Maven Central metadata, the published `.module` and `.pom` files, the `oshai/kotlin-logging` source at tag `8.0.4` (shallow clone, read only, deleted afterwards), GitHub releases and issues, and two consumer libraries' build files and published metadata.
+- **Issue:** [SpartanLaboratories/GeneralTools#7](https://github.com/SpartanLaboratories/GeneralTools/issues/7).
+- **Date of research:** 2026-10-12. Repo baseline: `master` @ `6926069`.
+- **Sources fetched:** Primary sources were fetched on 2026-10-12: Maven Central metadata, the published `.module` and `.pom` files, the `oshai/kotlin-logging` source at tag `8.0.4` (shallow clone, read only, deleted afterwards), GitHub releases and issues, and two consumer libraries' build files and published metadata.
 
 ## 1. Question
 
-Does kotlin-logging meet B1's three preconditions (current version, `jvm`/`js`/`wasmJs` targets, MyGameTools stays on Kotlin 2.2.0) for GeneralTools 3.0.0, and what is the idiomatic shape of the integration, including the single central failure helper?
-**Decision informed:** D3, which covers the release choice, dependency scope, logger declaration, helper shape and test-side logging.
+Does kotlin-logging fit GeneralTools 3.0.0, and what is the idiomatic shape of the integration, including the single central failure helper?
+
+An answer has to meet these requirements:
+
+- The targets are `jvm`, `js` and `wasmJs`.
+- Common code logs through kotlin-logging, which delegates to slf4j on the JVM so consumers' logging backends are unchanged.
+- One internal helper logs each expected failure at WARN and builds its `Result.failure`; every failure site uses it.
+- The current kotlin-logging release publishes `jvm`, `js` and `wasmJs`.
+- MyGameTools, a JVM-only consumer on Kotlin 2.2.0 with an `api` dependency, compiles against 3.0.0 without changing its Kotlin version.
+- 3.0.0 makes exactly these breaks: `Color`'s primary constructor becomes `internal`; `TwoDoubles.divideBy` returns `Result` and logs at WARN through the helper; `TwoDoubles` is no longer `sealed`; `Point` and `Dimensions` become immutable; `evaluateList` takes `(T) -> Boolean` and moves to common code; the `com.spartanlabs.logging` package is removed.
+- Tests live in `com.spartanlabs.testing.<level>.<package>`; pure tests in `commonTest`, file/URL/AWT/slf4j tests in `jvmTest`.
+- `read`, `asURL`, `Logger.time` and `UserActions` stay JVM-only.
 
 ## 2. Bottom line
 
-- **Preconditions: all three PASS.**
+- **The three requirements hold** (current version, `jvm`/`js`/`wasmJs` targets, MyGameTools stays on Kotlin 2.2.0).
   1. **Current version: PASS.** The latest release is **8.0.4**, published 2026-05-27 (Maven Central `<release>8.0.4</release>`, GitHub release `8.0.4` "Latest"). Nothing newer exists as of 2026-10-12, and the master HEAD commit is "bump to semver 8.0.5" of the same day.
   2. **Targets: PASS.** The 8.0.4 Gradle module metadata publishes `jvm`, `js` and `wasmJs` (plus `wasmWasi`, Android, iOS/macOS/tvOS/watchOS and Linux/mingw native). The `.jar` and both `.klib` files exist on Maven Central (HTTP 200).
   3. **MyGameTools stays on Kotlin 2.2.0: PASS, with one condition that is not kotlin-logging's.**
      - kotlin-logging 8.0.4 is compiled with Kotlin **2.1.21**, `languageVersion = apiVersion = 2.0`, JVM target 1.8. Its only Kotlin dependency is `kotlin-stdlib 2.1.21` (plus `kotlin-dom-api-compat 2.1.21` on `js`). All of that is older than 2.2.0.
      - As an `implementation` dependency of a KMP `commonMain`, it is published to the JVM variant's runtime scope only. This is the same pattern as the MCP Kotlin SDK 0.15.0 and Koog (both inspected below). MyGameTools' 2.2.0 compiler never sees kotlin-logging on its compile classpath, and a newer runtime stdlib is harmless.
-     - **Condition (R1's area):** the stdlib on MyGameTools' *compile* classpath comes from GeneralTools' own Kotlin pin, not from kotlin-logging. R1 must pin `coreLibrariesVersion`/`apiVersion` so GeneralTools' published stdlib requirement is not newer than 2.2.x. kotlin-logging neither fixes nor worsens this.
+     - **Condition (build pins; see [kmp-build-and-kotlin-compat.md](kmp-build-and-kotlin-compat.md)):** the stdlib on MyGameTools' *compile* classpath comes from GeneralTools' own Kotlin pin, not from kotlin-logging. The build must pin `coreLibrariesVersion`/`apiVersion` so GeneralTools' published stdlib requirement is not newer than 2.2.x. kotlin-logging neither fixes nor worsens this.
 - **Use `io.github.oshai:kotlin-logging:8.0.4` as `implementation` in `commonMain`.**
   - Do not use `api`: no public GeneralTools signature needs a `KLogger`, and `api` would put kotlin-logging in every consumer's compile classpath and semver surface.
   - Keep `jvmMain { api("org.slf4j:slf4j-api:2.0.16") }`. It is needed by the public `Logger.time` extension, and kotlin-logging-jvm declares **no** slf4j dependency (`compileOnly`), so the app must supply `slf4j-api`.
@@ -24,7 +35,7 @@ Does kotlin-logging meet B1's three preconditions (current version, `jvm`/`js`/`
 - **Helper shape.** One `internal` extension in `commonMain`, `internal fun <T> KLogger.failure(message: String): Result<T>`.
   - It builds `IllegalArgumentException(message)`, calls `warn { message }`, and returns `Result.failure(exception)`.
   - Log eagerly, with no throwable and no payload. `Result<out T>` is covariant, so one helper serves every `Result<X>` return.
-- **One decision for the planner, not a blocker: 8.x prints a startup line.** On first use of `KotlinLogging`, every 8.x version prints `kotlin-logging: initializing... active logger factory: Slf4jLoggerFactory` to stdout, on every platform, by default. A consumer such as MyGameTools would see a new stdout line. It is suppressible by the consumer (`-Dkotlin-logging.logStartupMessage=false` or env `KOTLIN_LOGGING_STARTUP_MESSAGE=false` on the JVM). Version 7.0.14 (2026-01-01) has the same stdlib, language level and targets and does not print it, but 7.x is the previous major.
+- **A trade-off that needs a call, not a blocker: 8.x prints a startup line.** On first use of `KotlinLogging`, every 8.x version prints `kotlin-logging: initializing... active logger factory: Slf4jLoggerFactory` to stdout, on every platform, by default. A consumer such as MyGameTools would see a new stdout line. It is suppressible by the consumer (`-Dkotlin-logging.logStartupMessage=false` or env `KOTLIN_LOGGING_STARTUP_MESSAGE=false` on the JVM). Version 7.0.14 (2026-01-01) has the same stdlib, language level and targets and does not print it, but 7.x is the previous major.
 - **Maturity.** The README still says "An experimental multiplatform support is available", but that sentence is stale. The project publishes 20+ targets, `js`/`wasm` use a built-in "direct" logger, and JetBrains' Koog and the official MCP Kotlin SDK use it in production KMP builds.
   - The real maturity risks are a one-maintainer project and no per-logger levels on JS/Wasm.
 
@@ -54,7 +65,7 @@ Tiers: **consensus** = standard/spec or multiple independent sources. **practice
 - Root `kotlin-logging-8.0.4.module` variants include `jsApiElements-published` (platform `js`), `wasmJsApiElements-published` (platform `wasm`, wasm target `js`), `jvmApiElements-published`, `wasmWasi…`, `release/debug` Android, and the native targets.
 - The per-target modules redirect via `available-at` to `kotlin-logging-js`, `kotlin-logging-wasm-js` and `kotlin-logging-jvm`. The files `kotlin-logging-js-8.0.4.klib`, `kotlin-logging-wasm-js-8.0.4.klib` and `kotlin-logging-jvm-8.0.4.jar` return HTTP 200.
 - 7.0.14 and 7.0.13 also publish `js`, `jvm`, `wasmJs` and `wasmWasi`.
-- This confirms the lead (SpartanGraphics N1 F4) directly.
+- This confirms SpartanGraphics' web-target research (`web-target-kotlin-js-vs-wasm.md` F4, in the SpartanLaboratories/SpartanGraphics working tree) directly.
 
 ### F5. Compiler and stdlib compatibility (the critical question). Tier: consensus (build files and published metadata, plus the Kotlin API guidelines).
 - At tag 8.0.4:
@@ -63,7 +74,7 @@ Tiers: **consensus** = standard/spec or multiple independent sources. **practice
   - Published `kotlin-logging-jvm-8.0.4.module`: `kotlin-stdlib` `requires 2.1.21` in both `jvmApiElements` and `jvmRuntimeElements`.
   - `js` additionally requires `kotlin-dom-api-compat 2.1.21`; `wasmJs` requires only `kotlin-stdlib 2.1.21`.
 - The jar's classes are Java 8 bytecode (class major 52), and it also carries a `module-info.class` (major 61, Java 17).
-- Kotlin API guidelines: the library's *language version* decides which compilers can compile against it, and its *API version* sets the minimum runtime stdlib. "On the JVM, consumers can use any compiler version from the previous language version onwards … On other platforms, consumers can use a compiler version the same as the library's configured language version or any later version." This matches the brief's rule.
+- Kotlin API guidelines: the library's *language version* decides which compilers can compile against it, and its *API version* sets the minimum runtime stdlib. "On the JVM, consumers can use any compiler version from the previous language version onwards … On other platforms, consumers can use a compiler version the same as the library's configured language version or any later version." This is the compatibility rule quoted in full in claim 5 of section 7.
   - Language version 2.0 is below 2.2.0 on every platform, so this is satisfied for MyGameTools, for GeneralTools' own compiler on `js`/`wasmJs` (any ≥ 2.0), and for future KMP consumers.
 - **History to learn from:** [issue #546](https://github.com/oshai/kotlin-logging/issues/546). A kotlin-logging release compiled with Kotlin 2.2 broke Kotlin 2.0 consumers ("Class 'kotlin.Unit' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.2.0, but the compiler version 2.0.0 can read versions up to 2.1.0"). The maintainer reverted in 7.0.12 and pinned 2.1.21 since. The project actively holds its compile level low, which suits this repo. A future 8.x/9.x could raise it; pin the exact version and review the `.module` on every bump.
 
@@ -138,15 +149,15 @@ Tiers: **consensus** = standard/spec or multiple independent sources. **practice
 3. **Do not expose kotlin-logging in public signatures or public `inline` functions.** That would put it on consumers' compile classpath and into the semver surface (a public inline body is inlined into consumer bytecode and references `KLogger`).
 4. **`KotlinLogging.logger {}` is unreliable on JS/Wasm (F8).** Empty or truncated names. Always pass the name string.
 5. **Central helper changes log call-site information.** Logback patterns that print `%C/%M/%L` would show the helper, not the failing function. The repo's pattern (`%logger{36}`) shows the logger name, which the per-file logger preserves. If the function name matters, put it in the message (existing messages already start with `"segmentIntersectsSegment: …"`).
-6. **Every failure is now a log line (B1).** Hot loops that probe degenerate input will produce a WARN per call. On the JVM, consumers can silence `com.spartanlabs.geometry` via logback. On JS/Wasm there is only one global level, so the only selective mute is a wrapping `Appender` (F8). Document this in the migration notes.
+6. **Every failure is now a log line.** Hot loops that probe degenerate input will produce a WARN per call. On the JVM, consumers can silence `com.spartanlabs.geometry` via logback. On JS/Wasm there is only one global level, so the only selective mute is a wrapping `Appender` (F8). Document this in the migration notes.
 7. **Default-level surprise on JS/Wasm.** Default INFO means `debug`/`trace` calls (Misc, UserActions) are silent and WARN prints. A JS test that wants TRACE must set `KotlinLoggingConfiguration.direct.logLevel = Level.TRACE` (global, and on the JVM it prints a "this config might be ignored" WARN via `internalCheckFactory`, so keep it out of `commonTest`).
 8. **`{}` in messages.** slf4j-style `{}` placeholders disappear when converting to Kotlin string templates (good), but a message that contains a literal `{}` can misbehave with some JVM backends (log4j JSON layout, [issue #401](https://github.com/oshai/kotlin-logging/issues/401)). Not relevant to logback and unlikely for geometry values.
 9. **Single maintainer, young major.** v8 is five months old. Pin the exact version, no ranges, and read the `.module` and the diff on every bump (F5, #546).
-10. **Kotlin stdlib alignment is not kotlin-logging's problem but is the real compile-time risk (R1).** If GeneralTools 3.0.0 is built with a much newer Kotlin plugin and publishes `kotlin-stdlib` at that version on its API variant, MyGameTools' 2.2.0 compiler would read it from the compile classpath and fail with an incompatible-metadata error. That happens independent of kotlin-logging; R1's pins decide it.
+10. **Kotlin stdlib alignment is not kotlin-logging's problem but is the real compile-time risk (see [kmp-build-and-kotlin-compat.md](kmp-build-and-kotlin-compat.md)).** If GeneralTools 3.0.0 is built with a much newer Kotlin plugin and publishes `kotlin-stdlib` at that version on its API variant, MyGameTools' 2.2.0 compiler would read it from the compile classpath and fail with an incompatible-metadata error. That happens independent of kotlin-logging; the build's pins decide it.
 
 ## 6. Recommendation for this repo
 
-**Adopt kotlin-logging 8.0.4 as specified by B1, shaped as follows.**
+**Adopt kotlin-logging 8.0.4, shaped as follows.**
 
 1. **Dependency.** `commonMain { implementation("io.github.oshai:kotlin-logging:8.0.4") }` (exact version, no range). `jvmMain { api("org.slf4j:slf4j-api:2.0.16") }` stays, since the public JVM-only `Logger.time` uses it and the app must supply slf4j. Logback stays a **test** dependency of `jvmTest` only. Do not use `api` for kotlin-logging, because nothing in the public surface needs it, and `api` would put it on MyGameTools' compile classpath and in the semver contract.
 2. **Logger declaration.** Keep the repo's file-level `private val log` convention but with explicit names: `private val log = KotlinLogging.logger("com.spartanlabs.geometry.Intersections")`, one per file, names unchanged from today. That keeps consumers' logback config matching and works the same on JS/Wasm.
@@ -157,14 +168,14 @@ Tiers: **consensus** = standard/spec or multiple independent sources. **practice
      - A single shared logger would change every logger name, so existing `com.spartanlabs.geometry.*` logback rules would stop matching and there would be no per-file origin. Reject it.
      - The extension keeps each file's logger name, mirrors the existing `Logger.time` extension, and can be unit-tested in `commonTest` with a three-member recording `KLogger` fake.
    - Return type: `Result<T>` generic, mirroring `Result.failure<T>`. `Result<out T>` is covariant, so `Result<Nothing>` would also work; generic `T` keeps the signature identical to the stdlib's and forces a type at the call site.
-   - Exception type: keep `IllegalArgumentException`, the documented contract, with no exception parameter until a site needs a different type. `TwoDoubles.divideBy` (B2) uses the same helper at WARN.
-   - Optional, planner's choice: add a second parameter `detail: (() -> Any?)? = null` appended to the *log line only* (`warn { if (detail == null) message else "$message: ${detail()}" }`). It preserves today's value-rich diagnostics (the offending segment, ray or vector) without changing the exception message tests assert, and it is the one place laziness pays off (the value's `toString` runs only when WARN is enabled). Without it, B1 is still met, but logs lose the values.
+   - Exception type: keep `IllegalArgumentException`, the documented contract, with no exception parameter until a site needs a different type. `TwoDoubles.divideBy`, which returns a `Result` in 3.0.0, uses the same helper at WARN.
+   - Optional: add a second parameter `detail: (() -> Any?)? = null` appended to the *log line only* (`warn { if (detail == null) message else "$message: ${detail()}" }`). It preserves today's value-rich diagnostics (the offending segment, ray or vector) without changing the exception message tests assert, and it is the one place laziness pays off (the value's `toString` runs only when WARN is enabled). Without it, the helper still meets its contract, but logs lose the values.
 4. **Every one of the 12 sites uses the helper.** `return log.failure("…")` replaces both `log.warn(…)` and `Result.failure(…)`. After conversion a grep for `Result.failure(IllegalArgumentException` outside the helper should find nothing (a cheap guard against a site forgetting to log).
 5. **Tests.**
    - **Logback stays the JVM test backend:** `jvmTest { implementation("ch.qos.logback:logback-classic:1.5.13") }` plus `src/jvmTest/resources/logback-test.xml` (moved from `src/test/resources`; KMP source-set resources live in the directory named after the source set). Logger names are unchanged, so the file works as is.
    - `commonTest`: assert the helper with a recording fake `KLogger`: one WARN event, the same message, the failure exception is `IllegalArgumentException` with that message.
    - `js`/`wasmJs` test output: failures print through `console.warn` as `WARN: [com.spartanlabs.geometry.Intersections] <message>` at the default level; `debug`/`trace` are silent unless a JS-only test sets `KotlinLoggingConfiguration.direct.logLevel`. Each test run also prints the startup line unless `KOTLIN_LOGGING_STARTUP_MESSAGE=false` is set in the Node environment.
-6. **Version choice to surface to the user (not a precondition failure).** 8.0.4 is the current, widely used (Koog, MCP SDK) release and the right default, but it is the first major line to print a startup line. If the user prefers silent consumers over currency, 7.0.14 is the same on stdlib/language level/targets/API for this use. The README, migration notes and any consumer docs should state the opt-out (`-Dkotlin-logging.logStartupMessage=false`).
+6. **Version choice that needs a call (not a failed requirement).** 8.0.4 is the current, widely used (Koog, MCP SDK) release and the right default, but it is the first major line to print a startup line. If silent consumers matter more than currency, 7.0.14 is the same on stdlib/language level/targets/API for this use. The README, migration notes and any consumer docs should state the opt-out (`-Dkotlin-logging.logStartupMessage=false`).
 7. **Verification that cannot be done from here (do before release).** After the build is converted, run `publishToMavenLocal` and read the generated `GeneralTools-jvm-3.0.0.module`: confirm `jvmApiElements-published` has no kotlin-logging, `jvmRuntimeElements-published` requires it, and the stdlib requirement is ≤ 2.2.x.
 
 ## 7. Load-bearing claims
@@ -193,12 +204,12 @@ Tiers: **consensus** = standard/spec or multiple independent sources. **practice
 ## 8. Gaps
 
 - **Not built or run.** Everything about GeneralTools' own published metadata, and what MyGameTools' Gradle resolves against it, is inferred from two published KMP libraries (MCP SDK 0.15.0, Koog) that use the identical `commonMain implementation` pattern. The `publishToMavenLocal` check in §6 item 7 is still required.
-- **The stdlib seen on MyGameTools' compile classpath depends on R1's pins.** I did not determine GeneralTools' Kotlin version. I only state that kotlin-logging adds nothing newer than 2.1.21 and contributes no compile-time constraint.
+- **The stdlib seen on MyGameTools' compile classpath depends on the build's pins (see [kmp-build-and-kotlin-compat.md](kmp-build-and-kotlin-compat.md)).** I did not determine GeneralTools' Kotlin version. I only state that kotlin-logging adds nothing newer than 2.1.21 and contributes no compile-time constraint.
 - **Runtime-harmlessness of a newer stdlib** (kotlin-logging compiled at 2.1.21 running on MyGameTools' 2.2.x stdlib) rests on the Kotlin guideline that API version only sets a *minimum* runtime stdlib. I did not find a sentence saying "newer is always fine" and did not run it. It is the normal Kotlin backward-compatibility expectation (low risk).
-- **Klib ABI compatibility** of a 2.1.21-built `js`/`wasmJs` klib consumed by newer compilers: not verified from a primary source here (the lead's N1 says JetBrains has not finalised klib binary compatibility guarantees). The risk is limited to future KMP consumers that link against kotlin-logging's klib via GeneralTools.
-- **No pattern found for a "log and return `Result.failure`" helper** in comparable libraries. The helper design (§6) is first-principles. I did not search for a published argument on whether to log at failure creation versus at the handling boundary; B1 settles it for this repo.
+- **Klib ABI compatibility** of a 2.1.21-built `js`/`wasmJs` klib consumed by newer compilers: not verified from a primary source here (SpartanGraphics' web-target research, `web-target-kotlin-js-vs-wasm.md` in the SpartanLaboratories/SpartanGraphics working tree, says JetBrains has not finalised klib binary compatibility guarantees). The risk is limited to future KMP consumers that link against kotlin-logging's klib via GeneralTools.
+- **No pattern found for a "log and return `Result.failure`" helper** in comparable libraries. The helper design (§6) is first-principles. I did not search for a published argument on whether to log at failure creation versus at the handling boundary; this repository logs at failure creation.
 - **kotlin-logging 8.0.4 vs 7.0.14 on the JVM:** I did not diff 7.0.14 and 8.0.4 behaviour beyond the startup message, the removed deprecated methods and the JPMS descriptor. Whether 7.x still gets fixes is unknown.
-- **JPMS:** the shipped `module-info.class` requires `kotlinx.coroutines.core` (non-static) while Gradle metadata does not declare coroutines. Only matters if a consumer runs on the module path. Not investigated further. Per the global CLAUDE.md, this could be reported upstream as a kotlin-logging issue if it ever matters (kotlin-logging is not a Spartan Labs repo, so no issue is proposed).
-- **`src/jvmTest/resources` convention:** the Kotlin docs only say a source set's files are "usually stored in the directory with the name of the source set". R5/R1 should confirm the exact resources path in the Kotlin Gradle plugin for the `jvm` test compilation.
+- **JPMS:** the shipped `module-info.class` requires `kotlinx.coroutines.core` (non-static) while Gradle metadata does not declare coroutines. Only matters if a consumer runs on the module path. Not investigated further. It could be reported upstream as a kotlin-logging issue if it ever matters.
+- **`src/jvmTest/resources` convention:** the Kotlin docs only say a source set's files are "usually stored in the directory with the name of the source set". The exact resources path in the Kotlin Gradle plugin for the `jvm` test compilation is for the build and test-layout research to confirm ([kmp-build-and-kotlin-compat.md](kmp-build-and-kotlin-compat.md), [kmp-test-levels-and-names.md](kmp-test-levels-and-names.md)).
 - **Behaviour on `wasmJs` in a real browser/Karma run** (console output capture) was not observed; the claims come from source only.
-- **Brief gaps:** none blocking. MyGameTools' own source does not use kotlin-logging (grepped `oshai`/`kotlinlogging`: no matches), so no consumer-side version conflict exists today.
+- **Other gaps:** none blocking. MyGameTools' own source does not use kotlin-logging (grepped `oshai`/`kotlinlogging`: no matches), so no consumer-side version conflict exists today.

@@ -1,115 +1,224 @@
-# Research: plan, verification and summary
+# Research: GeneralTools 3.0.0 on Kotlin Multiplatform
 
-- **For:** [SpartanLaboratories/GeneralTools#7](https://github.com/SpartanLaboratories/GeneralTools/issues/7),
-  *"Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)"*. By the
-  user's decision of 2026-10-12, the same change also resolves
+- **Issue:** [SpartanLaboratories/GeneralTools#7](https://github.com/SpartanLaboratories/GeneralTools/issues/7),
+  *"Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)"*. The
+  same change resolves
   [SpartanLaboratories/GeneralTools#8](https://github.com/SpartanLaboratories/GeneralTools/issues/8),
   *"Read-only views for Point and Square so libraries can expose geometry without copying"*.
-- **Release:** `3.0.0` (major), published to Maven Central by hand at the end of the run.
-- **Written by:** the planner. The `<question-slug>.md` files beside this one belong to the
-  researchers who wrote them and are never edited here.
-- **Date:** 2026-10-12. Baseline: `master` @ `6926069`; `./gradlew build` passes with 185 tests
-  and no failures.
-- **Citations:** documents by section, code by symbol (outside repos at a pinned tag or commit).
+- **Release:** `3.0.0`, a major version, published to Maven Central by hand.
+- **Baseline:** `master` @ `17d30bc`; the source is unchanged since `6926069`. `./gradlew build`
+  passes with 185 tests, no failures and none skipped.
+- **Citations:** documents by section, code by symbol; outside repositories at a pinned tag or
+  commit.
 
-This file has three parts: the research plan (written before any researcher started), the
-verification results, and the summary that stage 3 designs from.
-
----
-
-## Part 1: Research plan
-
-### 1.1 Binding constraints
-
-The user's interview answers (2026-10-12), one line each. Every researcher brief carries them.
-
-| # | Constraint |
-|---|---|
-| B1 | Logging: common code logs through **kotlin-logging** (slf4j on the JVM, so consumers' backends are unchanged). **One central internal helper** logs the message at **WARN** and builds the `Result.failure`; every failure site uses it. Research must confirm kotlin-logging's current version, its `jvm`/`js`/`wasmJs` targets, and that MyGameTools can stay on Kotlin 2.2.0. If any of those fails, the planner returns to the user. |
-| B2 | 3.0.0 = the multiplatform move **plus** these breaks: `Color`'s primary constructor becomes `internal`; `TwoDoubles.divideBy` returns `Result` (logging WARN through the helper, not ERROR); `TwoDoubles` is unsealed (stability tier per the user's rules, raised if not confident); `Point`/`Dimensions` become immutable; `evaluateList` takes `(T) -> Boolean` and moves to common; the whole `com.spartanlabs.logging` package is removed, with no deprecation cycle. |
-| B3 | #8 is folded in: immutable `Point`/`Dimensions` plus whatever of #8 still applies (for example read-only interfaces). No issue is edited, re-parented, commented on or closed. Where #8's documents go is raised at the next halt. |
-| B4 | Targets: `jvm`, `js` and `wasmJs`. If any existing test expectation cannot hold on a target without a behaviour change, the planner returns to the user before design. |
-| B5 | JVM bytecode level 17. |
-| B6 | Tests: every test in `com.spartanlabs.testing.<level>.<package>`; pure tests in `commonTest`, file/URL/AWT/slf4j tests in `jvmTest`; the stray test class `Point` folds into `PointTest`; the empty `MiscKtTest` is deleted; package-filtered level selection on every target's test task. |
-| B7 | `src/test/resources/keys.txt` is deleted in this change. No issue is filed. |
-| B8 | The `capitalizeEveryWord` comma bug is fixed in this change, with a test for the comma case. No separate issue. |
-| B9 | The run ends with a manual Maven Central publish of `3.0.0` (`publishAndReleaseToMavenCentral` or equivalent, bare tag `3.0.0`, GitHub release). Coordinates `io.github.spartanlaboratories:GeneralTools` and package names stay; Maven-only consumers move to `GeneralTools-jvm`. |
-| B10 | Re-derived assumptions the user did not object to: |
-| | - The API dump changes by **exactly** the intended set of breaks, and the migration notes cover every break. |
-| | - The MyGameTools pre-publish check is re-planned, because MyGameTools will no longer compile unchanged. |
-| | - `read`, `asURL`, `org.slf4j.Logger.time` and `UserActions` stay JVM-only. |
-| | - No Android or native targets. No CHANGELOG.md; migration notes go in the README and the GitHub release. |
-
-### 1.2 Reuse first
-
-- **This repo:** there are no earlier research files. The prior plans carry their research
-  inline. That research is reused as context, not redone:
-  - `docs/plans/3-geometry-primitives/plan.md` §2: the slab method and NaN handling, plus
-    decisions D-mut and D-hash.
-  - `docs/plans/1-color-methods/plan.md` §2: Color's rounding and the hex-format decisions.
-- **SpartanGraphics working-tree research** (uncommitted, dated 2026-10-11, at
-  `D:\Documents\Programming\SpartanGraphics\docs\roadmap\research\`):
-  - [`web-target-kotlin-js-vs-wasm.md`](../../../../../SpartanGraphics/docs/roadmap/research/web-target-kotlin-js-vs-wasm.md)
-    (N1) is reused for these points:
-    - Kotlin/JS is Stable and Kotlin/Wasm is Beta.
-    - The shared `webMain` source set exists since Kotlin 2.2.20.
-    - kotlin-logging 8.0.4 publishes `js` and `wasmJs` variants.
-    - The language-version compatibility rule for consumers.
-    - The klib ABI position.
-
-    The claims we rely on are re-verified in Part 2, because the file is uncommitted and in
-    another repo.
-  - `idiomatic-kotlin.md`, for its value-type and hot-path-math sections. Context for R6 and R7.
-  - `consumer-needs-and-dependencies.md`: whether SpartanGraphics will depend on GeneralTools
-    is still open there. Context for R8.
-  - `android-build-and-platform-floors.md`: context only. The JVM level is settled by B5.
-
-### 1.3 Decisions and questions
-
-Each question informs one decision stage 3 must make that the interview did not settle.
-
-| ID | Decision | Options | Criteria | Evidence that settles it | Research |
-|---|---|---|---|---|---|
-| D1 | Build configuration: Kotlin plugin version and compatibility pins, target and source-set layout, how JVM 17 is enforced, JS/Wasm test runtime, Gradle and CI | stay on Kotlin 2.2.0; move to current 2.4.x with `languageVersion`/`apiVersion`/`coreLibrariesVersion` pinned; `jvmToolchain(17)` versus `jvmTarget` + `-Xjdk-release` | B1 (MyGameTools stays on Kotlin 2.2.0), B4, B5; long-lived and low-maintenance | Kotlin compatibility guide and API guidelines; KGP docs and source; Gradle compatibility matrix | R1 [`kmp-build-and-kotlin-compat.md`](kmp-build-and-kotlin-compat.md) |
-| D2 | How 3.0.0 is published and checked before the irreversible release | vanniktech 0.36.0 versus newer; javadoc-jar mode; automatic release versus staged deployment tested before release; `publishToMavenLocal` smoke tests | B9; Central releases cannot be undone; the existing manual process | vanniktech docs, source and changelog; Sonatype Central Portal docs; KGP publishing docs | R2 [`kmp-maven-central-publishing.md`](kmp-maven-central-publishing.md) |
-| D3 | Logging integration and the central failure helper's shape (B1's preconditions) | kotlin-logging release choice; `implementation` versus `api`; helper as a `KLogger` extension versus a top-level function; event builder versus plain messages | B1 | kotlin-logging releases, module metadata and POMs; its source and README; slf4j compatibility | R3 [`kotlin-logging-adoption.md`](kotlin-logging-adoption.md) |
-| D4 | Whether every existing pure test holds on `js` and `wasmJs` (the B4 halt check), and the common replacements for JVM-only calls | per test class: holds / platform-specific expectation / behaviour change | B4, B8 ("unchanged behaviour" except the comma fix) | Kotlin stdlib JS and Wasm sources at pinned tags; official docs | R4 [`cross-platform-behaviour-parity.md`](cross-platform-behaviour-parity.md) |
-| D5 | Test layout and level selection across `jvm`/`js`/`wasmJs`; test naming | per-level tasks per target; one property applied to all test tasks; keep or rename the 182 backtick names | B6; the user's 5-level standard; MyGameTools and SpartanGraphics precedent | KGP and Gradle docs and source (`KotlinJsTest`); Kotlin docs on identifiers; precedent repos | R5 [`kmp-test-levels-and-names.md`](kmp-test-levels-and-names.md) |
-| D6 | The 3.0.0 geometry model: immutable `Point`/`Dimensions`, unsealed `TwoDoubles`, `divideBy` returning `Result`, live mutable state, what of #8 still applies (`Square`, read-only views), the seam's stability tier | `var` reassignment versus a read-only/mutable pair; abstract base versus interface versus no base; `Square` mutable plus a read-only view versus immutable | B2, B3; the user's library-design rules; MyGameTools migration cost; hot-path performance | comparable libraries' code (OPENRNDR, Kool, KorGE/korma, Compose ui-geometry, JavaFX, libGDX, kotlin-math); JVM and JS allocation evidence | R6 [`immutable-geometry-model.md`](immutable-geometry-model.md) |
-| D7 | Language mechanics for the other breaks, and the API-dump proof | `Color` as a data class with an internal constructor (copy visibility) versus a final class versus a value class; Result-returning naming; `evaluateList` signature; Misc facade naming; KGP `abiValidation()` versus the BCV plugin; `explicitApi()` | B2, B10; the user's clean-break rule | Kotlin docs, KEEPs and release notes; BCV and KGP docs | R7 [`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md) |
-| D8 | Blast radius, adoption sweep, downstream migration size, and which pre-publish verification is meaningful | consumer smoke test only; uncommitted MyGameTools migration spike through a composite build; staged-deployment testing; pre-release version | B2, B3, B9, B10 | this repo, MyGameTools, MyGameClient, MyGameServer and WebTools code (read-only); git history | R8 [`downstream-blast-radius.md`](downstream-blast-radius.md) |
-
-These decisions need no research:
-- The JVM level (B5), and the target set and logging library choice (B3, B1).
-- Tag and release conventions: a bare `X.Y.Z` tag and a GitHub release, per README and history.
-
-### 1.4 Lenses
-
-Each researcher works through three lenses inside its own question:
-1. The best systems for the purpose.
-2. Common practice and convention.
-3. Idiomatic Kotlin, grounded in the repo's paradigm: OOP for domain modelling, FP for data
-   transformation, and `Result` for expected failures.
-
-R7 is the dedicated idiomatic-Kotlin question, because the public API's shape is itself a
-decision.
-
-### 1.5 Verification plan
-
-- **Outside-world claims:** every findings file ends with its load-bearing claims. One
-  `verifier` re-opens every source, together with the N1 claims reused in 1.2.
-  - A claim that **fails** leaves the design inputs, and any decision resting on it reopens.
-  - A claim that is **unclear** stays, with its weakness stated wherever it is used.
-- **Claims about this codebase:** the planner spot-checks these against the code.
+This file holds the research questions behind the 3.0.0 design, then the verification of the
+outside-world claims their answers rest on, then a topic-by-topic summary. Each question's
+findings live in the file it names.
 
 ---
 
-## Part 2: Verification results
+## What 3.0.0 is
+
+- **Targets.** `jvm` (bytecode 17), `js` and `wasmJs`, built from one Kotlin Multiplatform
+  module. There are no Android or native targets.
+- **Placement.** `Color`, the whole `com.spartanlabs.geometry` package and the platform-neutral
+  `Misc` helpers live in common code. `read`, `asURL`, the slf4j `Logger.time` extension and
+  `UserActions` stay JVM-only.
+- **Logging.** Common code logs through kotlin-logging, which delegates to slf4j on the JVM, so a
+  consumer's logging backend keeps working unchanged. One internal helper logs each expected
+  failure at WARN and builds its `Result.failure`; every failure site goes through it.
+- **Breaking changes, and only these.**
+  - `Color`'s primary constructor becomes `internal`.
+  - `TwoDoubles` is no longer `sealed`.
+  - `Point` and `Dimensions` become immutable.
+  - `TwoDoubles.divideBy` returns a `Result` instead of throwing, and logs at WARN instead of
+    ERROR.
+  - `evaluateList` takes a `(T) -> Boolean` and moves to common code.
+  - The `com.spartanlabs.logging` package is removed.
+
+  Each break is clean, with no deprecation cycle. The public API dump changes by exactly this set.
+- **Also in the change.** `capitalizeEveryWord` stops dropping commas that are part of its input,
+  with a test for that case. `src/test/resources/keys.txt`, which no test reads, is deleted.
+- **Coordinates.** `io.github.spartanlaboratories:GeneralTools` and every package name stay.
+  Gradle consumers resolve the right variant automatically; Maven-only consumers switch to
+  `GeneralTools-jvm`.
+- **Release notes.** Migration notes covering every break go in the README and the GitHub
+  release. The repository has no CHANGELOG.md.
+- **Release mechanics.** A maintainer publishes by hand; there is no CI publish. The release is
+  tagged with a bare `3.0.0` and gets a GitHub release.
+- **Downstream.** MyGameTools (SpartanLabsGaming/MyGameTools) consumes GeneralTools `2.2.0` as an
+  `api` dependency and builds with Kotlin 2.2.0. It stays on Kotlin 2.2.0 when it adopts 3.0.0.
+  It will not compile unchanged against 3.0.0: it mutates `Point` and `Dimensions` in place
+  (`setTo`, `dimensions.width = ...`) in about 36 places.
+
+---
+
+## Sources reused
+
+- **Earlier plans in this repository** carry their research inline. It is reused as context,
+  not repeated:
+  - `docs/plans/3-geometry-primitives/plan.md` §2: the slab method and its NaN handling. Its §7
+    explains why `Segment`, `Ray` and `CenteredBox` document "treat as immutable" instead of
+    copying their mutable `Point`s, and anticipates immutable `Point`/`Dimensions` in a future
+    major.
+  - `docs/plans/1-color-methods/plan.md` §2: `Color`'s rounding and hex formats.
+- **SpartanGraphics research**, in the working tree of
+  [SpartanLaboratories/SpartanGraphics](https://github.com/SpartanLaboratories/SpartanGraphics)
+  at `docs/roadmap/research/` (dated 2026-10-11, not committed there):
+  - `web-target-kotlin-js-vs-wasm.md` already answers several web-target points: Kotlin/JS is
+    Stable and Kotlin/Wasm is Beta; the shared `webMain` source set exists since Kotlin 2.2.20;
+    kotlin-logging 8.0.4 publishes `js` and `wasmJs` variants; non-JVM consumers need a compiler
+    at least as new as a library's language version; klib binary-compatibility guarantees are not
+    finalized; partial linkage is always on from Kotlin 2.4.0. Because the file is uncommitted and
+    lives in another repository, the claims used here are re-verified below.
+  - `idiomatic-kotlin.md`: value types and hot-path maths. Context for the geometry-model and
+    API-mechanics questions.
+  - `consumer-needs-and-dependencies.md`: whether SpartanGraphics will depend on GeneralTools is
+    still open there. Context for the downstream question.
+  - `android-build-and-platform-floors.md`: context only.
+
+---
+
+## Questions
+
+### 1. How should the build pin Kotlin versions so a Kotlin 2.2.0 consumer can still compile against it, and how are targets, source sets, JVM 17, the JS/Wasm test runtimes, Gradle and CI set up?
+
+- **Options.** Stay on Kotlin Gradle plugin 2.2.0; or move to the current 2.4.x with
+  `languageVersion`, `apiVersion` and the published `kotlin-stdlib` pinned. For JVM 17:
+  `jvmToolchain(17)`, or `jvmTarget` plus `-Xjdk-release`.
+- **Requirements.** Targets are `jvm` (bytecode 17), `js` and `wasmJs`. At least one non-JVM
+  target exists, so common code cannot quietly use JVM APIs. MyGameTools, a JVM-only consumer on
+  Kotlin 2.2.0 with an `api` dependency, compiles against 3.0.0 without changing its Kotlin
+  version. The setup is long-lived and cheap to maintain. The Gradle wrapper is 9.0.0 today.
+- **Evidence that settles it.** The Kotlin compatibility guide and API guidelines; Kotlin Gradle
+  plugin docs and source; the Gradle compatibility matrix; what comparable published libraries
+  declare.
+- **Findings:** [`kmp-build-and-kotlin-compat.md`](kmp-build-and-kotlin-compat.md).
+
+### 2. How is the multiplatform 3.0.0 published to Maven Central with the vanniktech plugin, and how are the real artifacts checked before the irreversible release?
+
+- **Options.** vanniktech `0.36.0` (in use today) or newer; the javadoc-jar mode; automatic
+  release, or a staged deployment tested before release; local smoke tests through
+  `publishToMavenLocal` or a file repository.
+- **Requirements.** Coordinates `io.github.spartanlaboratories:GeneralTools` stay; Maven-only
+  consumers move to `GeneralTools-jvm`. A maintainer publishes by hand from a machine that holds
+  the signing key and the Central credentials; there is no CI publish. A Central release cannot
+  be undone. The release gets a bare `3.0.0` tag and a GitHub release.
+- **Evidence that settles it.** vanniktech's docs, source and changelog; the Sonatype Central
+  Portal docs; Kotlin Gradle plugin publishing docs; comparable libraries' published artifacts.
+- **Findings:** [`kmp-maven-central-publishing.md`](kmp-maven-central-publishing.md).
+
+### 3. Does kotlin-logging serve `jvm`, `js` and `wasmJs` without raising consumers' Kotlin floor, and what shape should its integration and the central failure helper take?
+
+- **Options.** Which kotlin-logging release; `implementation` or `api` scope; the helper as a
+  `KLogger` extension or a top-level function; kotlin-logging's event builder or plain messages.
+- **Requirements.** Common code logs through kotlin-logging, which delegates to slf4j on the JVM
+  so a consumer's backend keeps working unchanged. The current kotlin-logging release publishes
+  `jvm`, `js` and `wasmJs` and does not stop a Kotlin 2.2.0 JVM consumer from compiling. One
+  internal helper logs each expected failure at WARN and builds its `Result.failure`; every
+  failure site uses it.
+- **Evidence that settles it.** kotlin-logging's releases, Gradle module metadata and POMs; its
+  source and README; slf4j compatibility; published libraries that use the same dependency shape.
+- **Findings:** [`kotlin-logging-adoption.md`](kotlin-logging-adoption.md).
+
+### 4. Does every existing pure test hold on `js` and `wasmJs`, and which common-code replacements serve the JVM-only calls?
+
+- **Options.** For each test class: it holds unchanged on all three targets; it needs a
+  platform-specific expectation; or it can pass only if behaviour changes on some target.
+- **Requirements.** `Color` and the geometry types behave the same on `jvm`, `js` and `wasmJs`.
+  The existing test expectations hold unchanged, except that `capitalizeEveryWord` stops dropping
+  commas that are part of its input. JVM-only calls in code that moves to common are replaced:
+  `String.format` in `Color.toHex`, `javaClass` in `TwoDoubles.equals`/`hashCode`, the
+  `java.lang.Math.pow` import in `Point.kt`, `java.util.function.Predicate` in `evaluateList`,
+  the deprecated `String.capitalize` in `capitalizeEveryWord`, and `Thread.sleep` in tests. Code
+  that leans on JVM numeric behaviour is checked target by target: `minOf`/`maxOf` propagating
+  NaN in the slab tests, `Float` arithmetic in `Color`, and `Double.toString` in
+  `TwoDoubles.toString`.
+- **Evidence that settles it.** The Kotlin standard library's JS and Wasm sources at pinned tags;
+  official docs; the repository's own tests, read assertion by assertion.
+- **Findings:** [`cross-platform-behaviour-parity.md`](cross-platform-behaviour-parity.md).
+
+### 5. How are tests laid out and selected by level across `jvm`, `js` and `wasmJs`, and do the existing test names work on every target?
+
+- **Options.** Separate per-level test tasks for each target, or one level property applied to
+  every target's test task; keep the 182 backtick-quoted test names, or rename them.
+- **Requirements.** Tests follow the 5-level hierarchy, each level in its own
+  `com.spartanlabs.testing.<level>.<package>` package. Pure tests go to `commonTest`; file, URL,
+  AWT and slf4j tests go to `jvmTest`. The stray test class `Point` in
+  `src/test/kotlin/geometry/Point.kt` folds into `PointTest`, and the empty `MiscKtTest` is
+  deleted. Every target's test task can select levels by package filter. `logback-test.xml` keeps
+  serving the JVM tests.
+- **Evidence that settles it.** Kotlin Gradle plugin and Gradle docs and source (`KotlinJsTest`,
+  test filtering); Kotlin docs on identifiers per target; MyGameTools' and SpartanGraphics'
+  level-selection setups.
+- **Findings:** [`kmp-test-levels-and-names.md`](kmp-test-levels-and-names.md).
+
+### 6. What shape should the immutable geometry model take, and what is left of read-only views once `Point` and `Dimensions` are immutable?
+
+- **Options.** Live mutable state through a `var` that holds an immutable value, or through a
+  read-only/mutable pair of types; `TwoDoubles` as an abstract base class, an interface, or no
+  shared base; `Square` kept mutable with a read-only view, or made immutable.
+- **Requirements.**
+  - `Point` and `Dimensions` become immutable. `TwoDoubles` is no longer `sealed`, so consumers
+    can define their own two-double types. `divideBy` returns a `Result` and logs through the
+    failure helper instead of throwing.
+  - A library can hand out geometry that its callers cannot mutate, without copying it. Issue #8
+    names the cost today: MyGameTools' `ZoneGrid` and `UnzonedPointException` copy `Point`s, and
+    `Zone.bounds` exposes a shared `Square` guarded only by a prose "do not mutate".
+  - The concrete types keep their `equals`/`hashCode` semantics.
+  - Domain types are open to subclassing; members that maintain a class's invariants stay
+    `final` or `internal`. Every new public seam sits in one stability tier: Stable Core,
+    Supported Extension (the same semver promise, marked `@SupportedExtension`), or Experimental
+    (behind `@RequiresOptIn`).
+  - The 3.0.0 breaks are the listed set; everything else stays source-compatible.
+  - Geometry sits on game hot paths (raycasts, per-frame movement), so allocation cost on the JVM
+    and on JS matters.
+- **Evidence that settles it.** Comparable libraries' code (OPENRNDR, Kool, KorGE/korma, Compose
+  `ui-geometry`, JavaFX, libGDX, kotlin-math); JVM and JS allocation and escape-analysis
+  evidence; how MyGameTools uses the types.
+- **Findings:** [`immutable-geometry-model.md`](immutable-geometry-model.md).
+
+### 7. Which Kotlin language mechanics best express the other 3.0.0 breaks, and how is it proven that the public API changes by exactly the intended set?
+
+- **Options.** `Color` as a data class with an `internal` constructor (and what that does to
+  `copy`), a plain final class, or a value class; naming for functions that return `Result`; the
+  `evaluateList` signature; JVM facade names for the `Misc` functions split between common and
+  JVM code (`@JvmName`, `@JvmMultifileClass`); the Kotlin Gradle plugin's `abiValidation()` or
+  the binary-compatibility-validator plugin; `explicitApi()`.
+- **Requirements.** `Color`'s primary constructor becomes `internal`, leaving the factories as
+  the public way to build a `Color`. `evaluateList` takes `(T) -> Boolean` and lives in common
+  code. The `com.spartanlabs.logging` package is removed. `read`, `asURL`, `Logger.time` and
+  `UserActions` stay JVM-only. Breaks are clean, with no deprecation cycle. The public API dump
+  changes by exactly the intended set of breaks, and migration notes cover every one.
+- **Evidence that settles it.** Kotlin docs, KEEPs and release notes; the ABI-validation docs of
+  the Kotlin Gradle plugin and of the binary-compatibility-validator; comparable libraries'
+  setups.
+- **Findings:** [`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md).
+
+### 8. What does 3.0.0 break downstream, which existing code should move onto the new geometry model, and which checks before publishing prove the release?
+
+- **Options.** A consumer smoke test only; a throwaway MyGameTools migration, never committed,
+  built against the new GeneralTools through a composite build; testing the staged Central
+  deployment before release; a pre-release version.
+- **Requirements.** MyGameTools stays on Kotlin 2.2.0 and does not compile unchanged against
+  3.0.0; the size of its migration is part of the answer. The downstream repositories
+  (MyGameTools, MyGameClient, MyGameServer, WebTools, SpartanGraphics) are read, never changed,
+  by this work. Inside this repository, every class built on a mechanism that 3.0.0 replaces
+  (mutable `Point`/`Dimensions`, the throwing `divideBy`, the slf4j logger fields,
+  `com.spartanlabs.logging`) gets a verdict: move onto the new model, or not. A Central release
+  cannot be undone.
+- **Evidence that settles it.** This repository's code and history; the downstream repositories'
+  code, read-only; `git log` and `git blame` on the areas touched.
+- **Findings:** [`downstream-blast-radius.md`](downstream-blast-radius.md).
+
+---
+
+## Verification results
 
 *Pending.*
 
 ---
 
-## Part 3: Summary
+## Summary
 
 *Pending.*

@@ -47,9 +47,10 @@ findings live in the file it names.
 - **Release mechanics.** A maintainer publishes by hand; there is no CI publish. The release is
   tagged with a bare `3.0.0` and gets a GitHub release.
 - **Downstream.** MyGameTools (SpartanLabsGaming/MyGameTools) consumes GeneralTools `2.2.0` as an
-  `api` dependency and builds with Kotlin 2.2.0. It stays on Kotlin 2.2.0 when it adopts 3.0.0.
-  It will not compile unchanged against 3.0.0: it mutates `Point` and `Dimensions` in place
-  (`setTo`, `dimensions.width = ...`) in about 36 places.
+  `api` dependency on `master` (its last published release, `gametools` 5.0.0, carries `2.0.1`) and
+  builds with Kotlin 2.2.0. It stays on Kotlin 2.2.0 when it adopts 3.0.0. It will not compile
+  unchanged against 3.0.0: it mutates `Point` and `Dimensions` in place (`setTo`,
+  `dimensions.width = ...`) at 40 sites in 17 files.
 
 ---
 
@@ -215,7 +216,55 @@ findings live in the file it names.
 
 ## Verification results
 
-*Pending.*
+Every outside-world claim a recommendation rests on was re-opened at its source on 2026-10-18:
+the numbered load-bearing claims of the eight findings files, and nine claims reused from
+SpartanGraphics' `web-target-kotlin-js-vs-wasm.md` (its claims 1, 2, 5 and 12 to 17). Quotes that
+the findings mark as fetcher-extracted turned out verbatim, apart from typography.
+
+| Findings file | Claims checked | Hold | Do not hold |
+|---|---|---|---|
+| [`kmp-build-and-kotlin-compat.md`](kmp-build-and-kotlin-compat.md) | 33 | 33 | 0 |
+| [`kmp-maven-central-publishing.md`](kmp-maven-central-publishing.md) | 23 | 23 | 0 |
+| [`kotlin-logging-adoption.md`](kotlin-logging-adoption.md) | 20 | 20 | 0 |
+| [`cross-platform-behaviour-parity.md`](cross-platform-behaviour-parity.md) | 28 | 27 | 1 |
+| [`kmp-test-levels-and-names.md`](kmp-test-levels-and-names.md) | 20 | 20 | 0 |
+| [`immutable-geometry-model.md`](immutable-geometry-model.md) | 20 | 20 | 0 |
+| [`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md) | 26 | 25 | 1 |
+| [`downstream-blast-radius.md`](downstream-blast-radius.md) | 9, plus the published artifacts it decodes | all | 0 |
+| SpartanGraphics `web-target-kotlin-js-vs-wasm.md` (reused) | 9 | 9 | 0 |
+
+No claim is unclear. The pinned versions are current: Kotlin 2.4.21 is the latest stable release
+(2.5.0-Beta1 is the only newer tag), and vanniktech `0.37.0`, kotlin-logging `8.0.4`, the
+binary-compatibility-validator `0.18.2`, `actions/setup-java` v6.1.0, `gradle/actions` v6.4.0 and
+kotlinx.coroutines 1.11.0 are each the latest release.
+
+**The two claims that do not hold, and what holds instead.**
+
+- **Data-class `copy` visibility** ([`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md)
+  claim 1). The warning on a data class with a non-public constructor was scheduled to become an
+  error at language version 2.5. Kotlin 2.5.0-Beta1 postponed that with no new version
+  ([KT-89123](https://youtrack.jetbrains.com/issue/KT-89123), "Keep the visibility inconsistency
+  about data class copy and primary constructor as a warning"). It stays a warning outside
+  progressive mode, both on the declaration and at consumers' `copy` calls. The choice of annotation
+  for `Color` therefore rests on validation and on the set of breaks alone, not on a future build
+  failure.
+- **`KClass.qualifiedName` on Wasm** ([`cross-platform-behaviour-parity.md`](cross-platform-behaviour-parity.md)
+  claim 19). It is enabled by default on Kotlin/Wasm since Kotlin 2.3.0; the stdlib KDoc that says
+  otherwise predates the change. It is still always `null` on JS, so common code still avoids it.
+
+**Claims about this repository and its consumers** were checked against the code directly:
+
+- the baseline build: 185 tests, none failing or skipped;
+- the 182 backtick test names, which use only letters, digits, spaces, hyphens (34 names) and
+  apostrophes (5 names);
+- 7 slf4j logger fields, and 12 failure sites: 11 `Result.failure` calls plus the throwing
+  `divideBy`;
+- 183 `log.` calls in the test tree, 173 of them in tests that move to `commonTest`;
+- the inputs of the grazing-ray test;
+- in today's jar, member functions that return `Result` have mangled JVM names
+  (`distanceFrom-IoAF18A`, `asRay-d1pmJ48`) and top-level ones do not;
+- MyGameTools' 40 in-place mutation sites in 17 files (6 in main sources), `VisibleObject` handing
+  `area.location` to `GameObject`, and `Actor.isAtDestination` comparing with `==`.
 
 ---
 

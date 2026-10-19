@@ -13,7 +13,7 @@ An answer has to meet these requirements:
 
 - Tests follow a 5-level hierarchy, each level in its own package segment under a `testing` root, mirroring the production package below it: level 1 `testing.gating`, level 2 `testing.component`, level 3 `testing.integration`, level 4a `testing.deterministic`, level 4b `testing.e2e`, level 4c `testing.nonfunctional`, level 5 `testing.uat`. Production packages are `com.spartanlabs.geometry` and `com.spartanlabs.generaltools`, so the level-2 test of `com.spartanlabs.geometry.Point` is `com.spartanlabs.testing.component.geometry.PointTest`. One test class per file.
 - Each level can be run, skipped or gated on its own, bound to a test task or a filter, so CI can run levels 1-2 on every commit and keep 4-5 for release gates. Every target's test task (`jvmTest`, `jsNodeTest`, `wasmJsNodeTest`) can select levels by package filter.
-- Pure tests go to `commonTest`; file, URL, AWT and slf4j tests go to `jvmTest`. The stray class `Point` (package `geometry`) folds into `PointTest`; the empty `MiscKtTest` is deleted; `src/test/resources/keys.txt` is deleted; `logback-test.xml` keeps serving the JVM tests.
+- Pure tests go to `commonTest`; file, URL, AWT and slf4j tests go to `jvmTest`. The stray class `Point` (package `geometry`) folds into `PointTest`; the empty `MiscKtTest` is deleted; `logback-test.xml` keeps serving the JVM tests. `src/test/resources/keys.txt` is already deleted on `master`, and moving the test sources leaves it alone.
 - The existing component tests carry JUnit `@Tag` and log through slf4j `LoggerFactory`; neither exists in common code.
 
 ## 2. Bottom line
@@ -156,7 +156,7 @@ src/jvmTest/kotlin/com/spartanlabs/testing/<level>/<pkg>/       file, URL, AWT, 
 src/jvmTest/resources/logback-test.xml
 ```
 
-`keys.txt` and the `MiscKtTest` file are deleted. The stray class `Point` disappears into `PointTest`. `commonTest.dependencies { implementation(kotlin("test")) }`; `jvmTest` adds the logback test dependency; the JVM test task keeps `useJUnitPlatform()`.
+The `MiscKtTest` file is deleted; `keys.txt`, already deleted on `master`, is not moved with the other test resources. The stray class `Point` disappears into `PointTest`. `commonTest.dependencies { implementation(kotlin("test")) }`; `jvmTest` adds the logback test dependency; the JVM test task keeps `useJUnitPlatform()`.
 
 **Level for each class not yet in a level package.**
 

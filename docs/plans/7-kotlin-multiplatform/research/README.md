@@ -6,8 +6,10 @@
   [SpartanLaboratories/GeneralTools#8](https://github.com/SpartanLaboratories/GeneralTools/issues/8),
   *"Read-only views for Point and Square so libraries can expose geometry without copying"*.
 - **Release:** `3.0.0`, a major version, published to Maven Central by hand.
-- **Baseline:** `master` @ `17d30bc`; the source is unchanged since `6926069`. `./gradlew build`
-  passes with 185 tests, no failures and none skipped.
+- **Baseline:** the branch `feat/issue-7-kotlin-multiplatform` starts from `master` @ `17d30bc`, and
+  the main sources are unchanged since `6926069`. `./gradlew build` passes there with 185 tests, no
+  failures and none skipped. `master` has since moved to `c196d1a`, which only deletes
+  `src/test/resources/keys.txt`.
 - **Citations:** documents by section, code by symbol; outside repositories at a pinned tag or
   commit.
 
@@ -28,29 +30,45 @@ findings live in the file it names.
   consumer's logging backend keeps working unchanged. One internal helper logs each expected
   failure at WARN and builds its `Result.failure`; every failure site goes through it.
 - **Breaking changes, and only these.**
-  - `Color`'s primary constructor becomes `internal`.
-  - `TwoDoubles` is no longer `sealed`.
-  - `Point` and `Dimensions` become immutable.
+  - The library becomes multiplatform. Gradle consumers resolve the right variant automatically;
+    Maven-only consumers switch to `GeneralTools-jvm`.
+  - `TwoDoubles` is no longer `sealed`. Subclassing it is Experimental, behind an ERROR-level
+    opt-in marker.
   - `TwoDoubles.divideBy` returns a `Result` instead of throwing, and logs at WARN instead of
     ERROR.
   - `evaluateList` takes a `(T) -> Boolean` and moves to common code.
   - The `com.spartanlabs.logging` package is removed.
+  - `Square` gets a new name, and its `location` and `dimensions` references become read-only
+    (`val`). The `Point` and `Dimensions` it holds stay mutable.
+  - `TwoDoubles` equality becomes lawful: NaN equals NaN, `-0.0` hashes like `0.0`, and `0.0`
+    still equals `-0.0`.
+  - `Color`'s public constructor validates its channels: a value outside `0..255` throws
+    `IllegalArgumentException`, through `copy` as well. `Color.of` still clamps.
+  - `trimIfLongerThan` throws `IndexOutOfBoundsException` for a negative length on every platform.
+  - `capitalizeEveryWord` stops dropping commas that are part of its input, with a test for that
+    case.
 
-  Each break is clean, with no deprecation cycle. The public API dump changes by exactly this set.
-- **Also in the change.** `capitalizeEveryWord` stops dropping commas that are part of its input,
-  with a test for that case. `src/test/resources/keys.txt`, which no test reads, is deleted.
+  Each break is clean, with no deprecation cycle. The public API dump changes by exactly the
+  signature changes in this set; the behaviour changes get tests of their own.
+- **Kept as in 2.x.** `Point` and `Dimensions` stay mutable, with their in-place members. `Color`
+  keeps its public constructor and its public `copy`.
+- **Added.** The renamed `Square` gains a method that returns an immutable copy of itself, as a new
+  immutable type.
+- **Not part of the change.** `src/test/resources/keys.txt` is already deleted on `master`. Moving
+  the test sources neither moves nor modifies it, and bringing `master` into the branch removes it
+  there.
 - **Coordinates.** `io.github.spartanlaboratories:GeneralTools` and every package name stay.
-  Gradle consumers resolve the right variant automatically; Maven-only consumers switch to
-  `GeneralTools-jvm`.
 - **Release notes.** Migration notes covering every break go in the README and the GitHub
   release. The repository has no CHANGELOG.md.
-- **Release mechanics.** A maintainer publishes by hand; there is no CI publish. The release is
-  tagged with a bare `3.0.0` and gets a GitHub release.
+- **Release mechanics.** A maintainer publishes by hand; there is no CI publish. Before the
+  irreversible step, a throwaway MyGameTools migration and a consumer smoke project, both kept
+  outside the repository, are built against the new artifacts. The release is tagged with a bare
+  `3.0.0` and gets a GitHub release.
 - **Downstream.** MyGameTools (SpartanLabsGaming/MyGameTools) consumes GeneralTools `2.2.0` as an
   `api` dependency on `master` (its last published release, `gametools` 5.0.0, carries `2.0.1`) and
   builds with Kotlin 2.2.0. It stays on Kotlin 2.2.0 when it adopts 3.0.0. It will not compile
-  unchanged against 3.0.0: it mutates `Point` and `Dimensions` in place (`setTo`,
-  `dimensions.width = ...`) at 40 sites in 17 files.
+  unchanged against 3.0.0: it names `Square` in 14 files and assigns `area.dimensions` in
+  `VisibleObject`. Its in-place `Point` and `Dimensions` updates keep compiling.
 
 ---
 
@@ -128,7 +146,8 @@ findings live in the file it names.
   platform-specific expectation; or it can pass only if behaviour changes on some target.
 - **Requirements.** `Color` and the geometry types behave the same on `jvm`, `js` and `wasmJs`.
   The existing test expectations hold unchanged, except that `capitalizeEveryWord` stops dropping
-  commas that are part of its input. JVM-only calls in code that moves to common are replaced:
+  commas that are part of its input, and the `Point.toString` test checks the layout rather than
+  the platform's digits. JVM-only calls in code that moves to common are replaced:
   `String.format` in `Color.toHex`, `javaClass` in `TwoDoubles.equals`/`hashCode`, the
   `java.lang.Math.pow` import in `Point.kt`, `java.util.function.Predicate` in `evaluateList`,
   the deprecated `String.capitalize` in `capitalizeEveryWord`, and `Thread.sleep` in tests. Code
@@ -154,19 +173,20 @@ findings live in the file it names.
   level-selection setups.
 - **Findings:** [`kmp-test-levels-and-names.md`](kmp-test-levels-and-names.md).
 
-### 6. What shape should the immutable geometry model take, and what is left of read-only views once `Point` and `Dimensions` are immutable?
+### 6. What shape would an immutable geometry model take, and what would be left of read-only views if `Point` and `Dimensions` were immutable?
 
 - **Options.** Live mutable state through a `var` that holds an immutable value, or through a
   read-only/mutable pair of types; `TwoDoubles` as an abstract base class, an interface, or no
   shared base; `Square` kept mutable with a read-only view, or made immutable.
 - **Requirements.**
-  - `Point` and `Dimensions` become immutable. `TwoDoubles` is no longer `sealed`, so consumers
-    can define their own two-double types. `divideBy` returns a `Result` and logs through the
-    failure helper instead of throwing.
+  - The model studied here makes `Point` and `Dimensions` immutable. 3.0.0 keeps them mutable;
+    question 9 covers that model. `TwoDoubles` is no longer `sealed`, so consumers can define
+    their own two-double types. `divideBy` returns a `Result` and logs through the failure helper
+    instead of throwing.
   - A library can hand out geometry that its callers cannot mutate, without copying it. Issue #8
     names the cost today: MyGameTools' `ZoneGrid` and `UnzonedPointException` copy `Point`s, and
     `Zone.bounds` exposes a shared `Square` guarded only by a prose "do not mutate".
-  - The concrete types keep their `equals`/`hashCode` semantics.
+  - Equality requires the same concrete class and the same values.
   - Domain types are open to subclassing; members that maintain a class's invariants stay
     `final` or `internal`. Every new public seam sits in one stability tier: Stable Core,
     Supported Extension (the same semver promise, marked `@SupportedExtension`), or Experimental
@@ -186,8 +206,9 @@ findings live in the file it names.
   `evaluateList` signature; JVM facade names for the `Misc` functions split between common and
   JVM code (`@JvmName`, `@JvmMultifileClass`); the Kotlin Gradle plugin's `abiValidation()` or
   the binary-compatibility-validator plugin; `explicitApi()`.
-- **Requirements.** `Color`'s primary constructor becomes `internal`, leaving the factories as
-  the public way to build a `Color`. `evaluateList` takes `(T) -> Boolean` and lives in common
+- **Requirements.** Every `Color` holds channels in `0..255`. 3.0.0 keeps the constructor public
+  and makes it validate; the study also covers an `internal` constructor that leaves the
+  factories as the only way in. `evaluateList` takes `(T) -> Boolean` and lives in common
   code. The `com.spartanlabs.logging` package is removed. `read`, `asURL`, `Logger.time` and
   `UserActions` stay JVM-only. Breaks are clean, with no deprecation cycle. The public API dump
   changes by exactly the intended set of breaks, and migration notes cover every one.
@@ -205,12 +226,69 @@ findings live in the file it names.
   3.0.0; the size of its migration is part of the answer. The downstream repositories
   (MyGameTools, MyGameClient, MyGameServer, WebTools, SpartanGraphics) are read, never changed,
   by this work. Inside this repository, every class built on a mechanism that 3.0.0 replaces
-  (mutable `Point`/`Dimensions`, the throwing `divideBy`, the slf4j logger fields,
-  `com.spartanlabs.logging`) gets a verdict: move onto the new model, or not. A Central release
-  cannot be undone.
+  (the throwing `divideBy`, the slf4j logger fields, `com.spartanlabs.logging`, and in the
+  immutable model studied in question 6, mutable `Point`/`Dimensions`) gets a verdict: move onto
+  the new model, or not. A Central release cannot be undone. The sweep here assumes immutable
+  `Point` and `Dimensions`; question 10 repeats it for the mutable model.
 - **Evidence that settles it.** This repository's code and history; the downstream repositories'
   code, read-only; `git log` and `git blame` on the areas touched.
 - **Findings:** [`downstream-blast-radius.md`](downstream-blast-radius.md).
+
+### 9. With `Point` and `Dimensions` mutable, what shape do `divideBy`, the in-place operators, the renamed `Square` and its immutable copy take?
+
+- **Options.**
+  - `divideBy` on a mutable type: divide in place and return `Result<Unit>`; divide in place and
+    return the receiver inside the `Result` (`Result<Point>` on `Point`); or leave the receiver
+    alone and return a new instance.
+  - `/=` (`divAssign`) when the divisor is zero: log the failure and leave the value unchanged;
+    throw; divide by IEEE rules (Infinity or NaN); or drop the operator.
+  - Non-assigning operators (`div`, and with it `plus`, `minus`, `times`): add them or not. Kotlin
+    reports `a += b` on a `var` as ambiguous when both `plus` and `plusAssign` exist.
+  - The immutable copy: a type that holds four `Double`s, or one that holds immutable point and
+    size types; whether it implements `AxisAlignedBox`, whose members return mutable `Point` and
+    `Dimensions`; how it relates to `CenteredBox`.
+  - Read-only views: whether `AxisAlignedBox` still protects anything when `min` and `size` return
+    the live mutable parts; whether read-only interfaces in the shape issue #8 sketches
+    (`ReadOnlyPoint`, `ReadOnlySquare`) earn a place.
+  - Names for the renamed `Square` and for the immutable copy type.
+- **Requirements.**
+  - `Point` and `Dimensions` stay mutable, as in 2.x, with their in-place members: `var x`, `y`,
+    `width` and `height`, `setTo`, `modBy`, `amplifyBy`, `plusAssign`, `minusAssign`, `timesAssign`
+    and `divAssign`.
+  - `TwoDoubles` is no longer `sealed`. Subclassing it is Experimental, gated by
+    `@SubclassOptInRequired` with the ERROR-level marker `ExperimentalForInheritanceGeneralToolsApi`.
+  - `divideBy` returns a `Result` and logs at WARN through the failure helper instead of throwing.
+  - Equality requires the same concrete class and IEEE-equal components, except that NaN equals
+    NaN; `-0.0` hashes like `0.0`.
+  - `Square` gets a new name. Its `location` and `dimensions` references become `val`, and the
+    parts stay mutable.
+  - The renamed type provides a method that returns an immutable copy of itself, as a new
+    immutable type in a stability tier of its own.
+  - Library-design rules: open hierarchies at genuine extension points, policy behind parameters,
+    additive and opt-in extension, and every public seam in one stability tier.
+  - The 3.0.0 breaks are the listed set; an option that needs a further break says so.
+  - Geometry sits on game hot paths (per-frame movement, raycasts).
+- **Evidence that settles it.** Kotlin's operator-overloading rules; comparable libraries that pair
+  a mutable rectangle with an immutable one (JavaFX, AWT, Android, Compose, libGDX, korlibs,
+  OPENRNDR); the equality and opt-in findings in
+  [`immutable-geometry-model.md`](immutable-geometry-model.md), which carry over; how MyGameTools
+  uses the types.
+- **Findings:** [`mutable-geometry-model.md`](mutable-geometry-model.md).
+
+### 10. Under the mutable model, what does 3.0.0 break downstream, what changes in this repository, and what must the API dump show?
+
+- **Options.** For each downstream site: it keeps compiling; it fails to compile; or it compiles
+  and behaves differently. For the published `gametools` 5.0.0: whether it can still run beside
+  GeneralTools 3.0.0.
+- **Requirements.** The 3.0.0 break set above. MyGameTools stays on Kotlin 2.2.0. The downstream
+  repositories are read, never changed, by this work, and nothing is filed against them. Every
+  class here built on a mechanism that 3.0.0 changes gets a verdict. The API dump changes by
+  exactly the signature part of the break set.
+- **Evidence that settles it.** The downstream repositories' code, read-only; the bytecode of the
+  published `gametools` 5.0.0; this repository's code; the consumer facts in
+  [`downstream-blast-radius.md`](downstream-blast-radius.md) and the dump method in
+  [`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md).
+- **Findings:** [`downstream-under-mutable-model.md`](downstream-under-mutable-model.md).
 
 ---
 
@@ -361,27 +439,28 @@ call is stated with its options and a recommendation.
 
 ### Cross-platform behaviour
 
-- **Found.** Of the 176 tests that move to `commonTest`, 163 hold unchanged on `jvm`, `js` and
-  `wasmJs`, and 12 change because `Point` and `Dimensions` lose their in-place mutators. One cannot
-  hold unchanged: `Point(1.0, 2.0).toString()` is `"1.0, 2.0"` on the JVM and Wasm but `"1, 2"` on
-  JS, which prints a `Double` with JavaScript's number formatting. Evidence:
+- **Found.** The tests that move to `commonTest` keep their expectations on `jvm`, `js` and
+  `wasmJs`, with four exceptions whose subject changes by design: the `Point.toString` test, the
+  `divAssign`-by-zero test (the `divideBy` break), the `Square` test that reassigns `location` (the
+  read-only references), and the `Color` test that expects the constructor not to clamp (the
+  constructor now validates). Tests that name `Square` follow its rename. The one platform
+  difference a test meets: `Point(1.0, 2.0).toString()` is `"1.0, 2.0"` on the JVM and Wasm but
+  `"1, 2"` on JS, which prints a `Double` with JavaScript's number formatting. Evidence:
   [`cross-platform-behaviour-parity.md`](cross-platform-behaviour-parity.md).
-- **Trade-off that needs a call: `toString` on JS.**
-  - (A) A per-target expectation in the test.
-  - (B) A five-line internal normaliser in common code that appends `.0` to integral output. Every
-    target then prints `"1.0, 2.0"`, and JVM output cannot change.
-  - (C) A formatter that reproduces the JVM layout for every magnitude.
-  - (D) A format-agnostic assertion.
-
-  Recommendation: B.
+- **`toString` follows the platform.** `TwoDoubles.toString` keeps each platform's own number
+  formatting, and its KDoc says so. The `Point.toString` test checks the layout only: its expected
+  text is built from the platform's own rendering (`"${1.0}, ${2.0}"`), or it uses values that print
+  the same everywhere, such as `1.5` and `-2.25`. There is no normalising helper and no
+  per-platform branch. Kotlin documents `Double.toString`'s format as unstable, and no code here or
+  downstream parses or asserts on `Point` text.
 - **Differences no test covers.**
   - On JS a `Float` is computed in double precision. `Color.lerp` with a non-dyadic fraction can
     therefore land one channel unit away from the JVM (about 0.01% of probed cases), and
     `luminance()` differs in its last digits. The KDoc states it; float32 emulation on JS is not
     added.
-  - `trimIfLongerThan` with a negative length returns `""` on JS and throws elsewhere. An explicit
-    check makes every target throw `IndexOutOfBoundsException`, the supertype of what the JVM throws
-    today.
+  - `trimIfLongerThan` with a negative length throws `IndexOutOfBoundsException` on every target,
+    through an explicit check. Without it JS would return `""`; the JVM's own exception is a
+    subtype of `IndexOutOfBoundsException`.
 - **Replacements for JVM-only calls.**
   - `Color.toHex` uses `Int.toString(16).padStart(2, '0').uppercase()`. It reproduces `%02X` for
     every non-negative channel, whereas `HexFormat` on bytes would wrap a channel above 255. This is
@@ -408,7 +487,8 @@ call is stated with its options and a recommendation.
     - The `asURL` and `Logger.time` tests are level 2 in `jvmTest`.
     - The `read` test and `UserActionsTest` are level 3 in `jvmTest`.
     - The stray `Point` test class folds into `PointTest`.
-    - `MiscKtTest` and `keys.txt` are deleted.
+    - `MiscKtTest` is deleted. `src/test/resources/keys.txt` is already gone from `master`, and
+      the move leaves it alone.
   - A `-PtestLevel=<level>[,<level>]` property adds
     `includeTestsMatching("com.spartanlabs.testing.<level>.*")` to every test task and sets
     `failOnNoMatchingTests = false`. Left unset, `check` runs every level on every target.
@@ -423,59 +503,34 @@ call is stated with its options and a recommendation.
 
 ### Geometry model
 
-- **Recommended.**
-  - Live state is a `var` holding an immutable value. There is no mutable twin type.
-  - `TwoDoubles` becomes a non-generic `abstract class`. It has `val first` and `val second`,
-    `containsNaN`, a `protected abstract fun create(first, second)` factory, `final`
-    `equals`/`hashCode`, and `open infix fun divideBy(magnitude: Double): Result<TwoDoubles>`.
-  - `Point` and `Dimensions` narrow `divideBy` to `Result<Point>` and `Result<Dimensions>`. It keeps
-    today's reciprocal arithmetic.
-  - `Point` and `Dimensions` stay final and keep their copy constructors. Both gain `plus`, `minus`,
-    `times` and `copy`, and `Point` also gains `unaryMinus`. `+=` on a `var` compiles through
-    `plus`.
-  - There is no `div` operator. `p /= k` stops compiling rather than silently changing from "fails
-    on zero" to "returns Infinity".
-  - `Square` stays a mutable holder of immutable parts, and `AxisAlignedBox` is its read-only view.
-    No `ReadOnlyPoint` or `ReadOnlySquare` type is needed: immutability and the existing interface
-    resolve issue #8.
-
-  Evidence: [`immutable-geometry-model.md`](immutable-geometry-model.md).
-- **Rejected.**
-  - A recursive generic `TwoDoubles<T>`: it breaks every plain `TwoDoubles` reference.
-  - An interface: it cannot carry `equals`/`hashCode`.
-  - A mutable twin: it splits equality and doubles the surface, and korlibs has deprecated its own.
-  - An immutable `Square`: it is a further break.
-- **Trade-off that needs a call: the equality contract.**
-  - (C) Keep IEEE equality for the zeros, make NaN equal NaN, and hash `-0.0` like `0.0` and every
-    NaN alike. Equality becomes lawful with a consistent hash, and no pair that is equal today
-    becomes unequal.
-  - (A) Fix only the hash. NaN points stay unequal to themselves.
-  - (D) Total order, as Kotlin data classes use. It splits `0.0` from `-0.0`, which breaks
-    MyGameTools' `isAtDestination`.
-  - (E) Leave the defect.
-
-  Recommendation: C, stated as a contract change in the migration notes. The parity findings
-  proposed A; C covers A's hash fix and also makes NaN equality reflexive, which A leaves broken.
-- **Trade-off that needs a call: the stability tier of subclassing `TwoDoubles`.** Nothing has
-  subclassed it yet, because it was sealed. Its shape (the factory hook, the covariant `divideBy`)
-  has no consumer evidence.
-  - Experimental: gated by `@SubclassOptInRequired` with a new ERROR-level `@RequiresOptIn` marker,
-    and graduating once a consumer builds on it.
-  - Supported Extension: no opt-in, marked with a `@SupportedExtension` annotation that the library
-    would add.
-  - Stable Core.
-
-  Recommendation: Experimental. In every option, using `Point`, `Dimensions` or a `TwoDoubles`
-  value needs no opt-in.
-- **Silent hazards.**
-  - `p divideBy k` written as a statement compiles and does nothing, and nothing available at
-    language version 2.2 can warn the caller.
-  - Code that shared one `Point` between two holders loses the sharing when it switches to
-    reassignment.
-- **Proved only by a spike.** The covariant `Result<Point>` override, and `@SubclassOptInRequired`
-  in common code at language version 2.2, have not been through a compiler. If the covariant
-  override fails, `divideBy` moves to `Point` and `Dimensions` only. That is a further break for
-  callers that hold a plain `TwoDoubles`; none exist downstream.
+- **Settled.**
+  - `Point` and `Dimensions` stay mutable, as in 2.x, with every in-place member. Live state such
+    as an entity's position updates in place without an allocation, and code that shares one
+    `Point` between holders keeps working. The immutable model in
+    [`immutable-geometry-model.md`](immutable-geometry-model.md) is therefore not used; its
+    findings on equality, on the opt-in tier and on Kotlin's operator rules still apply.
+  - `TwoDoubles` is no longer `sealed`. Subclassing it is Experimental, through
+    `@SubclassOptInRequired(ExperimentalForInheritanceGeneralToolsApi::class)`, and graduates once a
+    consumer builds on it. Using `Point`, `Dimensions` or any `TwoDoubles` value needs no opt-in.
+  - Equality requires the same concrete class and IEEE-equal components, except that NaN equals
+    NaN; `-0.0` hashes like `0.0`, and every NaN alike. No pair that is equal in 2.x becomes
+    unequal; only NaN-versus-NaN pairs become equal. The migration notes state it as a contract
+    change. Because the types are mutable, a `Point` used as a hash key must not change while it
+    is in the map.
+  - `Square` gets a new name. Its `location` and `dimensions` references become `val`, so a holder
+    can no longer swap the parts, while the parts themselves stay mutable.
+  - The renamed type provides a method that returns an immutable copy of itself, as a new immutable
+    type.
+- **Answered by question 9** ([`mutable-geometry-model.md`](mutable-geometry-model.md)):
+  - `divideBy`'s return shape on a mutable type, what `/=` does when the divisor is zero, and
+    whether non-assigning operators such as `div` belong.
+  - The immutable copy type: its parts, its relation to `AxisAlignedBox` and `CenteredBox`, and its
+    stability tier.
+  - Whether `AxisAlignedBox` still serves as a read-only view when it returns live mutable parts,
+    and whether read-only interfaces earn a place.
+  - Names for the renamed `Square` and for the immutable copy type.
+- **Rejected for `TwoDoubles`.** A recursive generic `TwoDoubles<T>`: it breaks every plain
+  `TwoDoubles` reference. An interface: it cannot carry `equals`/`hashCode`.
 
 ### API mechanics and proof of the API change
 
@@ -498,25 +553,24 @@ call is stated with its options and a recommendation.
   3. The build migration must leave that dump byte-identical.
   4. Each break lands in its own commit, and the combined diff is reviewed against a break ledger.
   5. Breaks a dump cannot show get compile or unit checks of their own: unsealing (a consumer's
-     exhaustive `when` needs an `else`), the opt-in gate, and equality and logging behaviour.
-- **Trade-off that needs a call: `Color.copy`.** A data class with an `internal` constructor
-  carries a standing compiler warning unless it is annotated, so `Color` takes one of two
-  annotations.
-  - `@ExposedCopyVisibility` keeps `copy` public. The JVM dump then loses only the constructor, so
-    the break set stays exactly as listed. But `copy` skips clamping, so it remains a public way to
-    build an out-of-range `Color`, and every consumer `copy` call carries a compiler warning.
-  - `@ConsistentCopyVisibility` makes `copy` internal too. That adds one break beyond the listed
-    set: `Color.copy`, which no downstream code calls. It closes the last unvalidated way to build a
-    `Color`, and the standard library recommends it for code that does not need binary
-    compatibility.
+     exhaustive `when` needs an `else`), the opt-in gate, equality, logging, `Color`'s validation
+     and `trimIfLongerThan`.
 
-  Recommendation: `@ConsistentCopyVisibility`. The API-mechanics findings preferred
-  `@ExposedCopyVisibility` because it keeps the break set exact. Validated construction is the
-  purpose of the internal constructor, and an exposed `copy` defeats that purpose.
-- **Opt-in marker shape.** The marker is `@RequiresOptIn(level = ERROR)` with `@Retention(BINARY)`
-  and `@Target()`. It can therefore only be passed to `@SubclassOptInRequired` or `@OptIn`, as with
-  kotlinx.serialization's `SealedSerializationApi`. Its name and package go with the tier; the
-  proposal is `ExperimentalForInheritanceGeneralToolsApi` in `com.spartanlabs.generaltools`.
+  Question 10 sets out the ledger of dump lines for the mutable model.
+- **`Color` keeps a public constructor that validates.** An `init` block requires every channel to
+  be in `0..255` and throws `IllegalArgumentException` otherwise. `copy` goes through the same
+  constructor, so it validates too and needs no copy-visibility annotation. `Color.of` still clamps.
+  Every factory (`of`, `fromNormalized`, `fromPackedInt`, `fromHex`) and every transform already
+  produces in-range channels. A caller that passed out-of-range values, which 2.x accepted
+  silently, now gets an exception, and the migration notes name that behaviour change. A
+  validating public constructor keeps every existing `Color(...)` call compiling while enforcing
+  the `0..255` contract that the 2.x KDoc only stated, so the dump keeps `Color`'s constructor and
+  `copy`. The `internal` constructor studied in
+  [`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md) is not used.
+- **Opt-in marker.** `ExperimentalForInheritanceGeneralToolsApi` in `com.spartanlabs.generaltools`,
+  declared `@RequiresOptIn(level = ERROR)`, `@Retention(BINARY)` and `@Target()`. It can therefore
+  only be passed to `@SubclassOptInRequired` or `@OptIn`, as with kotlinx.serialization's
+  `SealedSerializationApi`.
 - **Disagreement.** KEEP-0127 calls `Result` unsuited to domain errors, and the Kotlin guidelines
   advise a deprecation cycle and no data classes in public APIs. 3.0.0 holds to the library's
   paradigm instead: expected failures are returned as a `Result`, which the guidelines permit. A
@@ -524,30 +578,23 @@ call is stated with its options and a recommendation.
 
 ### Downstream impact and pre-publish verification
 
-- **Found.** Only MyGameTools and MyGameClient have source that stops compiling.
-  - MyGameTools: 40 in-place mutation sites in 17 files, 2 `Color(...)` calls, and one design
-    change. `GameObject.location` becomes an `open var`, which `VisibleObject` owns through
-    `area.location`. Roughly 25 files and 150 to 200 lines change.
-  - MyGameClient: 19 `Color(...)` calls in 6 files.
-  - MyGameServer, WebTools, SpartanGraphics and KotlinBottools need nothing.
-  - No downstream code uses `divideBy`, `evaluateList`, `com.spartanlabs.logging` or Java, and none
-    has an exhaustive `when` over `TwoDoubles`.
+- **What carries over.** [`downstream-blast-radius.md`](downstream-blast-radius.md) maps the
+  consumers, their Kotlin floors and MyGameClient's own `Color.lightened` extension, which the
+  GeneralTools member of the same name (there since 2.1.0) shadows. Its sweep assumes immutable
+  `Point` and `Dimensions`.
+- **What the mutable model changes.** MyGameTools' 40 in-place mutation sites keep compiling, and
+  `GameObject.location` keeps sharing one `Point` with `VisibleObject.area`. What breaks instead:
+  - the rename of `Square`, which 14 MyGameTools files import;
+  - the read-only `location` and `dimensions` references, which `VisibleObject` assigns through
+    `area.dimensions`;
+  - the published `gametools` 5.0.0's references to the old class name.
 
-  Evidence: [`downstream-blast-radius.md`](downstream-blast-radius.md).
-- **Silent changes.** The migration notes list each one.
-  - A mechanical `val` to `var` on `GameObject.location` desynchronises it from `area.location`.
-  - `Alive`'s assignments of live `Point`s become snapshots.
-  - The published `gametools` 5.0.0 calls `Point.setTo` and `plusAssign`. It fails with
-    `NoSuchMethodError` if GeneralTools 3.0.0 resolves beside it.
-  - GeneralTools has had a `Color.lightened` member since 2.1.0, and it shadows MyGameClient's own
-    `Color.lightened` extension.
-- **In this repository.**
-  - `TwoDoubles`, `Point`, `Dimensions`, `Segment`, `Vectors.kt`, `Intersections.kt` and the common
-    part of `Misc.kt` move onto the new model. Their logger fields and the 12 failure sites move to
-    the helper.
-  - `Square`, `AxisAlignedBox`, `Ray` and `CenteredBox` keep their shape. Their KDoc now states
-    immutability as a guarantee.
-  - `UserActions.kt` and the JVM part of `Misc` keep slf4j.
+  MyGameClient's 19 `Color(...)` calls keep compiling; a value outside `0..255` now throws.
+  Question 10 settles the counts, the silent changes, the in-repository verdicts and the ledger of
+  dump lines ([`downstream-under-mutable-model.md`](downstream-under-mutable-model.md)).
+- **Logging in this repository.** Every slf4j logger field in common code moves to kotlin-logging,
+  and the 12 failure sites move to the failure helper. `UserActions.kt` and the JVM part of `Misc`
+  keep slf4j.
 - **Pre-publish sequence**, on the maintainer's machine. Steps 1 to 3 gate step 4.
   1. A throwaway MyGameTools migration in a scratch clone, built against this repository through
      `--include-build`. It settles API gaps while additions are still free.
@@ -558,10 +605,6 @@ call is stated with its options and a recommendation.
   4. Press Publish, then check once from plain `mavenCentral()`.
   5. Tag and release.
 
-  A pre-release version is not used: it is permanent, and its bytes differ from the release.
-- **Trade-off that needs a call: where the smoke project lives.**
-  - Committed as a separate `consumer-smoke/` build of about 30 lines, outside the main build and
-    run by hand before each release. It then guards the Kotlin floor on every later release.
-  - Kept outside the repository and discarded after the release.
-
-  Recommendation: committed.
+  A pre-release version is not used: it is permanent, and its bytes differ from the release. The
+  smoke project and the MyGameTools clone live outside the repository and are discarded after the
+  release.

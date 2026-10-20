@@ -65,8 +65,9 @@ findings live in the file it names.
   outside the repository, are built against the new artifacts. The release is tagged with a bare
   `3.0.0` and gets a GitHub release.
 - **Downstream.** MyGameTools (SpartanLabsGaming/MyGameTools) consumes GeneralTools `2.2.0` as an
-  `api` dependency on `master` (its last published release, `gametools` 5.0.0, carries `2.0.1`) and
-  builds with Kotlin 2.2.0. It stays on Kotlin 2.2.0 when it adopts 3.0.0. It will not compile
+  `api` dependency on `master`, and builds with Kotlin 2.2.0. Of its published releases, `gametools`
+  5.1.0 also requires GeneralTools `2.2.0`; 5.0.0, which MyGameClient and MyGameServer use,
+  requires `2.0.1`. It stays on Kotlin 2.2.0 when it adopts 3.0.0. It will not compile
   unchanged against 3.0.0: it names `Square` in 14 files and assigns `area.dimensions` in
   `VisibleObject`. Its in-place `Point` and `Dimensions` updates keep compiling.
 
@@ -343,6 +344,29 @@ kotlinx.coroutines 1.11.0 are each the latest release.
   (`distanceFrom-IoAF18A`, `asRay-d1pmJ48`) and top-level ones do not;
 - MyGameTools' 40 in-place mutation sites in 17 files (6 in main sources), `VisibleObject` handing
   `area.location` to `GameObject`, and `Actor.isAtDestination` comparing with `==`.
+
+**Questions 9 and 10.** Their 27 load-bearing claims were re-opened at their sources on
+2026-10-19. All hold, and none is unclear.
+
+| Findings file | Claims checked | Hold | Do not hold |
+|---|---|---|---|
+| [`mutable-geometry-model.md`](mutable-geometry-model.md) | 19 | 19 | 0 |
+| [`downstream-under-mutable-model.md`](downstream-under-mutable-model.md) | 8, plus the published artifacts it decodes | all | 0 |
+
+The bytecode references re-check from the published `gametools-core` and `gametools-world` 5.1.0
+jars: `com/spartanlabs/geometry/Square` is referenced exactly at the sites named, with the same
+program counters. Two points carry their stated limits. The runtime `NoClassDefFoundError` is
+derived from those references, not executed. SpartanGraphics' planned type names come from an
+uncommitted planning draft.
+
+Claims about this repository and its consumers, checked against the code directly for these two
+questions:
+
+- MyGameTools names `Square` on 39 code lines in 14 files.
+- MyGameClient names it on 27 lines in 8 files, plus one comment-only reference.
+- `VisibleObject`'s `dimensions` setter assigns `area.dimensions`.
+- Maven Central serves `gametools`, `gametools-core` and `gametools-world` 5.1.0, and
+  `gametools-core` 5.1.0 requires GeneralTools `2.2.0`.
 
 ---
 

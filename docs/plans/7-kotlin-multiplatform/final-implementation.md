@@ -162,6 +162,15 @@ as-built record once implementation ends.
   follows the `explicit-api` precedent above (`TwoDoubles` line 13 keeps `second:Double`). The compiled code is the same
   either way.
 
+### `commonize` — commit 8 uses an em dash in the README `Misc` entry
+
+- **Plan:** [plan-commonize.md](plan-commonize.md) §7.4, `Misc` entry, rewritten to "`Misc` - string, list and timing
+  helpers: ..." (ASCII hyphen).
+- **What differs:** the entry reads "`Misc` — string, list and timing helpers: ..." with an em dash (U+2014). The rest of
+  the §7.4 text is unchanged.
+- **Why:** the sibling entries in README "Modules" (`UserActions`, `Color`, the geometry entries) use an em dash. The user
+  chose (2026-10-20) consistency with them over the plan's ASCII hyphen.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`

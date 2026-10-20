@@ -45,9 +45,14 @@ Maven does not read Gradle module metadata, so depend on the JVM artifact:
 
 ## Modules
 
+Everything below is common code, available on the `jvm`, `js` and `wasmJs` targets, except the items marked
+**JVM only**, which exist only in the `jvm` variant (`GeneralTools-jvm`).
+
 - **`com.spartanlabs.generaltools`**
-  - `Misc` — string, URL, file, list, and timing helpers.
-  - `UserActions` — AWT screenshot capture and input automation.
+  - `Misc` — string, list and timing helpers: `profile`, `onException`, `forEvery`, `forEveryIndexed` and
+    `trimIfLongerThan` are common; **JVM only:** `asURL`, `read`, the slf4j `Logger.time` extension, `evaluateList`
+    and `capitalizeEveryWord`.
+  - `UserActions` — AWT screenshot capture and input automation. **JVM only.**
   - `Color` — immutable RGBA value type: transforms plus hex / packed-int codecs.
 - **`com.spartanlabs.geometry`**
   - `Point` / `Dimensions`, `TwoDoubles` — 2D coordinate / size pairs.

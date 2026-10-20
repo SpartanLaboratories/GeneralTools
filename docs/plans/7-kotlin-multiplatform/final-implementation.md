@@ -75,3 +75,42 @@ as-built record once implementation ends.
   required comment takes its place on the line above the dependency.
 - **Why:** the placeholder marks where this unit's line goes and states it is still to come; kept, it would describe
   a dependency that is now present. No other line of the build script changes.
+
+### `logging` — commit 2 ends `Point.distanceFrom`'s KDoc failure sentence with a full stop
+
+- **Plan:** [plan-logging.md](plan-logging.md) §6 "Commit 2" ("The KDoc on the public function gets one added
+  sentence") and §8 "KDoc" (one added sentence on `Point.distanceFrom`).
+- **What differs:** besides the added sentence, the existing last line of `Point.distanceFrom`'s KDoc,
+  "Returns a failed [Result] if either point contains a NaN value", gains a closing full stop.
+- **Why:** the line had no terminal punctuation, so KDoc would run it and the added sentence together as
+  "... a NaN value On failure also logs ...". The other five KDoc blocks already end their sentence with a full stop
+  and are changed only by the added line.
+
+### `logging` — commit 2 drops the "was" comment on `divideBy`'s ERROR line
+
+- **Plan:** [plan-logging.md](plan-logging.md) §6 "Commit 2", `TwoDoubles.kt`, whose code shows
+  ``log.error { ... }   // was log.error("... {} ...", simpleName)``.
+- **What differs:** the line carries no trailing comment: `log.error { "Attempted to divide a ${this::class.simpleName} by zero" }`.
+- **Why:** the plan contradicted itself. Its own §9 Level 1 grep #2 (`log\.(warn|error|info|debug|trace)\("` over
+  `src/jvmMain/kotlin/geometry`, "expect no output") matched that comment. The user chose (2026-10-20) to drop the
+  comment so the grep prints nothing.
+
+### `logging` — commit 2 adds the `Ray.unit` KDoc sentence, a KDoc-only change to `Ray.kt`
+
+- **Plan:** [plan-logging.md](plan-logging.md) §8 "KDoc" asks for a sentence on `Ray.unit` ("failure is reported by
+  [Point.normalized], which logs one WARN line"). §2 ("`Ray.kt` is unchanged by this unit"), §4 (non-goal "Any change to
+  `Ray.kt`"), §6 "Commit 2" (five geometry files) and §11 row 2 ("five geometry files") leave `Ray.kt` out.
+- **What differs:** `Ray.unit`'s KDoc gains the line "Failure is reported by [Point.normalized], which logs one WARN
+  line." at the end of its description, where the other six functions got their sentence. No code in `Ray.kt` changes,
+  and `Ray.kt` is part of commit 2.
+- **Why:** §8 contradicted the "Ray.kt unchanged" statements. The user chose (2026-10-20) to add the sentence as a
+  KDoc-only change.
+
+### `logging` — commit 2 puts the README quick-reference note inside the parentheses
+
+- **Plan:** [plan-logging.md](plan-logging.md) §8, "Geometry quick reference": in the sentence that begins
+  "Intersection functions (all return `Result`; ...)" *append* "Each failure also logs one WARN line (see Logging)."
+- **What differs:** the note sits inside the parenthetical, before the colon:
+  "... negative / non-finite `box.size`; each failure also logs one WARN line, see Logging):".
+- **Why:** appending literally after the sentence's closing `):` broke the colon that leads into the table. The user
+  chose (2026-10-20) the in-parentheses wording, which keeps that lead-in.

@@ -1,10 +1,11 @@
 package com.spartanlabs.geometry
 
-import org.slf4j.LoggerFactory
+import com.spartanlabs.generaltools.failure
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.math.sqrt
 
 /** Logger used for diagnostic output from this file's functions. */
-private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.Vectors")
+private val log = KotlinLogging.logger("com.spartanlabs.geometry.Vectors")
 
 /**
  * Absolute tolerance for parallel / collinear / on-boundary geometry tests in
@@ -65,6 +66,7 @@ public val Point.lengthSquared: Double get() = x * x + y * y
 
 /**
  * This vector scaled to unit length.
+ * On failure also logs one WARN line on this file's logger (see the README's Logging section).
  *
  * @return `Result.failure(IllegalArgumentException)` if this point contains
  *   `NaN` or its [length] is `< EPSILON` (a zero-ish vector has no defined
@@ -78,10 +80,9 @@ public fun Point.normalized(): Result<Point> {
     // (consistent with Point.distanceFrom).
     val len = length
     if (containsNaN || len < EPSILON) {
-        log.warn("Cannot normalize a zero-length or non-finite vector: {}", this)
-        return Result.failure(
-            IllegalArgumentException("Vector must be finite and longer than EPSILON to be normalized")
-        )
+        return log.failure("Vector must be finite and longer than EPSILON to be normalized") {
+            "Point.normalized: zero-length or non-finite vector ($this)"
+        }
     }
     return Result.success(Point(x / len, y / len))
 }

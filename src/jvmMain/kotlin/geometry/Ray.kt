@@ -27,6 +27,7 @@ public data class Ray(val origin: Point, val direction: Point) {
     /**
      * A copy of this ray with [direction] scaled to unit length, so that `t`
      * values returned by the intersection tests become true world distances.
+     * Failure is reported by [Point.normalized], which logs one WARN line.
      *
      * @return `Result.failure(IllegalArgumentException)` if [direction] has
      *   `length < EPSILON` or contains `NaN`; otherwise `Result.success` of a

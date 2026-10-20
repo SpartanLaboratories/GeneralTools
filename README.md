@@ -162,7 +162,7 @@ Vector algebra (extension functions on `Point`, in `Vectors.kt`):
 
 Intersection functions (all return `Result`; failure on degenerate input —
 zero-length segment, zero-direction ray, non-finite coordinates, negative /
-non-finite `box.size`):
+non-finite `box.size`; each failure also logs one WARN line, see Logging):
 
 | Function | Success shape |
 |---|---|
@@ -193,6 +193,29 @@ when (val r = segmentIntersectsSegment(
 }
 ```
 
+## Logging
+
+GeneralTools logs through [kotlin-logging](https://github.com/oshai/kotlin-logging) 8.0.4. On the JVM
+it delegates to slf4j, so your existing logback / log4j configuration applies; on JS and Wasm output
+goes to the console at a single global level (INFO by default, no per-logger control - to mute
+GeneralTools there, wrap kotlin-logging's `Appender` and drop events whose `loggerName` starts with
+`com.spartanlabs`).
+
+- **Logger names** are `com.spartanlabs.<package>.<File>`, unchanged from 2.x:
+  `com.spartanlabs.geometry.TwoDoubles`, `.Point`, `.Segment`, `.Vectors`, `.Intersections`, and
+  `com.spartanlabs.generaltools.Misc` and `com.spartanlabs.generaltools.UserActions`. The JVM-only
+  helpers (`read`, `asURL`, `Logger.time`, `UserActions`) log through slf4j directly.
+- **Every expected failure logs one WARN line** on its file's logger: `Point.distanceFrom`,
+  `Segment.asRay`, `Point.normalized` (and so `Ray.unit`), `segmentIntersectsSegment`,
+  `segmentIntersectsBox`, `rayIntersectsBox`. The line is `<exception message>: <function>: <offending
+  values>`. The returned `Result` holds an `IllegalArgumentException` with the message only; no stack
+  trace is logged.
+- A loop that probes degenerate input logs one line per call. On the JVM set
+  `com.spartanlabs.geometry` to ERROR in your backend; test cheap preconditions first in hot loops.
+- kotlin-logging prints one startup line to stdout on first use. Opt out with
+  `-Dkotlin-logging.logStartupMessage=false` or the environment variable
+  `KOTLIN_LOGGING_STARTUP_MESSAGE=false`; GeneralTools does not set it for you.
+
 ## 3.0.0 migration notes
 
 3.0.0 is a major release. The library is now Kotlin Multiplatform, and the breaking changes listed here are clean
@@ -203,3 +226,5 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | A Maven build resolves `GeneralTools:3.0.0` but every `com.spartanlabs` import is unresolved | `GeneralTools` is now the multiplatform root: it holds Gradle module metadata and no classes, and Maven does not read it | Depend on `io.github.spartanlaboratories:GeneralTools-jvm:3.0.0`. Gradle builds need no change. |
 | A Kotlin/JS or Kotlin/Wasm build reports an incompatible klib ABI version for GeneralTools | The `js` and `wasm-js` klibs are built by Kotlin 2.4 and carry its ABI version; `languageVersion` cannot lower it | Build with Kotlin 2.4 or newer. Kotlin/Wasm is Beta, so its klib compatibility guarantees are not final. |
 | A JVM build reports that GeneralTools `was compiled with an incompatible version of Kotlin` (actual metadata version 2.2.0) | The JVM variant is compiled with language and API version 2.2 and requires `kotlin-stdlib` 2.2.0 | Build with Kotlin 2.1 or newer. |
+| `kotlin-logging: initializing... active logger factory: Slf4jLoggerFactory` printed once on stdout | kotlin-logging 8 prints a startup line the first time any GeneralTools code that holds a logger runs | Start the JVM with `-Dkotlin-logging.logStartupMessage=false`, or set `KOTLIN_LOGGING_STARTUP_MESSAGE=false` (JS: the same name in `process.env`). |
+| New WARN lines when a geometry call returns a failed `Result`; alert or log-scrape rules written for the 2.x WARN text stop matching | Each expected failure now logs one WARN line through a shared helper: `<message>: <function>: <values>`, under the unchanged logger names. `TwoDoubles.divideBy(0.0)` still throws `IllegalArgumentException("Cannot divide by zero")` and logs at ERROR. | Match on logger name and level rather than text; silence `com.spartanlabs.geometry` in your backend if the volume is a problem. Exception messages are byte-identical to 2.x. |

@@ -1,9 +1,9 @@
 package com.spartanlabs.geometry
 
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 /** Logger used for diagnostic output from this file's functions. */
-private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.TwoDoubles")
+private val log = KotlinLogging.logger("com.spartanlabs.geometry.TwoDoubles")
 
 /**
  * Base class for any type represented by a pair of Doubles, such as a 2D
@@ -41,7 +41,7 @@ public sealed class TwoDoubles(public var first: Double = 0.0, public var second
      */
     public infix fun divideBy(magnitude: Double): Unit =
         if (magnitude == 0.0) {
-            log.error("Attempted to divide a {} by zero", this::class.simpleName)
+            log.error { "Attempted to divide a ${this::class.simpleName} by zero" }
             throw IllegalArgumentException("Cannot divide by zero")
         }
         else amplifyBy(1/magnitude)

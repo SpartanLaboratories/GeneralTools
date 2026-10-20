@@ -1,10 +1,11 @@
 package com.spartanlabs.geometry
 
-import org.slf4j.LoggerFactory
+import com.spartanlabs.generaltools.failure
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.math.abs
 
 /** Logger used for diagnostic output from this file's functions. */
-private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.Intersections")
+private val log = KotlinLogging.logger("com.spartanlabs.geometry.Intersections")
 
 //region Result types
 
@@ -49,6 +50,7 @@ public sealed interface SegmentIntersection {
  * `Touching` (end-to-end), or [SegmentIntersection.Overlapping]. Two segments
  * whose cross product is within [EPSILON] of zero are treated as parallel /
  * collinear (deterministic; see plan §6).
+ * On failure also logs one WARN line on this file's logger (see the README's Logging section).
  *
  * @param s1 the first segment; its parameterisation orients any `Touching` /
  *   `Overlapping` result.
@@ -59,12 +61,14 @@ public sealed interface SegmentIntersection {
  */
 public fun segmentIntersectsSegment(s1: Segment, s2: Segment): Result<SegmentIntersection> {
     if (s1.a.containsNaN || s1.b.containsNaN || s2.a.containsNaN || s2.b.containsNaN) {
-        log.warn("segmentIntersectsSegment: NaN coordinate in {} or {}", s1, s2)
-        return Result.failure(IllegalArgumentException("Segments must have finite coordinates"))
+        return log.failure("Segments must have finite coordinates") {
+            "segmentIntersectsSegment: NaN coordinate in $s1 or $s2"
+        }
     }
     if (s1.length < EPSILON || s2.length < EPSILON) {
-        log.warn("segmentIntersectsSegment: degenerate segment ({} or {})", s1, s2)
-        return Result.failure(IllegalArgumentException("Segments must be longer than EPSILON"))
+        return log.failure("Segments must be longer than EPSILON") {
+            "segmentIntersectsSegment: degenerate segment ($s1 or $s2)"
+        }
     }
 
     val r = s1.delta
@@ -120,6 +124,7 @@ public fun segmentIntersectsSegment(s1: Segment, s2: Segment): Result<SegmentInt
  * an endpoint-inside short-circuit for the fully-contained case. [box] is any
  * [AxisAlignedBox] — a [Square] or a [CenteredBox]; only [AxisAlignedBox.min] /
  * [AxisAlignedBox.max] are read, so the origin convention does not matter.
+ * On failure also logs one WARN line on this file's logger (see the README's Logging section).
  *
  * @param s the segment to test.
  * @param box the box to test against.
@@ -129,15 +134,13 @@ public fun segmentIntersectsSegment(s1: Segment, s2: Segment): Result<SegmentInt
  *   yields `success(false)`).
  */
 public fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean> {
-    boxProblem(box)?.let {
-        log.warn("segmentIntersectsBox: {}", it)
-        return Result.failure(IllegalArgumentException(it))
+    boxProblem(box)?.let { problem ->
+        return log.failure(problem) { "segmentIntersectsBox: invalid box $box" }
     }
     if (s.a.containsNaN || s.b.containsNaN || s.length < EPSILON) {
-        log.warn("segmentIntersectsBox: degenerate or non-finite segment {}", s)
-        return Result.failure(
-            IllegalArgumentException("Segment must be finite and longer than EPSILON")
-        )
+        return log.failure("Segment must be finite and longer than EPSILON") {
+            "segmentIntersectsBox: degenerate or non-finite segment $s"
+        }
     }
 
     // Cheap path: an endpoint inside (or on) the box guarantees an intersection
@@ -174,6 +177,7 @@ public fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean
  *
  * [box] is any [AxisAlignedBox] — a [Square] or a [CenteredBox]; only
  * [AxisAlignedBox.min] / [AxisAlignedBox.max] are read.
+ * On failure also logs one WARN line on this file's logger (see the README's Logging section).
  *
  * @param r the ray; [Ray.direction] need not be unit length.
  * @param box the box to test against.
@@ -186,24 +190,24 @@ public fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean
  *   of `r.direction.length` (use [Ray.pointAt] or [Ray.unit]).
  */
 public fun rayIntersectsBox(r: Ray, box: AxisAlignedBox): Result<Double?> {
-    boxProblem(box)?.let {
-        log.warn("rayIntersectsBox: {}", it)
-        return Result.failure(IllegalArgumentException(it))
+    boxProblem(box)?.let { problem ->
+        return log.failure(problem) { "rayIntersectsBox: invalid box $box" }
     }
     if (!box.min.x.isFinite() || !box.min.y.isFinite() || !box.max.x.isFinite() || !box.max.y.isFinite()) {
-        log.warn("rayIntersectsBox: non-finite box corner ({}, {})", box.min, box.max)
-        return Result.failure(IllegalArgumentException("Box corners must be finite"))
+        return log.failure("Box corners must be finite") {
+            "rayIntersectsBox: non-finite box corner (${box.min}) and (${box.max})"
+        }
     }
     if (r.origin.containsNaN || r.direction.containsNaN ||
         !r.origin.x.isFinite() || !r.origin.y.isFinite() ||
         !r.direction.x.isFinite() || !r.direction.y.isFinite()
     ) {
-        log.warn("rayIntersectsBox: non-finite ray {}", r)
-        return Result.failure(IllegalArgumentException("Ray must have finite coordinates"))
+        return log.failure("Ray must have finite coordinates") { "rayIntersectsBox: non-finite ray $r" }
     }
     if (r.direction.length < EPSILON) {
-        log.warn("rayIntersectsBox: zero-direction ray {}", r)
-        return Result.failure(IllegalArgumentException("Ray direction must be longer than EPSILON"))
+        return log.failure("Ray direction must be longer than EPSILON") {
+            "rayIntersectsBox: zero-direction ray $r"
+        }
     }
 
     // invD is +/-Infinity for an axis-parallel ray: intentional under IEEE-754

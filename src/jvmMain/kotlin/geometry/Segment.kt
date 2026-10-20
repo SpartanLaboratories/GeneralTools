@@ -1,9 +1,10 @@
 package com.spartanlabs.geometry
 
-import org.slf4j.LoggerFactory
+import com.spartanlabs.generaltools.failure
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 /** Logger used for diagnostic output from this file's functions. */
-private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.Segment")
+private val log = KotlinLogging.logger("com.spartanlabs.geometry.Segment")
 
 /**
  * A directed line segment from [a] to [b].
@@ -37,6 +38,7 @@ public data class Segment(val a: Point, val b: Point) {
 
     /**
      * This segment as a [Ray] starting at [a] with direction [delta].
+     * On failure also logs one WARN line on this file's logger (see the README's Logging section).
      *
      * @return `Result.failure(IllegalArgumentException)` if the segment is
      *   degenerate ([length] `< EPSILON`) or contains `NaN`; otherwise
@@ -44,10 +46,9 @@ public data class Segment(val a: Point, val b: Point) {
      */
     public fun asRay(): Result<Ray> {
         if (a.containsNaN || b.containsNaN || length < EPSILON) {
-            log.warn("Cannot build a Ray from a degenerate or non-finite Segment: {}", this)
-            return Result.failure(
-                IllegalArgumentException("Segment must be finite and longer than EPSILON")
-            )
+            return log.failure("Segment must be finite and longer than EPSILON") {
+                "Segment.asRay: degenerate or non-finite segment $this"
+            }
         }
         return Result.success(Ray(Point(a.x, a.y), delta))
     }

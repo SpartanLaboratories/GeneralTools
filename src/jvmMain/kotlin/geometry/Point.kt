@@ -1,12 +1,13 @@
 package com.spartanlabs.geometry
 
-import org.slf4j.LoggerFactory
+import com.spartanlabs.generaltools.failure
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.lang.Math.pow
 import kotlin.math.pow
 import kotlin.math.sqrt
 
 /** Logger used for diagnostic output from this file's functions. */
-private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.Point")
+private val log = KotlinLogging.logger("com.spartanlabs.geometry.Point")
 
 /**
  * Represents a point in 2D space with an [x] and [y] coordinate
@@ -25,13 +26,12 @@ public class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
     /**
      * Computes the euclidean distance between this point and [other]
      * <br>
-     * Returns a failed [Result] if either point contains a NaN value
+     * Returns a failed [Result] if either point contains a NaN value.
+     * On failure also logs one WARN line on this file's logger (see the README's Logging section).
      */
     public infix fun distanceFrom(other: Point): Result<Double> =
-        if(containsNaN || other.containsNaN) {
-            log.warn("Cannot compute distance: one or both points contain NaN values")
-            Result.failure(IllegalArgumentException("Point values must be numbers"))
-        }
+        if (containsNaN || other.containsNaN)
+            log.failure("Point values must be numbers") { "Point.distanceFrom: NaN coordinate in ($this) or ($other)" }
         else Result.success(sqrt((x - other.x).pow(2.0) + (y - other.y).pow(2.0)))
 }
 /**

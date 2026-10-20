@@ -3,6 +3,7 @@ import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
 plugins {
     // One Kotlin Multiplatform module replaces kotlin("jvm") + java-library (java-library is an error in a
@@ -47,6 +48,11 @@ kotlin {
     js { nodejs() }
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs { nodejs() }
+    //endregion
+
+    //region API proof
+    @OptIn(ExperimentalAbiValidation::class)
+    abiValidation()
     //endregion
 
     //region Dependencies by source set

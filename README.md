@@ -64,6 +64,8 @@ downloads when it is missing; the first JS or Wasm test run also downloads Node.
 ./gradlew jsNodeTest            # JS tests on Node
 ./gradlew wasmJsNodeTest        # Wasm/JS tests on Node
 ./gradlew allTests              # all three targets, one report
+./gradlew checkKotlinAbi        # compare the public API with the dumps in api/ (part of check)
+./gradlew updateKotlinAbi       # rewrite the dumps after an intended API change; commit the diff
 ```
 
 ## Releasing

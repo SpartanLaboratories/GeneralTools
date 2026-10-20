@@ -210,6 +210,17 @@ as-built record once implementation ends.
   until commit (e). The user decided (2026-10-20) to keep the link; it is unresolved in (a)-(d) and resolves when (e)
   lands. It does not affect compilation or the dumps.
 
+### `two-doubles` — commit (b) writes the four migration rows in the table's sentence case
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §8, row (b), "Migration rows" column: four rows given as
+  `symptom / cause / fix`, each part starting in lower case (for example "(4) Results of `divideBy` ... / each component
+  is divided directly ... / compare with a tolerance.").
+- **What differs:** in the README table each cell starts with a capital ("Each component is divided directly ...",
+  "Compare with a tolerance.", "The return type is `Result` ...", "Recompile Kotlin callers; ..."), and each Fix cell ends
+  with a full stop. The words are the plan's.
+- **Why:** the same reading as commit (a)'s "Add an `else` branch.": every existing row of the migration table starts
+  its cells with a capital and ends its Fix cell with a full stop.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`

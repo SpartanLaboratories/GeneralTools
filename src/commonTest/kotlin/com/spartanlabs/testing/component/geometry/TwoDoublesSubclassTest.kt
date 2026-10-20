@@ -99,4 +99,12 @@ class TwoDoublesSubclassTest {
         assertFalse(velocity.equals(acceleration))
         assertFalse(acceleration.equals(velocity))
     }
+
+    @Test
+    fun `a subclass divideBy divides in place`() {
+        val velocity = Velocity(4.0, 6.0)
+        assertTrue((velocity divideBy 2.0).isSuccess)
+        assertEquals(2.0, velocity.first)
+        assertEquals(3.0, velocity.second)
+    }
 }

@@ -158,6 +158,10 @@ composites as immutable and do not mutate shared components):
 `TwoDoubles` is abstract. Subclassing it needs `@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)` and may
 change in a minor release; using `Point`, `Dimensions` or a `TwoDoubles` parameter needs no opt-in.
 
+`divideBy(k)` divides in place and returns `Result<Unit>`; a zero divisor leaves the value unchanged and logs one WARN
+(logger `com.spartanlabs.geometry.TwoDoubles`). `p /= k` still throws `IllegalArgumentException("Cannot divide by
+zero")` and logs nothing.
+
 `AxisAlignedBox` is the shared read-only contract (`min`, `max`, `center`,
 `size`, `contains(p)`); both `Square` and `CenteredBox` implement it, and the
 box-intersection functions accept either. Convert with `Square.toCenteredBox()`
@@ -215,9 +219,9 @@ GeneralTools there, wrap kotlin-logging's `Appender` and drop events whose `logg
   helpers (`read`, `asURL`, `Logger.time`, `UserActions`) log through slf4j directly.
 - **Every expected failure logs one WARN line** on its file's logger: `Point.distanceFrom`,
   `Segment.asRay`, `Point.normalized` (and so `Ray.unit`), `segmentIntersectsSegment`,
-  `segmentIntersectsBox`, `rayIntersectsBox`. The line is `<exception message>: <function>: <offending
-  values>`. The returned `Result` holds an `IllegalArgumentException` with the message only; no stack
-  trace is logged.
+  `segmentIntersectsBox`, `rayIntersectsBox`, `TwoDoubles.divideBy`. The line is `<exception message>:
+  <function>: <offending values>`. The returned `Result` holds an `IllegalArgumentException` with the
+  message only; no stack trace is logged.
 - A loop that probes degenerate input logs one line per call. On the JVM set
   `com.spartanlabs.geometry` to ERROR in your backend; test cheap preconditions first in hot loops.
 - kotlin-logging prints one startup line to stdout on first use. Opt out with
@@ -235,6 +239,10 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | A Kotlin/JS or Kotlin/Wasm build reports an incompatible klib ABI version for GeneralTools | The `js` and `wasm-js` klibs are built by Kotlin 2.4 and carry its ABI version; `languageVersion` cannot lower it | Build with Kotlin 2.4 or newer. Kotlin/Wasm is Beta, so its klib compatibility guarantees are not final. |
 | A JVM build reports that GeneralTools `was compiled with an incompatible version of Kotlin` (actual metadata version 2.2.0) | The JVM variant is compiled with language and API version 2.2 and requires `kotlin-stdlib` 2.2.0 | Build with Kotlin 2.1 or newer. |
 | `kotlin-logging: initializing... active logger factory: Slf4jLoggerFactory` printed once on stdout | kotlin-logging 8 prints a startup line the first time any GeneralTools code that holds a logger runs | Start the JVM with `-Dkotlin-logging.logStartupMessage=false`, or set `KOTLIN_LOGGING_STARTUP_MESSAGE=false` (JS: the same name in `process.env`). |
-| New WARN lines when a geometry call returns a failed `Result`; alert or log-scrape rules written for the 2.x WARN text stop matching | Each expected failure now logs one WARN line through a shared helper: `<message>: <function>: <values>`, under the unchanged logger names. `TwoDoubles.divideBy(0.0)` still throws `IllegalArgumentException("Cannot divide by zero")` and logs at ERROR. | Match on logger name and level rather than text; silence `com.spartanlabs.geometry` in your backend if the volume is a problem. Exception messages are byte-identical to 2.x. |
+| New WARN lines when a geometry call returns a failed `Result`; alert or log-scrape rules written for the 2.x WARN text stop matching | Each expected failure now logs one WARN line through a shared helper: `<message>: <function>: <values>`, under the unchanged logger names. | Match on logger name and level rather than text; silence `com.spartanlabs.geometry` in your backend if the volume is a problem. Exception messages are byte-identical to 2.x. |
 | `Unresolved reference: Logger` / `MessageBuilder` / `IJColor` from `com.spartanlabs.logging`; `NoClassDefFoundError` at runtime | The package is removed; it printed one green ANSI line and nothing else used it | Use slf4j or kotlin-logging, or `println("\u001b[92m$message\u001b[0m")` for the same output. |
 | `when (x) { is Point -> ...; is Dimensions -> ... }` over a `TwoDoubles` with no `else` reports a non-exhaustive `when` | `TwoDoubles` is no longer `sealed` | Add an `else` branch. |
+| A `catch (e: IllegalArgumentException)` around `divideBy` never runs and a zero divisor leaves the value unchanged | `divideBy` returns `Result<Unit>` instead of throwing | Check `isFailure`/`getOrElse`, test the divisor first, or use `/=`; a statement `p divideBy k` still divides. |
+| `NoSuchMethodError: TwoDoubles.divideBy(D)V` in code compiled against 2.x (Java callers see `divideBy-<hash>`) | The return type is `Result` (a Kotlin member returning `Result` is name-mangled on the JVM) | Recompile Kotlin callers; Java callers use `divAssign(double)` or call through Kotlin. |
+| The log line `ERROR Attempted to divide a Point by zero` is gone, a zero `divideBy` logs `WARN Cannot divide by zero: Point.divideBy: (4.0, 6.0) by 0.0`, and `/=` by zero logs nothing | The failure is a returned `Result` reported at WARN, and the exception `/=` throws is its report | Adjust log filters and alerts. |
+| Results of `divideBy` and `/=` can differ from 2.x in the last digit (`49.0` divided by `49.0` is exactly `1.0`) | Each component is divided directly instead of multiplied by the reciprocal | Compare with a tolerance. |

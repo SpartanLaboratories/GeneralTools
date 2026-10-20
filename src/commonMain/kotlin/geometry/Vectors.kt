@@ -76,8 +76,8 @@ public val Point.lengthSquared: Double get() = x * x + y * y
 public fun Point.normalized(): Result<Point> {
     // A vector shorter than EPSILON has no well-defined direction: dividing by
     // its length would blow up to +/-Infinity or NaN. Guard the same degeneracy
-    // TwoDoubles.divideBy guards, but return a Result instead of throwing
-    // (consistent with Point.distanceFrom).
+    // TwoDoubles.divideBy guards (a zero divisor), reported as a Result like
+    // Point.distanceFrom.
     val len = length
     if (containsNaN || len < EPSILON) {
         return log.failure("Vector must be finite and longer than EPSILON to be normalized") {

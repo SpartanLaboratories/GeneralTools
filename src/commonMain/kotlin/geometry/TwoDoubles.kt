@@ -1,10 +1,17 @@
 package com.spartanlabs.geometry
 
 import com.spartanlabs.generaltools.ExperimentalForInheritanceGeneralToolsApi
+import com.spartanlabs.generaltools.failure
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 /** Logger used for diagnostic output from this file's functions. */
 private val log = KotlinLogging.logger("com.spartanlabs.geometry.TwoDoubles")
+
+/**
+ * Message of the [IllegalArgumentException] reported for a zero divisor by [TwoDoubles.divideBy],
+ * [TwoDoubles.divAssign] and the arithmetic package's `div`. One constant keeps the three spellings equal.
+ */
+internal const val DIVISION_BY_ZERO_MESSAGE: String = "Cannot divide by zero"
 
 /**
  * Base class for any type represented by a pair of Doubles, such as a 2D
@@ -58,24 +65,58 @@ public abstract class TwoDoubles protected constructor(
         second *= magnitude
     }
     /**
-     * Divides both [first] and [second] by [magnitude]
-     * <br>
-     * Throws an [IllegalArgumentException] if [magnitude] is zero
+     * Divides both [first] and [second] by [magnitude], in place. Each component is divided directly
+     * (`first / magnitude`), not multiplied by `1 / magnitude`, so a result can differ from 2.x by one unit
+     * in the last place (`49.0` divided by `49.0` is exactly `1.0`; 2.x gave `0.9999999999999999`) and a
+     * subnormal divisor no longer overflows through its reciprocal.
+     *
+     * A zero [magnitude] (`0.0` or `-0.0`) is an expected failure: the value is left unchanged, one WARN
+     * line is logged on the `com.spartanlabs.geometry.TwoDoubles` logger, and the result is a failure
+     * holding an [IllegalArgumentException] with the message "Cannot divide by zero". A NaN divisor is not
+     * a failure: it yields NaN components. Use [divAssign] (`/=`) for the throwing spelling.
+     *
+     * A discarded result is harmless: on success the division has already happened, and on failure the
+     * value is unchanged and the failure already logged. A failed call still builds an exception (with a
+     * stack trace on the JVM) and logs, so test a divisor that can be zero before dividing in a hot loop.
+     *
+     * @param magnitude the divisor.
+     * @return `Result.success(Unit)` after dividing both components, or `Result.failure` holding an
+     *   [IllegalArgumentException] if [magnitude] is `0.0` or `-0.0`.
      */
-    public infix fun divideBy(magnitude: Double): Unit =
+    public infix fun divideBy(magnitude: Double): Result<Unit> {
+        // IEEE comparison on two Doubles: -0.0 == 0.0, and NaN is not zero.
         if (magnitude == 0.0) {
-            log.error { "Attempted to divide a ${this::class.simpleName} by zero" }
-            throw IllegalArgumentException("Cannot divide by zero")
+            return log.failure(DIVISION_BY_ZERO_MESSAGE) {
+                "${this::class.simpleName ?: "TwoDoubles"}.divideBy: ($this) by $magnitude"
+            }
         }
-        else amplifyBy(1/magnitude)
+        divideComponentsBy(magnitude)
+        return Result.success(Unit)
+    }
     /** Adds [doubles]'s values to this instance */
     public operator fun plusAssign(doubles: TwoDoubles): Unit = modBy(doubles)
     /** Subtracts [doubles]'s values from this instance */
     public operator fun minusAssign(doubles: TwoDoubles): Unit = modBy(-doubles.first, -doubles.second)
     /** Multiplies this instance's values by [magnitude] */
     public operator fun timesAssign(magnitude: Double): Unit = amplifyBy(magnitude)
-    /** Divides this instance's values by [magnitude] */
-    public operator fun divAssign(magnitude: Double): Unit = divideBy(magnitude)
+    /**
+     * Divides this instance's values by [magnitude], in place, leaving exactly what [divideBy] leaves.
+     * Unlike [divideBy] it throws for a zero divisor and does not log, because an operator must return
+     * `Unit`; the exception is the report.
+     *
+     * @param magnitude the divisor.
+     * @throws IllegalArgumentException with the message "Cannot divide by zero" if [magnitude] is `0.0` or
+     *   `-0.0`; the value is left unchanged.
+     */
+    public operator fun divAssign(magnitude: Double) {
+        require(magnitude != 0.0) { DIVISION_BY_ZERO_MESSAGE }
+        divideComponentsBy(magnitude)
+    }
+    /** The one division both [divideBy] and [divAssign] use, so they cannot drift apart. */
+    private fun divideComponentsBy(magnitude: Double) {
+        first /= magnitude
+        second /= magnitude
+    }
     /**
      * Two [TwoDoubles] are equal if they are the same concrete type and their
      * [first] and [second] values match. Paired with [hashCode], which folds in

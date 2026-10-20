@@ -73,7 +73,7 @@ abstract class com.spartanlabs.geometry/TwoDoubles { // com.spartanlabs.geometry
 
     final fun amplifyBy(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.amplifyBy|amplifyBy(kotlin.Double){}[0]
     final fun divAssign(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.divAssign|divAssign(kotlin.Double){}[0]
-    final fun divideBy(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.divideBy|divideBy(kotlin.Double){}[0]
+    final fun divideBy(kotlin/Double): kotlin/Result<kotlin/Unit> // com.spartanlabs.geometry/TwoDoubles.divideBy|divideBy(kotlin.Double){}[0]
     final fun minusAssign(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.minusAssign|minusAssign(com.spartanlabs.geometry.TwoDoubles){}[0]
     final fun modBy(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.modBy|modBy(com.spartanlabs.geometry.TwoDoubles){}[0]
     final fun modBy(kotlin/Double, kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.modBy|modBy(kotlin.Double;kotlin.Double){}[0]

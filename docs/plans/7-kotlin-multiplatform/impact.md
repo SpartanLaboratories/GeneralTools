@@ -142,6 +142,12 @@ Not adopted, by design:
   - The release notes say that no published `gametools` runs beside 3.0.0.
 - **Mixed builds.** The coordinates are unchanged, so a Gradle build that mixes the two resolves to
   3.0.0. It fails at runtime, not at dependency resolution.
+- **Compiler-version changes outside the API dump.** Compiled by Kotlin 2.4.21, the class-side
+  `contains(Point)` of `Rectangle` (2.x `Square`) and of `CenteredBox` carries `ACC_BRIDGE`, which
+  2.x did not set, and the jar's module file is
+  `META-INF/io.github.spartanlaboratories_GeneralTools.kotlin_module` (2.x:
+  `META-INF/GeneralTools.kotlin_module`). Callers link by name and descriptor, so no call site
+  changes; reflection sees `Method.isBridge()` return `true` for those two methods.
 
 ### 3.4 Platform floors
 

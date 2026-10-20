@@ -95,8 +95,11 @@ tasks have no sources yet, and `commonize` gives them their first)
 
 - `./gradlew build` is green with `jvmTest`, `jsNodeTest` and `wasmJsNodeTest` all run, and
   `checkKotlinAbi` passes.
-- The first build-migration commit leaves the JVM dump byte-identical to the dump of tag `2.2.0`
-  (produced by binary-compatibility-validator `0.18.2` in a scratch copy outside the repository).
+- The baseline is the JVM dump of tag `2.2.0` as the Kotlin Gradle plugin lists it. It restates the
+  binary-compatibility-validator `0.18.2` dump made with the tag's own build in a scratch copy outside
+  the repository, and differs from it only by lines that a difference between the two tools' listing
+  rules explains, each naming a member with the same descriptor and access flags in both builds (S2,
+  section 3.3). The first build-migration commit leaves the JVM dump byte-identical to that baseline.
 - The final JVM dump differs from that baseline only by the rows in section 11.3.
 - The klib dump contains no `read`, `asURL`, `Logger.time`, `UserActionsKt` or `com.spartanlabs.logging`
   entry.
@@ -222,6 +225,8 @@ All were re-opened at their sources on 2026-10-18/19 (see the verification table
 | A member returning `Result` has a name-mangled JVM name (`distanceFrom-IoAF18A`, `asRay-d1pmJ48`); top-level functions are not mangled. Verified in today's jar | [`idiomatic-kotlin-api-mechanics.md`](research/idiomatic-kotlin-api-mechanics.md) F2.1 |
 | `@SubclassOptInRequired` (since Kotlin 2.1) gates subclassing of open and abstract classes only; using the type needs no opt-in; a marker with `@Target()` can only be passed to `@SubclassOptInRequired`/`@OptIn`; its annotation is absent from ABI dumps | `idiomatic-kotlin-api-mechanics.md` F5.1, F5.2 |
 | The KGP ABI validation (`abiValidation()`, `@since 2.4.0`) is Experimental, writes `api/<project>.api` and `api/<project>.klib.api` in the binary-compatibility-validator text format, and is wired into `check` as `checkKotlinAbi` | `idiomatic-kotlin-api-mechanics.md` F6.1 |
+| The KGP JVM dumper and binary-compatibility-validator `0.18.2` list different members for the same class files. The plugin takes the visibility of a synthetic default-arguments constructor from the constructor it serves and leaves out a `protected` member of a sealed or enum class; binary-compatibility-validator counts every `protected` member as public. For the 2.2.0 classes the two dumps differ by one line, `TwoDoubles`' `public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V`, which only binary-compatibility-validator lists; the class files of the tag's own build and of the migrated build have the same members and descriptors, and that constructor the same flags. The plugin's klib dump lists no constructor of a sealed class. Read at the sources and compared on 2026-10-20 | [`research/README.md`](research/README.md), "API mechanics and proof of the API change"; `plan-kmp-build.md` section 3 |
+| The JVM backend gives a class whose primary-constructor parameters all have default values a parameterless constructor with the primary constructor's visibility, except a sealed class. Read at the source on 2026-10-20 | `research/README.md`, same section |
 | `a += b` on a `var` is an overload ambiguity when both `plusAssign` and a `plus` returning a subtype exist | [`mutable-geometry-model.md`](research/mutable-geometry-model.md) 3.3 (Kotlin operator-overloading docs and specification) |
 | A `data class` cannot extend a type whose `componentN()` is `final`: "If the functions of the supertype cannot be overridden due to incompatible signatures or due to their being final, an error is reported." Re-read 2026-10-19 | <https://kotlinlang.org/docs/data-classes.html> |
 | Backtick names consisting of letters, digits, spaces, hyphens and apostrophes are legal on JS and Wasm from language version 2.1; level selection by package filter reaches `jvmTest`, `jsNodeTest` and `wasmJsNodeTest` through `AbstractTestTask` | [`kmp-test-levels-and-names.md`](research/kmp-test-levels-and-names.md) F3, F5 |
@@ -236,10 +241,9 @@ Each is relied on and has not been confirmed by running it. The unit that confir
 
 | # | Assumption | If false | Confirmed in |
 |---|---|---|---|
-| A1 | KGP 2.4.21's JVM dump is textually identical to binary-compatibility-validator `0.18.2`'s output for the same classes. | A format-only commit absorbs the difference before any API commit; the baseline is regenerated with the same tool the build uses. | `kmp-build` |
 | A2 | Compiling `js` and `wasmJs` at `languageVersion`/`apiVersion` 2.2 under KGP 2.4.21 works. | Fall back to pinning the versions on the JVM compilation only; the JVM compilation then remains the gate for what common code may use. | `kmp-build` |
 | A3 | A Kotlin 2.2.0 JVM consumer and a Kotlin 2.1.20 JVM consumer compile against `GeneralTools-jvm` built with KGP 2.4.21 at language 2.2 with `api(kotlin-stdlib:2.2.0)`. | The language/API pin or the stdlib pin is wrong; the pins move before anything is published. | `release` (smoke matrix) |
-| A4 | The ledger in section 11.3 predicts the dump. It is hand-derived from `javap -p -s` of the 2.2.0 jar and two published dumps, not produced by the tool. | The ledger is corrected; any dump line outside the corrected ledger is an error or a missing migration note. | each break unit |
+| A4 | The ledger in section 11.3 predicts the dump. It is hand-derived from `javap -p -s` of the 2.2.0 jar, two published dumps and the plugin's listing rules (section 3.3), not produced by the tool. | The ledger is corrected; any dump line outside the corrected ledger is an error or a missing migration note. | each break unit |
 | A5 | `this::class` in `equals`/`hashCode` costs nothing measurable on the JVM (a `ClassReference` is allocated per call; escape analysis is expected to remove it). `Actor.isAtDestination` in MyGameTools compares `Point`s with `==` every frame. | Replace the class comparison with an `internal expect fun sameClass(a: Any, b: Any)` whose JVM actual is `a.javaClass === b.javaClass`. No public signature changes. | `two-doubles` |
 | A6 | `@SubclassOptInRequired(Marker::class)` on an `abstract class` in the same module forces `@OptIn` only on its subclasses (`Point`, `Dimensions`), and a `@Target()` marker is accepted by the compiler at language 2.2. | The marker gets a non-empty target set or the opt-in is applied module-wide; the dump shows the marker class either way. | `two-doubles` |
 | A7 | The multifile facade split (`Misc.kt` common + `MiscJvm.kt` JVM, both `@file:JvmMultifileClass`/`@file:JvmName("MiscKt")`) leaves the `MiscKt` dump lines unchanged, including the `inline` `onException` and `@Throws` `asURL`. kotlinx.coroutines 1.11.0 shares one facade the same way between a common and a platform source set (`common/src/channels/Channels.common.kt` and `concurrent/src/channels/Channels.kt`, both `@file:JvmMultifileClass @file:JvmName("ChannelsKt")`). | No split keeps every function on `MiscKt`: two files that produce `MiscKt` clash without `@JvmMultifileClass`, and any other facade name moves functions to another class, a binary break outside the break set. `commonize` does not land a commit that changes a `MiscKt` dump line; the choice of which functions move goes to the user first. | `commonize` |
@@ -329,12 +333,21 @@ does not do.
 - **Placement:** `kotlin { @OptIn(ExperimentalAbiValidation::class) abiValidation() }` in S1;
   `api/GeneralTools.api` (JVM) and `api/GeneralTools.klib.api` (klib, `js` + `wasmJs`) committed;
   `check` depends on `checkKotlinAbi`; `updateKotlinAbi` rewrites the files.
-- **Owns:** the baseline dump (tag `2.2.0`, produced once by binary-compatibility-validator `0.18.2`
-  in a scratch copy and committed before any source or build change); the break ledger (section
-  11.3) against which the combined diff is reviewed; `explicitApi()` on the `kotlin {}` extension so
-  that a declaration is public only on purpose in a module that now exports to three targets.
+- **Owns:** the baseline dump: tag `2.2.0` recorded once by binary-compatibility-validator `0.18.2`
+  with the tag's own build in a scratch copy, then restated as the plugin's own dump of the same
+  classes, both committed before any source or build change. The baseline is always the dump of the
+  tool `check` runs. The restatement is admitted by comparing the class files of the two builds: the
+  same files, the same members and descriptors, and every line it drops or adds naming a member with
+  the same descriptor and access flags in both builds, explained by a rule in which the two tools
+  differ (section 3.3; for these classes, one `TwoDoubles` line). S2 also owns the break ledger
+  (section 11.3) against which the combined diff is reviewed, and `explicitApi()` on the `kotlin {}`
+  extension, so that a declaration is public only on purpose in a module that now exports to three
+  targets.
 - **Not:** it does not see sealed-ness, annotations such as `@SubclassOptInRequired`, `operator`,
-  KDoc, or behaviour; those are covered by tests and the consumer smoke checks (section 11.3).
+  KDoc, or behaviour; those are covered by tests and the consumer smoke checks (section 11.3). Nor
+  does it see class-file changes the dump format has no word for, such as `ACC_BRIDGE` or Kotlin
+  metadata; the 2.4.21 compiler makes some (break 1 in section 11.3), and the release smoke matrix
+  checks that consumers read the metadata.
 
 ### S3. Failure and logging seam
 
@@ -937,7 +950,7 @@ carries; kotlin-logging's startup line; JS/Wasm console output.
 | A Kotlin Gradle plugin older than 2.4.21 (2.2.0, 2.3.21) | 2.2.0 has pre-Beta Wasm, no `webMain`, and Gradle 9.0.0 outside its documented range; 2.3.21 works only while the build sits exactly one minor above its oldest consumer. | All consumers sat on one fixed minor. |
 | A global `coreLibrariesVersion` pin | The JS and Wasm compilers reject an older stdlib klib. | Only the JVM target existed. |
 | Renaming the JVM-only `Misc` functions' facade (`MiscJvmKt`) instead of a multifile class | Moves `read`, `asURL` and `Logger.time` to a new class: a binary break outside the break set. | The binary break were acceptable. |
-| binary-compatibility-validator as the standing dump tool | In maintenance mode; it needs an extra plugin, and the KGP tool emits the same format and covers klibs from one pin. It is used once, for the baseline. | The KGP tool's DSL churned past what pinning KGP exactly can absorb. |
+| binary-compatibility-validator as the standing dump tool | In maintenance mode; it needs an extra plugin, and the KGP tool emits the same text format and covers klibs from one pin. It is used once, to record tag `2.2.0` with the tag's own build; the baseline that `check` compares against is that record restated in the KGP tool's listing (S2). | The KGP tool's DSL churned past what pinning KGP exactly can absorb. |
 | Per-level Gradle test tasks; JUnit tags | Web test tasks cannot be registered by hand, each test would run once per level under `check`, and tags do not exist in common code. | The test runtime were JVM-only. |
 | Staging the work as a single plannable unit | The work spans a build migration, mechanical edits to every public declaration, six independently verifiable API changes and an operational release; one plan would bury the per-break commit and per-break ledger discipline. | The team were one person landing one branch in one sitting with no review. |
 | A `0.x`/pre-release version for the smoke test | A published pre-release is permanent and its bytes differ from the release. | Central allowed deleting a version. |
@@ -985,7 +998,7 @@ Before the first implementation commit, `master` (`c196d1a`) is merged into the 
 
 | Order | Slug | Scope | Depends on | Dump expectation after the unit |
 |---|---|---|---|---|
-| 1 | `kmp-build` | Commit the 2.2.0 baseline dump first. Replace `kotlin("jvm")`/`java-library` with the multiplatform plugin; targets, pins, toolchain and JVM-17 attribute; dependencies by source set (all of S1's except kotlin-logging, which `logging` adds); `abiValidation()` wired into `check`; the `-PtestLevel` filter; vanniktech `0.37.0` and the KMP publication configuration with `group`/`version` on the project, landing at `2.2.0`, then the bump to `3.0.0` as a `build:` commit of its own; CI action upgrades; committed `kotlin-js-store/yarn.lock`; README intro, coordinates, build-and-test, releasing. **All existing sources move to `jvmMain`, all existing tests to `jvmTest`, unchanged** (`logback-test.xml` to `src/jvmTest/resources`); `js` and `wasmJs` compile empty. A deliberately JVM-only intermediate state: nothing is common yet. If the ABI tool cannot run with empty web compilations, this unit declares `jvm()` only and the web targets, their stdlib lines and the Yarn lock arrive with `commonize`'s first common sources, keeping the JVM proof here. | master merged | JVM dump byte-identical to the baseline (a tool-format difference, if any, in a commit of its own - A1). No klib content yet. |
+| 1 | `kmp-build` | Commit the 2.2.0 baseline dump first, then restate it as the plugin's own dump of the same classes, admitted by a class-file comparison of the two builds (S2). Replace `kotlin("jvm")`/`java-library` with the multiplatform plugin; targets, pins, toolchain and JVM-17 attribute; dependencies by source set (all of S1's except kotlin-logging, which `logging` adds); `abiValidation()` wired into `check`; the `-PtestLevel` filter; vanniktech `0.37.0` and the KMP publication configuration with `group`/`version` on the project, landing at `2.2.0`, then the bump to `3.0.0` as a `build:` commit of its own; CI action upgrades; committed `kotlin-js-store/yarn.lock`; README intro, coordinates, build-and-test, releasing. **All existing sources move to `jvmMain`, all existing tests to `jvmTest`, unchanged** (`logback-test.xml` to `src/jvmTest/resources`); `js` and `wasmJs` compile empty. A deliberately JVM-only intermediate state: nothing is common yet. If the ABI tool cannot run with empty web compilations, this unit declares `jvm()` only and the web targets, their stdlib lines and the Yarn lock arrive with `commonize`'s first common sources, keeping the JVM proof here. | master merged | JVM dump byte-identical to the restated baseline, which drops one line of the binary-compatibility-validator dump (section 3.3). No klib content yet. |
 | 2 | `explicit-api` | `explicitApi()` on the `kotlin {}` extension and the mechanical edits to the 118 public declarations in `jvmMain` that strict mode rejects (40 of them also take an explicit type equal to the inferred one). No API change. Its own commit so the later break diffs are not buried in modifier noise. | 1 | Byte-identical. |
 | 3 | `logging` | Add `commonMain` `implementation(kotlin-logging:8.0.4)`. Add the internal `KLogger.failure(message, detail)` helper, with a `commonTest` test that uses a three-member recording `KLogger` fake. Replace the five geometry loggers with `KotlinLogging.logger("<same name>")`, and route the eleven `Result.failure` sites through the helper; each keeps its 2.x exception message and passes its 2.x WARN diagnostics as `detail`. The throwing `divideBy` keeps its ERROR log through the new logger until `two-doubles`. Files still compile in `jvmMain`. The last commit deletes `com.spartanlabs.logging` (break 5). | 1 (2 for ordering) | Byte-identical until the last commit, which removes the four logging classes. |
 | 4 | `commonize` | Make everything that can be common, common. See the readiness table below. Replace `javaClass` with `this::class` (identical semantics), `String.format` with `toString(16).padStart(2, '0').uppercase()`, drop `import java.lang.Math.pow`; split `Misc` into `Misc.kt` + `MiscJvm.kt` with the shared facade name; `git mv` files to `commonMain`; move tests to `commonTest`/`jvmTest` with level packages, drop slf4j fields/`@Tag`/`Thread.sleep`/`assert`, fold the stray `Point` class into `PointTest`, delete `MiscKtTest`; make the `Point.toString` test layout-only; create and review `GeneralTools.klib.api`; README Modules marks JVM-only items. | 3 | JVM dump byte-identical (including every `MiscKt` line). The klib dump is created and shows no `read`, `asURL`, `Logger.time`, `UserActionsKt`, or `com.spartanlabs.logging`. |
@@ -1029,13 +1042,13 @@ and it can move earlier without changing the design.
 
 ### 11.3 Break ledger and proof
 
-Rows are the expected differences from the 2.2.0 JVM dump (a prediction - A4), the unit that lands
-them, and the proof for what the dump cannot show.
+Rows are the expected differences from the committed 2.2.0 baseline in the plugin's listing (a
+prediction - A4), the unit that lands them, and the proof for what the dump cannot show.
 
 | Break | JVM dump rows | Unit | Proof for what the dump hides |
 |---|---|---|---|
-| 1 Multiplatform | none (dump neutral); klib dump created | `kmp-build`, `commonize` | consumer smoke matrix; Maven consumer on `GeneralTools-jvm` |
-| 2 Unseal + marker | `TwoDoubles`: loses its two synthetic private-constructor forms; gains three `protected` constructor lines; marker class added; header stays `public abstract class` | `two-doubles` | smoke source: `class Foo : TwoDoubles()` fails without `@OptIn`, compiles with it; `Point(1.0, 2.0)` and a `TwoDoubles` parameter need no opt-in; an exhaustive `when` over `TwoDoubles` without `else` stops compiling |
+| 1 Multiplatform | none (dump neutral); klib dump created | `kmp-build`, `commonize` | consumer smoke matrix; Maven consumer on `GeneralTools-jvm`; the class-file comparison behind the restated baseline, which also records what the 2.4.21 compiler changes outside the dump (`ACC_BRIDGE` on `Square.contains(Point)` and `CenteredBox.contains(Point)`, Kotlin metadata; `plan-kmp-build.md` section 3) |
+| 2 Unseal + marker | `TwoDoubles`: loses its two synthetic accessor constructors `(DDLkotlin/jvm/internal/DefaultConstructorMarker;)V` and `(Lcom/spartanlabs/geometry/TwoDoubles;Lkotlin/jvm/internal/DefaultConstructorMarker;)V`; gains three `protected` constructors, `()V` (new: the JVM backend adds a parameterless constructor once the class is not sealed), `(DD)V` and `(Lcom/spartanlabs/geometry/TwoDoubles;)V`, and the line `public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V` (a constructor 2.2.0 already has, which the plugin lists once the class is not sealed); marker class added; header stays `public abstract class` | `two-doubles` | smoke source: `class Foo : TwoDoubles()` fails without `@OptIn`, compiles with it; `Point(1.0, 2.0)` and a `TwoDoubles` parameter need no opt-in; an exhaustive `when` over `TwoDoubles` without `else` stops compiling |
 | 3 `divideBy` | `divideBy (D)V` replaced by `divideBy-IoAF18A (D)Ljava/lang/Object;` | `two-doubles` | unit tests: value changes on success; unchanged on `0.0` and `-0.0` with `isFailure` and `IllegalArgumentException`; one WARN line; a `49.0` case; `/=` by zero still throws and does not log |
 | 4 `evaluateList` | `MiscKt.evaluateList` descriptor `Predicate` -> `Function1` | `generaltools-breaks` | existing `evaluateList` tests (trailing lambdas) |
 | 5 logging package | `Logger`, `LoggerKt`, `MessageBuilder`, `IJColor` removed (18 members) | `logging` | grep: no user in any repository |
@@ -1053,6 +1066,10 @@ them, and the proof for what the dump cannot show.
 
 A dump diff can be satisfied by the wrong change (a source-compatible overload hiding a break), so the
 ledger is compared against intent, not against zero diff.
+
+Against binary-compatibility-validator's record of tag `2.2.0`, the `TwoDoubles` synthetic
+default-arguments line shows no change: that tool lists it for the sealed class too. Only the
+restated baseline omits it, which is why row 2 shows it as gained.
 
 ### 11.4 `release` in detail
 
@@ -1134,8 +1151,16 @@ GitHub release.
 **Tooling and process**
 
 - `ExperimentalAbiValidation` is Experimental and its DSL changed between Kotlin 2.2 and 2.4. KGP is
-  pinned exactly and the DSL is re-read on every bump; the dump format is shared with
-  binary-compatibility-validator, which remains a fallback without re-baselining.
+  pinned exactly and the DSL is re-read on every bump. The text format is shared with
+  binary-compatibility-validator, which remains a fallback, but the two tools list `protected`
+  members of sealed and enum classes differently (section 3.3). A switch therefore compares the
+  fallback's dump of the then-current classes with the committed file before it replaces the file,
+  as the restatement of the baseline does.
+- The dump has no word for some class-file changes a compiler upgrade makes. The move to the 2.4.21
+  compiler adds `ACC_BRIDGE` to `Square.contains(Point)` and `CenteredBox.contains(Point)` and
+  changes Kotlin metadata; the restatement's class-file comparison records these once. A later KGP
+  bump can bring more of the same kind with no dump change. Callers link by name and descriptor; the
+  release smoke matrix checks that Kotlin 2.2.0 and 2.1.20 consumers read the metadata (A3).
 - The build depends on first-run network downloads (Node, Yarn); the `kotlin-js-store/yarn.lock` is
   committed and a KGP bump needs `./gradlew kotlinUpgradeYarnLock`.
 - CI time grows by the two web test runs and the ABI check.
@@ -1153,11 +1178,14 @@ GitHub release.
 
 ## 13. Known gaps
 
-- **The ledger and several mechanics are predictions.** Nothing has been compiled. Not yet established:
-  whether KGP 2.4.21's JVM dump is textually identical to the baseline tool's output (A1); the exact
-  three `protected` constructor lines of `TwoDoubles`; whether `CenteredBox` lists the new accessors as
+- **The ledger and several mechanics are predictions.** No 3.0.0 change has been compiled. Not yet
+  established: the exact constructor lines of the unsealed `TwoDoubles` (derived from the plugin's
+  listing rules and its own test data, section 3.3); whether `CenteredBox` lists the new accessors as
   overrides or bridges; the member counts of `Rectangle` and `ImmutableRectangle`; the mangled name
   `divideBy-IoAF18A` (computed, matched against two existing suffixes, not read from a 3.0.0 build).
+- **The Kotlin-metadata flags that the 2.4.21 compiler writes differently** for the data classes'
+  generated `equals`, `hashCode` and `toString` are not decoded; the release smoke matrix is the
+  check that consumers read them (A3).
 - **Spikes that settle build questions** belong to `kmp-build`: 2.2 language/API on `js`/`wasmJs` under
   KGP 2.4.21 (A2); `org.gradle.jvm.version` on the published JVM variant; vanniktech signing with
   keyring properties and the configuration cache (A9); whether the `kotlin-logging` module file shows

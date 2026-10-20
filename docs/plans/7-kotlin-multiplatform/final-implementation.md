@@ -21,3 +21,14 @@ as-built record once implementation ends.
 - **Why:** JDK 17 is inside the plan's stated 17-24 range and matches the JDK CI builds `2.2.0` with
   (`.github/workflows/Build.yml`, Java 17). The plan's "JDK 17-24" is therefore too wide for this step: at least
   JDK 23 does not work. No file content was edited; the dump is copied byte-for-byte from the scratch.
+
+### `kmp-build` — C1 carried eight files; deviation entries ride with the commit they describe
+
+- **Plan:** [plan-kmp-build.md](plan-kmp-build.md) §11 (the C1 row lists seven paths) and §9 Level 1 ("Common to
+  C2-C7: ... no `docs/plans/` file is staged").
+- **What differs:** C1 (`8099065`) carries eight files: the seven of the §11 C1 row plus this file,
+  `final-implementation.md`, whose first entry describes C1's work. From C2 on, each entry appended here is committed
+  with the commit whose work it describes, so `docs/plans/7-kotlin-multiplatform/final-implementation.md` is the one
+  `docs/plans/` path that may be staged in C2-C7; §9's check holds for every other planning document.
+- **Why:** the user's planning rule commits documents under `docs/plans/` with the work they describe, and the
+  implementer logs each deviation at the moment it is made, so the entry belongs to the same commit as the change.

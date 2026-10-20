@@ -19,11 +19,13 @@
 - **Starts from:** the branch head `a0ca73e`, the merge of `master` (`c196d1a`) into the branch (C0), which
   removed `src/test/resources/keys.txt` from the tree; CI is green on it. `src/main` equals tag `2.2.0`; `./gradlew build` passes with
   185 tests (137 of them in the ten classes under `testing.component`).
-- **What it plans:** the 2.2.0 baseline API dump; the replacement of the JVM-only Gradle build by one
+- **What it plans:** the 2.2.0 baseline API dump and its restatement as the Kotlin plugin's own dump of the
+  same classes; the replacement of the JVM-only Gradle build by one
   Kotlin Multiplatform module (`jvm`, `js`, `wasmJs`); every source and test moved, unchanged, to
   `jvmMain`/`jvmTest`; the ABI-validation harness; the `-PtestLevel` filter; the vanniktech 0.37.0 publication
-  configuration; CI; the committed Yarn lock; the README sections this touches; and the spikes that settle
-  assumptions A1, A2, A8 (as far as a local publish shows it) and A9.
+  configuration; CI; the committed Yarn lock; the README sections this touches; the class-file comparison that
+  admits the restated baseline; and the spikes that settle assumptions A2, A8 (as far as a local publish shows
+  it) and A9.
 
 ---
 
@@ -31,19 +33,19 @@
 
 | # | Requirement | Acceptance check |
 |---|---|---|
-| R1 | `api/GeneralTools.api` holds the JVM API of tag `2.2.0`, produced by binary-compatibility-validator `0.18.2` in a scratch copy of the tag outside the repository, and is committed before any source or build change. | `git diff --stat 2.2.0 HEAD -- src/main` is empty at that commit; the file contains the `MiscKt`, `Square`, `logging/Logger` and `distanceFrom-IoAF18A` lines. |
+| R1 | `api/GeneralTools.api` holds the JVM API of tag `2.2.0`, committed before any source or build change: first as the binary-compatibility-validator `0.18.2` dump made with the tag's own build in a scratch copy outside the repository (C1), then restated as the dump the Kotlin Gradle plugin writes for the same classes (C1b), which is the file `checkKotlinAbi` compares against. The restatement is admitted only by the class-file comparison of section 6.3. | `git diff --stat 2.2.0 HEAD -- src/main` is empty at both commits; the file contains the `MiscKt`, `Square`, `logging/Logger` and `distanceFrom-IoAF18A` lines; C1b removes exactly one line (the `TwoDoubles` synthetic default-arguments constructor, section 3) and its body carries the evidence of section 6.3. |
 | R2 | The module is `kotlin("multiplatform") 2.4.21` with targets `jvm()`, `js { nodejs() }` and `@OptIn(ExperimentalWasmDsl::class) wasmJs { nodejs() }`; `kotlin("jvm")` and `java-library` are gone. No Android, native or browser target. The Gradle wrapper stays 9.0.0. | `./gradlew tasks --all` lists `jvmTest`, `jsNodeTest`, `wasmJsNodeTest`; `grep -E 'java-library|kotlin\("jvm"\)' build.gradle.kts` prints nothing. |
 | R3 | `languageVersion` and `apiVersion` are exactly 2.2 on the `kotlin {}` extension; `commonMain` declares `api(kotlin-stdlib:2.2.0)`; `jsMain` and `wasmJsMain` declare `api(kotlin-stdlib)` at the plugin's version; `coreLibrariesVersion` is not lowered. | `dependencies --configuration jvmCompileClasspath` shows `kotlin-stdlib:2.2.0` with no `->`; `jsCompileClasspath` and `wasmJsCompileClasspath` show `2.2.0 -> 2.4.21`. |
 | R4 | JVM output is bytecode 17 (toolchain 17, `jvmTarget` 17) and the JVM variant carries an explicit `org.gradle.jvm.version = 17`. | `javap -v` on a compiled class: `major version: 61`, `mv=[2,2,0]`; the published `-jvm` module lists `org.gradle.jvm.version` 17 (spike S4). |
 | R5 | Dependencies sit in source sets: `jvmMain` `api(slf4j-api:2.0.16)` and `implementation(org.apache.directory.studio:org.apache.commons.io:2.4)`; `commonTest` `implementation(kotlin("test"))`; `jvmTest` `implementation(logback-classic:1.5.13)`. kotlin-logging is **not** added (the `logging` unit adds it). | The `-jvm` module metadata (spike S4) lists slf4j-api in the API variant, commons-io only in the runtime variant. |
-| R6 | `@OptIn(ExperimentalAbiValidation::class) abiValidation()` is configured; `check` runs `checkKotlinAbi`; the JVM dump is byte-identical to R1's; a tool-format difference, if A1 fails, is committed on its own, before the migration. | `./gradlew updateKotlinAbi && git diff --exit-code -- api/` exits 0; `./gradlew check --dry-run` lists `checkKotlinAbi`. |
+| R6 | `@OptIn(ExperimentalAbiValidation::class) abiValidation()` is configured; `check` runs `checkKotlinAbi`; the JVM dump the migrated build writes is byte-identical to the baseline as C1b restates it. | `./gradlew updateKotlinAbi && git diff --exit-code -- api/` exits 0; `./gradlew check --dry-run` lists `checkKotlinAbi`. |
 | R7 | `-PtestLevel=<level>[,<level>]` adds `includeTestsMatching("com.spartanlabs.testing.<level>.*")` to every `AbstractTestTask` and sets `failOnNoMatchingTests = false`; levels are `gating`, `component`, `integration`, `deterministic`, `e2e`, `nonfunctional`, `uat`; an unknown level fails the build; unset runs everything. | The matrix in section 9 (Level 1, C4). |
 | R8 | The `mavenPublishing {}` block stays; vanniktech is `0.37.0`; `group` and `version` are set on the project and feed `coordinates(...)`; `configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty(), sourcesJar = SourcesJar.Sources()))` pins the empty-javadoc policy. The publication setup lands at version `2.2.0` (C5a), and the bump to `3.0.0` is a commit of its own (C5b). The artifacts are `GeneralTools`, `GeneralTools-jvm`, `GeneralTools-js`, `GeneralTools-wasm-js`. Nothing is uploaded or published until the maintainer explicitly starts the release. | After C5a, `./gradlew properties -q` prints `group: io.github.spartanlaboratories` and `version: 2.2.0`; after C5b, `version: 3.0.0`; the file-repository rehearsal (S4) shows the four artifact directories. No command in this plan names a `MavenCentral` task. |
 | R9 | CI uses `actions/checkout@v7`, `actions/setup-java@v6` (Temurin 17), `gradle/actions/setup-gradle@v6`, no Node step, no `chmod` step; the executable bit of `gradlew` is committed. | `git ls-files -s gradlew` prints `100755`; the first Actions run is green on `ubuntu-latest`. |
 | R10 | `kotlin-js-store/yarn.lock` (and whatever else the Kotlin plugin writes into `kotlin-js-store/`) is committed. | After `./gradlew build` on a clean checkout, `git status --short kotlin-js-store` is empty. |
 | R11 | All 14 main files move to `src/jvmMain/kotlin` and all 17 test files to `src/jvmTest/kotlin`, each keeping its subdirectory and **unchanged**; `src/test/resources/logback-test.xml` moves to `src/jvmTest/resources/`. Nothing is common yet; `js`/`wasmJs` compile empty. | `git diff --cached -M --name-status` shows 32 `R100` lines for the moves; `src/main` and `src/test` no longer exist; 185 tests pass in `jvmTest`. |
 | R12 | README: rewritten intro; "Maven coordinates", "Build & test" and "Releasing" rewritten; `## 3.0.0 migration notes` created with this unit's three rows (Maven artifact, web Kotlin 2.4 floor, JVM metadata floor). | Proof-read; section 8. |
-| R13 | The spikes of section 9 (Level 3) are run before the commits they gate, and their outcomes are recorded in the commit bodies. | Commit bodies of C2, C3 and C5a carry the S1/S2/S3/S4 outcomes. |
+| R13 | The spikes of section 9 (Level 3) are run before the commits they gate, and their outcomes are recorded in the commit bodies. | Commit bodies of C1b, C2, C3 and C5a carry the S1/S2/S3/S4 outcomes. |
 
 ---
 
@@ -83,6 +85,33 @@ All paths are at the start of the unit (after the `master` merge); line numbers 
 **README** (`README.md`): sections at `:1` intro, `:7` Maven coordinates (2.2.0), `:29` Modules, `:47` Build & test
 (`./gradlew build`, `./gradlew test`), `:56` Releasing (names in-memory signing keys), `:71` `Color`, `:98` Geometry.
 
+**The 2.2.0 API in the two dump tools**
+
+- C1 (`8099065`) holds `api/GeneralTools.api` as binary-compatibility-validator `0.18.2` writes it for the classes that
+  the tag's own build compiles (run on JDK 17).
+- For the same sources, moved as in C2 and compiled by the 6.2 build (Scratch A, section 9), the plugin's `updateKotlinAbi`
+  writes the same file without one line, line 235 of C1's file:
+  `public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V` in
+  `public abstract class com/spartanlabs/geometry/TwoDoubles`. It is the synthetic default-arguments constructor of
+  `sealed class TwoDoubles(var first: Double = 0.0, var second: Double = 0.0)`. The plugin takes its visibility from the
+  primary constructor, which is `protected` in a sealed class, and leaves out `protected` members of sealed and enum
+  classes; binary-compatibility-validator lists them (sources in the facts below).
+- The two builds compile the same 28 class files, `javap -p -s` prints the same text for every one, and that constructor
+  has descriptor `(DDILkotlin/jvm/internal/DefaultConstructorMarker;)V` and flags `(0x1001) ACC_PUBLIC, ACC_SYNTHETIC` in both.
+- Neither dump records the other differences between the two builds' class files:
+  - `contains(Lcom/spartanlabs/geometry/Point;)Z` in `Square` and in `CenteredBox` (the class-side method whose body calls the
+    interface's default `AxisAlignedBox.contains` through `invokespecial`, the same in both builds) has flags `ACC_PUBLIC` in the
+    tag's build and `ACC_PUBLIC, ACC_BRIDGE` in the migrated one;
+  - the Kotlin metadata names the module `io.github.spartanlaboratories:GeneralTools` instead of `GeneralTools`, and the
+    module file is `META-INF/io.github.spartanlaboratories_GeneralTools.kotlin_module` instead of
+    `META-INF/GeneralTools.kotlin_module`;
+  - `AxisAlignedBox$DefaultImpls` carries metadata `xi=816` instead of `xi=48`, and the metadata flags of the data classes'
+    generated `equals`, `hashCode` and `toString` differ;
+  - one local-variable name in the debug information of `TwoDoubles` differs.
+
+  A caller links by name and descriptor, and those are unchanged. Kotlin consumers' reading of the metadata is what the
+  `release` smoke matrix checks (architecture A3).
+
 **Verified outside-world facts this unit rests on** (sources and quotes in
 [`research/kmp-build-and-kotlin-compat.md`](research/kmp-build-and-kotlin-compat.md) and
 [`research/kmp-maven-central-publishing.md`](research/kmp-maven-central-publishing.md); checked again for this plan
@@ -94,6 +123,15 @@ where noted):
   `abiValidation(Action)` exist on the `kotlin {}` extension `@since 2.4.0`; its `enabled` property is an error
   ([KotlinTopLevelExtension.kt @ v2.4.21](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/kotlin-gradle-plugin-api/src/common/kotlin/org/jetbrains/kotlin/gradle/dsl/KotlinTopLevelExtension.kt)).
   With one JVM target the JVM dump is `api/<project>.api`; klib dumps are `api/<project>.klib.api`.
+- The plugin's JVM dumper and binary-compatibility-validator `0.18.2` write the same text format but list different members.
+  The plugin treats a `protected` member of a sealed or enum class as not public (`isEffectivelyInternal` in
+  [KotlinMetadataVisibilities.kt @ v2.4.21](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/abi-validation/abi-tools/src/main/kotlin/org/jetbrains/kotlin/abi/tools/impl/jvm/KotlinMetadataVisibilities.kt))
+  and takes the visibility of a synthetic default-arguments constructor from the constructor it serves
+  (`alternateDefaultSignature` in
+  [KotlinMetadataSignature.kt @ v2.4.21](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/abi-validation/abi-tools/src/main/kotlin/org/jetbrains/kotlin/abi/tools/impl/jvm/KotlinMetadataSignature.kt));
+  binary-compatibility-validator counts every `protected` member as public
+  ([KotlinMetadataVisibilities.kt @ 0.18.2](https://github.com/Kotlin/binary-compatibility-validator/blob/0.18.2/src/main/kotlin/api/KotlinMetadataVisibilities.kt)).
+  Read on 2026-10-20; quoted in [`research/README.md`](research/README.md), "API mechanics and proof of the API change".
 - `KotlinMultiplatform(javadocJar: JavadocJar = JavadocJar.Empty(), sourcesJar: SourcesJar = SourcesJar.Sources(), androidVariantsToPublish)`
   is in `com.vanniktech.maven.publish`; `coordinates(groupId, artifactId, version)` and `configure(platform)` are members of the
   `mavenPublishing {}` receiver; signing is required unless the version ends in `-SNAPSHOT`
@@ -111,7 +149,6 @@ where noted):
 
 | # | Assumption | If false |
 |---|---|---|
-| A1 (architecture) | KGP 2.4.21's JVM dump is textually identical to binary-compatibility-validator `0.18.2`'s output for the same classes. Settled by spike S1 **before** any commit past C1. | The regenerated file becomes its own commit (C1b) placed before the migration; its sorted lines must equal the baseline's, otherwise the migration changed the API and is fixed first. |
 | A2 (architecture) | `js` and `wasmJs` compile and test at `languageVersion`/`apiVersion` 2.2 under KGP 2.4.21. Settled by spike S2, which needs a scratch common source because the committed tree has none. | The pins move to `jvm { compilerOptions { ... } }` and the top-level `compilerOptions` block is dropped; the JVM compilation remains the gate for what common code may use. |
 | A8 (architecture) | The published `-jvm` module shows slf4j-api in the API variant, commons-io only at runtime, `kotlin-stdlib` 2.2.0, `org.gradle.jvm.version` 17. Spike S4 checks this as far as a local file-repository publish shows it; the kotlin-logging line cannot be checked until the `logging` unit adds the dependency, and the `release` unit re-runs the same procedure. | The dependency scopes in the source-set blocks are corrected. |
 | A9 (architecture) | vanniktech `0.37.0` signs the four publications with the keyring-file properties and runs under the configuration cache. Spike S5 (needs the maintainer's key ring; run with Gradle reading the user-home properties, never printing them). | The README "Releasing" text and the properties change; no source change. |
@@ -313,18 +350,38 @@ Notes the implementer needs:
 
 ```mermaid
 flowchart TD
-  T["tag 2.2.0 (git archive, scratch outside the repo)"] -->|"BCV 0.18.2 apiDump"| B["api/GeneralTools.api (C1)"]
-  M["migrated tree (scratch, then C2)"] -->|"KGP 2.4.21 updateKotlinAbi"| D["dump"]
+  T["tag 2.2.0 (git archive, scratch outside the repo)"] -->|"BCV 0.18.2 apiDump, tag's own build"| B["api/GeneralTools.api (C1)"]
+  M["migrated tree (Scratch A, then C2)"] -->|"KGP 2.4.21 updateKotlinAbi"| D["plugin dump"]
   B --> CMP{"S1: byte-identical?"}
   D --> CMP
   CMP -->|yes| C3["C3: abiValidation() wired, no dump change"]
-  CMP -->|"no: sorted lines equal"| C1b["C1b: baseline restated in the tool's format, before C2"]
-  CMP -->|"no: sorted lines differ"| FIX["the migration changed the API: fix the build, re-run S1"]
+  CMP -->|no| CF{"S1: class files compared (four conditions below) all hold?"}
+  CF -->|yes| C1b["C1b: baseline restated as the plugin dump, before C2"]
+  CF -->|no| FIX["the migration changed the compiled API, or a line is unexplained: fix the build or report; re-run S1"]
   C1b --> C3
 ```
 
-- Before the migration the reference dump is the 2.2.0 API; afterwards `check` fails on any difference until the author runs
-  `updateKotlinAbi` and commits the diff.
+**The baseline is the dump of the tool `check` runs.** Binary-compatibility-validator records the tag with the tag's own build
+(C1); the plugin's dumper is what `checkKotlinAbi` compares against from C3 on. Where the two dumps differ, S1 compares the class
+files the two builds compile (the tag's own build from the C1 scratch, and Scratch A), and the plugin's dump replaces the baseline
+(C1b) only when all four conditions hold:
+
+1. both builds compile the same set of class files;
+2. `javap -p -s` prints the same text for every class in both builds (same members, Java modifiers and descriptors);
+3. every line that one dump has and the other lacks names a member present in both builds with the same descriptor and the same
+   access flags (`javap -v`);
+4. each such line is explained by a rule in which the two tools differ, read at their pinned sources and applied to the unchanged
+   source declaration.
+
+A failure of 1-3 means the migration changed the compiled API: the build is corrected and S1 runs again. A failure of 4 is reported
+and nothing is committed: an unexplained listing difference would make every later dump prediction unreliable. Differences that
+neither dump records (access flags the dump format has no word for, such as `ACC_BRIDGE`; Kotlin metadata; debug information) do
+not block the restatement: they come from the compiler version, are listed in C1b's body, and the consumers' reading of the
+metadata is checked by the `release` smoke matrix. For the 2.2.0 classes the conditions hold and the restatement
+removes one line (section 3).
+
+- Before the migration the reference dump is the 2.2.0 API as the plugin lists it; afterwards `check` fails on any difference until
+  the author runs `updateKotlinAbi` and commits the diff.
 - The dump is of the **main compilation output** (`binariesSource` default), not of the published jar.
 - Each later break lands in its own commit and the combined diff is reviewed against architecture §11.3.
 
@@ -416,11 +473,27 @@ Commit numbers refer to section 11.
   `docs/plans/1-color-methods/plan.md` and `docs/plans/3-geometry-primitives/plan.md`. The other units' plans land in their own units' first commits.
 - The commit body records: tool and version, the tag, the command, and the sanity-grep result.
 
-### C1b - only if S1 shows A1 false (format-only)
+### C1b - the baseline restated as the plugin's dump
 
-- **modify `api/GeneralTools.api`**: replace with the file KGP 2.4.21 writes for the same 2.2.0 sources (taken from the S1 scratch run). Required evidence in the
-  body: `diff <(sort <C1 file>) <(sort <new file>)` is empty (a reordering or whitespace-only difference). If the sorted lines differ, this commit is not
-  allowed: the build migration changes the API and must be corrected first (compiler, language or `-Xjvm-default` difference), or the finding is reported.
+Made after S1 has passed (section 6.3), and before C2.
+
+- **modify `api/GeneralTools.api`**: replace it with the file the plugin writes in Scratch A
+  (`cp "$SCRATCH_A/api/GeneralTools.api" api/GeneralTools.api`; `.gitattributes` keeps it LF). Nothing else in `api/` changes:
+  the `api/GeneralTools.klib.api` that Scratch A also writes is S3's to decide and lands, if at all, in C3. For the 2.2.0 classes the
+  change is one removed line, `public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V` in
+  `com/spartanlabs/geometry/TwoDoubles`; a staged diff that shows anything else stops the commit (section 6.3).
+- **The planning documents that describe the restated baseline ride with this commit:** `plan-kmp-build.md`, `architecture.md` and
+  `impact.md` under `docs/plans/7-kotlin-multiplatform/`, and `final-implementation.md` with the entries that describe C1 and C1b work.
+- The body records:
+  - the tool and version (Kotlin Gradle plugin 2.4.21, `updateKotlinAbi` in Scratch A) and the removed line;
+  - the rule behind it: the plugin takes the constructor's visibility from the `protected` primary constructor of the sealed class and
+    leaves out `protected` members of sealed classes, while binary-compatibility-validator `0.18.2` lists them, with the three source
+    links of section 3;
+  - the S1 evidence for conditions 1-3: 28 class files on both sides, `javap -p -s` identical for all 28, and the constructor's descriptor
+    and flags (`0x1001`) in both builds;
+  - the differences neither dump records (section 3): `ACC_BRIDGE` on `Square.contains(Point)` and `CenteredBox.contains(Point)`, the
+    Kotlin metadata module name and module file name, `AxisAlignedBox$DefaultImpls` `xi`, the metadata flags of the data classes'
+    generated members, one debug local-variable name.
 
 ### C2 - the Kotlin Multiplatform migration
 
@@ -618,14 +691,17 @@ inside the new root. Verification is therefore build-level.
 
 ### Level 1 - gating (run before each commit; Git Bash at the repository root)
 
-Common to C2-C7: `git status --short` lists only the paths of that commit; no `docs/plans/` file is staged (the planning documents landed in C1, and
-the other units' plans land with their units); `./gradlew clean build --configuration-cache` ends `BUILD SUCCESSFUL`.
+Common to C2-C7: `git status --short` lists only the paths of that commit; no `docs/plans/` file is staged except
+`docs/plans/7-kotlin-multiplatform/final-implementation.md` when the commit carries the entry that describes its own work (the planning
+documents landed in C1 and C1b, and the other units' plans land with their units); `./gradlew clean build --configuration-cache` ends `BUILD SUCCESSFUL`.
 Helper: `count() { grep -ho "$2=\"[0-9]*\"" "$1"/TEST-*.xml 2>/dev/null | awk -F'"' '{s+=$2} END {print s+0}'; }`.
 No command here names a task containing `MavenCentral`.
 
 - **C1:** `git diff --stat 2.2.0 HEAD -- src/main` empty; `git ls-files -s .gitattributes api/GeneralTools.api`; `head -5 api/GeneralTools.api`; the R1 greps; `git show --stat HEAD` lists exactly
   `api/GeneralTools.api`, `.gitattributes`, `plan-kmp-build.md`, `architecture.md`, `impact.md` and the two earlier plans' pointer edits.
-- **C1b (if made):** `diff <(sort HEAD~1:api/GeneralTools.api) <(sort api/GeneralTools.api)` empty (use `git show HEAD~1:api/GeneralTools.api`).
+- **C1b:** before committing, `git diff --cached --numstat -- api/GeneralTools.api` prints `0	1	api/GeneralTools.api` and
+  `git diff --cached -U0 -- api/GeneralTools.api` shows only the removed `TwoDoubles` line of section 3; `git diff --cached --name-only` lists
+  `api/GeneralTools.api` and the four planning documents named in section 7 C1b, nothing else; `git diff --stat 2.2.0 HEAD -- src/main` is empty.
 - **C2:**
   - `git diff --cached -M --name-status | grep -c '^R100'` is 32; `git ls-files src/main src/test | wc -l` is 0.
   - `count build/test-results/jvmTest tests` is 185 and `count ... skipped` is 0 on a desktop session (UserActionsTest skips itself headless).
@@ -633,7 +709,7 @@ No command here names a task containing `MavenCentral`.
   - `javap -v -cp build/classes/kotlin/jvm/main com.spartanlabs.geometry.Point | grep -E 'major version|mv='` shows `major version: 61` and `mv=[2,2,0]`.
   - `./gradlew dependencies --configuration jvmCompileClasspath | grep kotlin-stdlib` -> `2.2.0` without `->`; the same for `jsCompileClasspath` and `wasmJsCompileClasspath` -> `2.2.0 -> 2.4.21`.
   - `./gradlew jsNodeTest wasmJsNodeTest` succeed (NO-SOURCE is expected).
-- **C3:** `./gradlew updateKotlinAbi && git diff --exit-code -- api/` exits 0 (byte-identical JVM dump; if S3 produced a klib file it is the only new file). Negative control (do not commit):
+- **C3:** `./gradlew updateKotlinAbi && git diff --exit-code -- api/` exits 0 (JVM dump byte-identical to the C1b baseline; if S3 produced a klib file it is the only new file). Negative control (do not commit):
   delete one line from `api/GeneralTools.api`, `./gradlew checkKotlinAbi` fails showing that line, then `git checkout -- api/GeneralTools.api`. `./gradlew check --dry-run | grep checkKotlinAbi`.
 - **C4 matrix** (input -> expected; `./gradlew cleanJvmTest jvmTest -PtestLevel=...` then `count`):
 
@@ -665,8 +741,30 @@ None. No production class or function changes; the only new function is the buil
 `src/commonMain/kotlin/spike/Spike.kt` (`package com.spartanlabs.spike`; `public fun halve(value: Double): Result<Double>` failing for NaN) and
 `src/commonTest/kotlin/com/spartanlabs/testing/{component,uat}/spike/*.kt` (one `@Test` each, one with a backtick name containing a space, a hyphen and an apostrophe). Nothing from Scratch A is committed.
 
-- **S1 (A1):** in Scratch A without spike files: `./gradlew updateKotlinAbi`; `diff api/GeneralTools.api <repo>/api/GeneralTools.api`. Identical -> A1 holds. Different -> run
-  `diff <(sort a) <(sort b)`; empty -> C1b as specified in section 7, else stop (6.3).
+- **S1 (baseline against the plugin's dump):** in Scratch A without spike files: `./gradlew updateKotlinAbi`, then
+  `diff "$SCRATCH_A/api/GeneralTools.api" <repo>/api/GeneralTools.api`. Identical -> no C1b; C3 as planned. Different -> compare the class
+  files, with `OLD` = the tag's own build from the C1 scratch (`$C1_SCRATCH/build/classes/kotlin/main`; if the scratch is gone, rebuild
+  tag `2.2.0` there with `./gradlew classes` on JDK 17, as for C1) and `NEW` = `$SCRATCH_A/build/classes/kotlin/jvm/main`, using a
+  JDK 17 or newer `javap`:
+  ```sh
+  # condition 1: prints nothing
+  diff <(cd "$OLD" && find . -name '*.class' | sort) <(cd "$NEW" && find . -name '*.class' | sort)
+  # condition 2: prints only "compared 28" (javap exits non-zero on a missing class, so a failed run cannot pass)
+  n=0; for f in $(cd "$OLD" && find . -name '*.class' | sort); do
+    a=$(javap -p -s "$OLD/$f") && b=$(javap -p -s "$NEW/$f") || { echo "javap failed: $f"; continue; }
+    [ "$a" = "$b" ] || echo "differs: $f"; n=$((n+1))
+  done; echo "compared $n"
+  # condition 3, for each member named by a differing dump line (here the TwoDoubles constructor): the same two lines from both builds
+  for B in "$OLD" "$NEW"; do javap -v -p "$B/com/spartanlabs/geometry/TwoDoubles.class" \
+    | grep -A2 'TwoDoubles(double, double, int, kotlin.jvm.internal.DefaultConstructorMarker);' | grep -E 'descriptor|flags'; done
+  # recorded, not gating: every member whose flags differ (expected: contains(Point) in CenteredBox and Square, ACC_BRIDGE added)
+  flags() { javap -v -p "$1" | sed -n '/^Constant pool:/,/^{/!p' | awk '/^  [a-z].*;$/ {m=$0} /^ +flags:/ {print m " |" $0}'; }
+  for f in $(cd "$OLD" && find . -name '*.class' | sort); do
+    d=$(diff <(flags "$OLD/$f") <(flags "$NEW/$f")) || { echo "== $f"; echo "$d"; }
+  done
+  ```
+  Condition 4 for the `TwoDoubles` line is the rule in section 3. All four hold -> C1b as specified in section 7. Any condition fails, or
+  a differing dump line other than the `TwoDoubles` one appears -> stop and report (6.3); nothing is committed.
 - **S3 (U1):** same tree, `./gradlew checkKotlinAbi updateKotlinAbi`. Record whether the tasks run, whether any `api/*.klib.api` is written and what it contains, and whether
   `checkKotlinAbi` passes without it. Outcomes: (a) passes, no klib file -> C3 as planned; (b) a header-only klib dump is written and `checkKotlinAbi` needs it -> C3 also commits it; (c) the task fails on
   missing klibs -> contingency in section 10.
@@ -748,12 +846,20 @@ None for this unit; user acceptance of the README wording happens at PR review.
 - **A published `3.0.0` is permanent.** The maintainer's user-home properties hold Central credentials; any `MavenCentral` task would upload. This plan runs none; rehearsals use a file repository only.
 - **JUnit launcher / variant (U2).** If `jvmTest` reports the JUnit Platform launcher missing, apply the U2 fix; if kotlin-test resolves the JUnit 4 variant, check that `useJUnitPlatform()` is registered before resolution.
 - **Line endings.** `.gitattributes` is added before the first generated reference file; verify with `git ls-files --eol api/GeneralTools.api` (`i/lf w/lf`).
+- **What the dump does not show.** The plugin's dump, like binary-compatibility-validator's, has no word for some class-file changes a
+  compiler upgrade makes. Moving to the 2.4.21 compiler adds `ACC_BRIDGE` to `Square.contains(Point)` and `CenteredBox.contains(Point)`
+  and changes Kotlin metadata (section 3). S1 records these once; a later Kotlin Gradle plugin bump can bring more of the same kind without
+  any dump change. Callers link by name and descriptor; the `release` smoke matrix checks that Kotlin 2.2.0 and 2.1.20 consumers read the
+  metadata.
+- **Two dump tools.** The committed baseline is the plugin's listing. A switch to binary-compatibility-validator (architecture section 12)
+  compares that tool's dump of the then-current classes with the committed file first, since the two list `protected` members of sealed
+  and enum classes differently.
 - **Yarn lock portability and churn (U4).** A Kotlin Gradle plugin bump makes the committed lock stale and the build fails (`FAIL` is the default) until `kotlinUpgradeYarnLock` is run and committed. CI downloads Node (nodejs.org) and Yarn (GitHub releases) on every run; an outage fails the build.
 - **Intermediate-commit README.** The README describes the finished 3.0.0 shape (common code on three targets) while C2-C7 still hold JVM-only sources; the branch is not released between those commits, and `commonize` completes the "Modules" section.
 - **`./gradlew test`** no longer exists as the way to run tests; the README names `jvmTest`, `allTests` and `check`.
 - **Rename hazard.** Moving files with `git mv` keeps history only if the contents are untouched; any edit in C2 turns a `R100` into an add/delete pair.
 - **Cross-repo:** none in this unit. MyGameTools' `--include-build` rehearsal (`release`) substitutes `io.github.spartanlaboratories:GeneralTools` because `group` and `project.name` equal the coordinate.
-- **Planning documents.** C1 carries `architecture.md`, `impact.md` and the dated pointer notes in the two earlier plans with this plan; the other units' plans stay out of C1-C7 and land with their units.
+- **Planning documents.** C1 carries `architecture.md`, `impact.md` and the dated pointer notes in the two earlier plans with this plan, and C1b carries the text of this plan, `architecture.md` and `impact.md` that describes the restated baseline; the other units' plans stay out of C1-C7 and land with their units; `final-implementation.md` rides with the commit whose work each entry describes.
 
 ---
 
@@ -765,9 +871,9 @@ Branch: `feat/issue-7-kotlin-multiplatform`. The `manager` performs every git st
 |---|---|---|---|---|
 | C0 | `Merge branch 'master' into feat/issue-7-kotlin-multiplatform` (merge commit `a0ca73e`, already on the branch and pushed; not part of this unit's diff) | removes `src/test/resources/keys.txt` | n/a | `git ls-files src/test/resources` lists only `logback-test.xml` |
 | C1 | `build: add the 2.2.0 baseline API dump` | `api/GeneralTools.api`, `.gitattributes`, this plan, `architecture.md`, `impact.md`, the dated pointers in the two earlier plans | creates the JVM baseline; no klib dump | section 7 C1 procedure; R1 greps |
-| C1b | `build: restate the baseline API dump in the Kotlin plugin's format` (only if S1 shows A1 false) | `api/GeneralTools.api` | format-only; sorted lines equal C1's | `diff <(sort ..) <(sort ..)` empty |
+| C1b | `build: restate the baseline API dump as the Kotlin plugin lists it` | `api/GeneralTools.api`; `plan-kmp-build.md`, `architecture.md`, `impact.md`, `final-implementation.md` | one line removed (`TwoDoubles` synthetic default-arguments constructor); no klib dump | S1 conditions 1-4 (section 6.3) in the body; `git diff --cached --numstat` `0 1` |
 | C2 | `build: migrate to Kotlin Multiplatform with jvm, js and wasmJs targets` | `build.gradle.kts`, 32 `git mv`, README intro/build/migration rows 2-3 | none (not yet measured; C3 measures it) | Level 1 C2; 185 tests |
-| C3 | `build: check the public API dump with the Kotlin Gradle plugin` | `abiValidation()`, README lines; klib file only per S3 | JVM byte-identical to C1/C1b; klib none (or header-only) | `updateKotlinAbi` + `git diff --exit-code -- api/`; negative control |
+| C3 | `build: check the public API dump with the Kotlin Gradle plugin` | `abiValidation()`, README lines; klib file only per S3 | JVM byte-identical to C1b; klib none (or header-only) | `updateKotlinAbi` + `git diff --exit-code -- api/`; negative control |
 | C4 | `build: select test levels with -PtestLevel` | `-PtestLevel` region, README | none | C4 matrix |
 | C5a | `build: configure the multiplatform publication` | `version = "2.2.0"` on the project, derived `coordinates`, `KotlinMultiplatform` configuration, README "Releasing" | none | S4 inspection (S5 on the maintainer's machine) |
 | C5b | `build: bump version to 3.0.0` | the `version` line only, README "Maven coordinates" and migration row 1 | none | `properties` prints `version: 3.0.0` |
@@ -813,8 +919,8 @@ Each commit builds and passes `./gradlew build` on its own. Spike scratch trees,
 
 1. Preconditions: `master` merged (C0); working tree free of unrelated changes in the paths this unit edits; JDK 17-24 on `PATH`; network for Gradle, Node, Yarn.
 2. Produce the baseline (section 7, C1) and commit C1.
-3. Build Scratch A and run S1, S3, S2, S4 (S5 on the maintainer's machine); decide C1b and the S3 outcome.
-4. Land C1b (if needed), then C2-C7, each after its Level 1 checks.
+3. Build Scratch A and run S1 (with its class-file comparison), S3, S2, S4 (S5 on the maintainer's machine); decide the S3 outcome.
+4. Land C1b as soon as S1 has passed; land C2-C7 once the remaining spikes have run, each after its Level 1 checks.
 5. Push (by the `manager`); read the Actions result; fix forward in a new commit.
 
 **Follow-ups (named, not in this unit):** Node/Yarn caching in CI ([#18](https://github.com/SpartanLaboratories/GeneralTools/issues/18)); a root artifact usable from plain Maven ([#17](https://github.com/SpartanLaboratories/GeneralTools/issues/17)); `webMain` only if a shared JS/Wasm `actual` is ever needed; the tapmoc plugin if the hand-written pins prove fiddly; raising the language floor together with
@@ -824,8 +930,9 @@ the consumers' Kotlin (2.5 deprecates 2.2 as a language version); a TestKit test
 
 ## 14. Known gaps
 
-- Nothing was compiled or run while planning. The Gradle DSL in 6.2 (accessor style, `@OptIn` on statements, the attribute block, `coreLibrariesVersion` inside `sourceSets`) is checked against KGP and vanniktech sources
-  but not executed; S2 and the C2 Level 1 run are the first execution.
+- The Gradle DSL in 6.2 (accessor style, `@OptIn` on statements, the attribute block, `coreLibrariesVersion` inside `sourceSets`) is checked against KGP and vanniktech sources
+  and has run once, in Scratch A with no common sources (`updateKotlinAbi`, section 3); S2 is its first run with common and web sources, and the C2 Level 1 run its first in the repository.
+- The Kotlin-metadata flags that differ for the data classes' generated `equals`, `hashCode` and `toString` (section 3) are not decoded; the `release` smoke matrix (Kotlin 2.2.0 and 2.1.20 consumers) is the check that consumers read them.
 - Whether the Kotlin Gradle plugin's ABI tool tolerates `js`/`wasmJs` compilations without klibs is not established (U1); neither is what it writes for them.
 - Whether `kotlin-js-store/yarn.lock` can be produced from the committed tree (no web tests) or only from Scratch A is not established (U5); the exact contents of `kotlin-js-store/` (a `wasm/` lock may exist) are unknown.
 - JS/Wasm klib ABI error text for migration row 2 is described, not quoted; row 3's floor (Kotlin 2.1) rests on the metadata rule, with the 2.1.20 consumer proof in `release` (A3).

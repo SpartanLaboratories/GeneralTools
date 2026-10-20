@@ -232,7 +232,6 @@ public final class com/spartanlabs/geometry/Square : com/spartanlabs/geometry/Ax
 }
 
 public abstract class com/spartanlabs/geometry/TwoDoubles {
-	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (DDLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lcom/spartanlabs/geometry/TwoDoubles;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun amplifyBy (D)V

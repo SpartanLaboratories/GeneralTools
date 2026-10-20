@@ -2,7 +2,6 @@ package com.spartanlabs.geometry
 
 import com.spartanlabs.generaltools.failure
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.lang.Math.pow
 import kotlin.math.pow
 import kotlin.math.sqrt
 

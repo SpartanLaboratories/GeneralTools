@@ -59,7 +59,7 @@ public sealed class TwoDoubles(public var first: Double = 0.0, public var second
      * the same concrete type.
      */
     override operator fun equals(other: Any?):Boolean {
-        if(other==null || other.javaClass != this.javaClass) return false
+        if(other==null || other::class != this::class) return false
         other as TwoDoubles
         return first == other.first && second == other.second
     }
@@ -70,7 +70,7 @@ public sealed class TwoDoubles(public var first: Double = 0.0, public var second
      * hash-based collections.
      */
     override fun hashCode(): Int =
-        31 * (31 * javaClass.hashCode() + first.hashCode()) + second.hashCode()
+        31 * (31 * this::class.hashCode() + first.hashCode()) + second.hashCode()
     /** Returns "first, second" */
     override fun toString(): String {
         return "$first, $second"

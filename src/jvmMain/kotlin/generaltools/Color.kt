@@ -145,10 +145,9 @@ public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: 
      * @return the hex string.
      */
     public fun toHex(includeAlpha: Boolean = false): String {
-        return if (includeAlpha) {
-            String.format("#%02X%02X%02X%02X", alpha, red, green, blue)
-        } else {
-            String.format("#%02X%02X%02X", red, green, blue)
+        val channels = if (includeAlpha) listOf(alpha, red, green, blue) else listOf(red, green, blue)
+        return channels.joinToString(separator = "", prefix = "#") { channel ->
+            channel.toString(16).padStart(2, '0').uppercase()
         }
     }
 

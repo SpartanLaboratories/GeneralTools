@@ -149,10 +149,11 @@ public fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean
 
     val dir = s.delta
     // invD may be +/-Infinity for an axis-parallel segment: intentional under
-    // IEEE-754 (see plan §2.1). minOf / maxOf on Double delegate to
-    // java.lang.Math.min / max, which PROPAGATE NaN, so a 0 * Infinity that
-    // arises when an endpoint sits exactly on a slab plane collapses the
-    // interval and the final `tmax >= tmin` test cleanly reports "no overlap".
+    // IEEE-754 (see plan §2.1). minOf / maxOf on Double propagate NaN on every
+    // Kotlin target (documented: "If either value is NaN, returns NaN"), so a
+    // 0 * Infinity that arises when an endpoint sits exactly on a slab plane
+    // collapses the interval and the final `tmax >= tmin` test cleanly reports
+    // "no overlap".
     val invDx = 1.0 / dir.x
     val invDy = 1.0 / dir.y
     var tmin = 0.0
@@ -214,10 +215,10 @@ public fun rayIntersectsBox(r: Ray, box: AxisAlignedBox): Result<Double?> {
     // (a parallel-and-outside slab leaves tmin/tmax at -/+Infinity -> miss; a
     // parallel-and-inside slab leaves the constraint inert). The one hazard is
     // 0 * Infinity = NaN when the origin lies exactly on a slab plane; because
-    // minOf / maxOf on Double delegate to java.lang.Math.min / max (which
-    // PROPAGATE NaN, unlike SSE minps/maxps), that NaN reaches the final test
-    // and `tmax >= maxOf(tmin, 0.0)` evaluates false -> a deterministic clean
-    // miss. See plan §2.1.
+    // minOf / maxOf on Double PROPAGATE NaN on every Kotlin target (documented:
+    // "If either value is NaN, returns NaN"; unlike SSE minps/maxps), that NaN
+    // reaches the final test and `tmax >= maxOf(tmin, 0.0)` evaluates false ->
+    // a deterministic clean miss. See plan §2.1.
     val invDx = 1.0 / r.direction.x
     val invDy = 1.0 / r.direction.y
     var tmin = Double.NEGATIVE_INFINITY

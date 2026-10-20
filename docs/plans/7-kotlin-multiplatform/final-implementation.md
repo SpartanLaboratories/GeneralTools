@@ -149,3 +149,15 @@ as-built record once implementation ends.
   `MiscKt__MiscJvmKt`, and a multifile facade has no single source file. Neither line is API. The JVM dump and all ten
   public signatures and descriptors on `MiscKt` are unchanged (assumption A7 as the architecture defines it), so the user
   accepted the split (2026-10-20) on the public-members criterion.
+
+### `commonize` — commit 3 keeps `TwoDoubles.equals`'s original spacing around the new expression
+
+- **Plan:** [plan-commonize.md](plan-commonize.md) §5.3 "`TwoDoubles.equals` and `hashCode`", whose code block shows
+  `if (other == null || other::class != this::class) return false` (and the signature as `equals(other: Any?): Boolean`).
+- **What differs:** the line reads `if(other==null || other::class != this::class) return false`. Only the two
+  `.javaClass` expressions were replaced; the existing `if(other==null` spacing was left as it was. The signature line
+  `override operator fun equals(other: Any?):Boolean {` is also unchanged.
+- **Why:** §5.3 states "Only the expression changes; the two members' visibility modifiers and KDoc stay as
+  `explicit-api` and `logging` left them". Re-spacing the line would be a formatting change beyond the expression. This
+  follows the `explicit-api` precedent above (`TwoDoubles` line 13 keeps `second:Double`). The compiled code is the same
+  either way.

@@ -33,6 +33,9 @@ val jvmFloor = 17
 
 kotlin {
     jvmToolchain(jvmFloor)
+    // Strict explicit API: a declaration is public only on purpose, because this module exports to
+    // three targets. Test source sets are not subject to it.
+    explicitApi()
 
     //region Pins
     // Metadata and API checks follow the floor on every target. The js/wasmJs ABI version still follows this compiler (2.4),

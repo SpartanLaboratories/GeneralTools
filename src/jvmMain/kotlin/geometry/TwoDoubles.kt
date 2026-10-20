@@ -10,27 +10,27 @@ private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.TwoDoubles")
  * point or a width/height pair. Provides shared arithmetic and comparison
  * operations for its subclasses.
  */
-sealed class TwoDoubles(var first: Double = 0.0, var second:Double = 0.0){
+public sealed class TwoDoubles(public var first: Double = 0.0, public var second:Double = 0.0){
     /** Creates a new instance with the same values as [doubles] */
-    constructor(doubles: TwoDoubles): this(doubles.first, doubles.second)
+    protected constructor(doubles: TwoDoubles): this(doubles.first, doubles.second)
     /** True if either [first] or [second] is NaN */
-    val containsNaN get() = first.isNaN() || second.isNaN()
+    public val containsNaN: Boolean get() = first.isNaN() || second.isNaN()
     /** Sets [first] and [second] to the given values */
-    fun setTo(first: Double, second: Double) = with(this){
+    public fun setTo(first: Double, second: Double): Unit = with(this){
         this.first = first
         this.second = second
     }
     /** Adds the given amounts to [first] and [second] */
-    fun modBy(first: Double, second: Double) = with(this){
+    public fun modBy(first: Double, second: Double): Unit = with(this){
         this.first  += first
         this.second += second
     }
     /** Sets [first] and [second] to match [new]'s values */
-    infix fun setTo(new: TwoDoubles) =    setTo(new.first, new.second)
+    public infix fun setTo(new: TwoDoubles): Unit =    setTo(new.first, new.second)
     /** Adds [change]'s values to [first] and [second] */
-    infix fun modBy(change: TwoDoubles) = modBy(change.first, change.second)
+    public infix fun modBy(change: TwoDoubles): Unit = modBy(change.first, change.second)
     /** Multiplies both [first] and [second] by [magnitude] */
-    infix fun amplifyBy(magnitude: Double) {
+    public infix fun amplifyBy(magnitude: Double) {
         first *= magnitude
         second *= magnitude
     }
@@ -39,20 +39,20 @@ sealed class TwoDoubles(var first: Double = 0.0, var second:Double = 0.0){
      * <br>
      * Throws an [IllegalArgumentException] if [magnitude] is zero
      */
-    infix fun divideBy(magnitude: Double) =
+    public infix fun divideBy(magnitude: Double): Unit =
         if (magnitude == 0.0) {
             log.error("Attempted to divide a {} by zero", this::class.simpleName)
             throw IllegalArgumentException("Cannot divide by zero")
         }
         else amplifyBy(1/magnitude)
     /** Adds [doubles]'s values to this instance */
-    operator fun plusAssign(doubles: TwoDoubles) = modBy(doubles)
+    public operator fun plusAssign(doubles: TwoDoubles): Unit = modBy(doubles)
     /** Subtracts [doubles]'s values from this instance */
-    operator fun minusAssign(doubles: TwoDoubles) = modBy(-doubles.first, -doubles.second)
+    public operator fun minusAssign(doubles: TwoDoubles): Unit = modBy(-doubles.first, -doubles.second)
     /** Multiplies this instance's values by [magnitude] */
-    operator fun timesAssign(magnitude: Double) = amplifyBy(magnitude)
+    public operator fun timesAssign(magnitude: Double): Unit = amplifyBy(magnitude)
     /** Divides this instance's values by [magnitude] */
-    operator fun divAssign(magnitude: Double) = divideBy(magnitude)
+    public operator fun divAssign(magnitude: Double): Unit = divideBy(magnitude)
     /**
      * Two [TwoDoubles] are equal if they are the same concrete type and their
      * [first] and [second] values match. Paired with [hashCode], which folds in

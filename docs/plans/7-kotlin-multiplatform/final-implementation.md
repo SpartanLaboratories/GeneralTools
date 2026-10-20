@@ -52,3 +52,15 @@ as-built record once implementation ends.
     `git status --short` lists only that commit's paths.
 - **Why:** each change keeps the question the step asks and the evidence it records; none touches the repository or
   the committed design.
+
+### `explicit-api` — `TwoDoubles` line 13 keeps `second:Double` without a space
+
+- **Plan:** [plan-explicit-api.md](plan-explicit-api.md) §7.9, row for line 13 (`TwoDoubles` and its two constructor
+  properties), whose "resulting text" reads `public var second: Double = 0.0`.
+- **What differs:** the line reads `public sealed class TwoDoubles(public var first: Double = 0.0, public var
+  second:Double = 0.0){`. Only the two `public` tokens and the class's `public` were inserted; the existing
+  `second:Double` (no space after the colon) was left as it was.
+- **Why:** §4 ("No KDoc, comment or formatting change beyond the inserted tokens") and §5 ("four mechanical forms,
+  and nothing else") forbid the extra space; every other "resulting text" row in §7 keeps the original spacing
+  (e.g. `IJColor(public val colorCode:String)`, `setTo(new: TwoDoubles): Unit =    setTo(...)`). The compiled class
+  is unaffected either way.

@@ -1,12 +1,12 @@
 package com.spartanlabs.logging
 
-class MessageBuilder(showClass:Boolean = true, showTime:Boolean = false, showThread:Boolean = false, showStackTrace:Boolean = false, val color:IJColor){
-    infix fun modify(message:String): String {
+public class MessageBuilder(showClass:Boolean = true, showTime:Boolean = false, showThread:Boolean = false, showStackTrace:Boolean = false, public val color:IJColor){
+    public infix fun modify(message:String): String {
         return color + message
     }
 }
-enum class IJColor(val colorCode:String){
+public enum class IJColor(public val colorCode:String){
     INFO("\u001b[92m");
-    val reset = "\u001b[0m"
-    operator fun plus(restOfString:String) = colorCode + restOfString + reset
+    public val reset: String = "\u001b[0m"
+    public operator fun plus(restOfString:String): String = colorCode + restOfString + reset
 }

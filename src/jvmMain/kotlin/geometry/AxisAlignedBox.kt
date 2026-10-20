@@ -11,18 +11,18 @@ package com.spartanlabs.geometry
  * so a [Square] and a [CenteredBox] can be passed interchangeably without
  * conversion.
  */
-interface AxisAlignedBox {
+public interface AxisAlignedBox {
     /** The corner with the smallest `x` and `y`. */
-    val min: Point
+    public val min: Point
 
     /** The corner with the largest `x` and `y`. */
-    val max: Point
+    public val max: Point
 
     /** The geometric centre, `(min + max) / 2`. */
-    val center: Point
+    public val center: Point
 
     /** Width and height (`max - min`); non-negative for a valid box. */
-    val size: Dimensions
+    public val size: Dimensions
 
     /**
      * Whether [p] lies inside this box or on its boundary
@@ -32,6 +32,6 @@ interface AxisAlignedBox {
      * @return `true` if [p] is inside or on the edge; `false` otherwise
      *   (including when any coordinate involved is `NaN`).
      */
-    infix fun contains(p: Point): Boolean =
+    public infix fun contains(p: Point): Boolean =
         p.x >= min.x && p.x <= max.x && p.y >= min.y && p.y <= max.y
 }

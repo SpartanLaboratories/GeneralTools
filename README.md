@@ -87,6 +87,11 @@ named levels on every target; an unknown level fails the build, and left unset e
 
 After a Kotlin Gradle plugin bump, run `./gradlew kotlinUpgradeYarnLock` and commit `kotlin-js-store/`.
 
+The library compiles in Kotlin's strict explicit API mode: every declaration reachable from outside the module
+states `public`, and every public function or property whose type would be inferred states its type. Test source
+sets are not subject to it. A missing modifier or type fails `compileKotlinJvm` (and the web compilations once they
+hold code).
+
 ## Releasing
 
 Releases are published to Maven Central **manually** by a maintainer; there is no CI publish workflow, and

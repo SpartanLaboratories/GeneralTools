@@ -19,7 +19,7 @@ private val log = LoggerFactory.getLogger("com.spartanlabs.generaltools.UserActi
 /**
  * Crops the specified image to the desired dimensions
  */
-fun cropImage(image: BufferedImage, x: Int, y: Int, width: Int, height: Int): BufferedImage {
+public fun cropImage(image: BufferedImage, x: Int, y: Int, width: Int, height: Int): BufferedImage {
     log.debug("Cropping image to x={}, y={}, width={}, height={}", x, y, width, height)
     return BufferedImage(width,height, BufferedImage.TYPE_INT_ARGB).apply{
         graphics.drawImage(image,0,0,width,height,x,y,x+width,y+height,null)
@@ -38,11 +38,11 @@ private fun saveImage(image: BufferedImage, filePath:String): File {
 /**
  * Saves the receiver image to the specified file location
  */
-infix fun BufferedImage.to(fileName:String) = saveImage(this, fileName)
+public infix fun BufferedImage.to(fileName:String): File = saveImage(this, fileName)
 /**
  * Copies the receiver file to `$fileName.png`
  */
-infix fun File.saveTo(fileName:String) {
+public infix fun File.saveTo(fileName:String) {
     log.debug("Copying file '{}' to '{}.png'", this.path, fileName)
     FileUtils.copyFile(this, File("$fileName.png"))
 }
@@ -50,7 +50,7 @@ infix fun File.saveTo(fileName:String) {
  * Opens [address] in the system's default browser, waits for the page to load,
  * then returns a screenshot of the browser window's content area
  */
-fun screenshotBrowser(address:String): BufferedImage {
+public fun screenshotBrowser(address:String): BufferedImage {
     log.info("Screenshotting browser at address '{}'", address)
     openInBrowser(address)
     Thread.sleep(1600)
@@ -59,7 +59,7 @@ fun screenshotBrowser(address:String): BufferedImage {
 /**
  * Opens [address] in the system's default browser
  */
-fun openInBrowser(address:String) {
+public fun openInBrowser(address:String) {
     log.debug("Opening browser at address '{}'", address)
     Desktop.getDesktop().browse(URL(address).toURI())
 }
@@ -67,14 +67,14 @@ fun openInBrowser(address:String) {
  * Takes a screenshot of the rectangular screen region described by the given
  * coordinates and dimensions
  */
-fun screenshotArea(x:Int, y:Int, width:Int, height:Int): BufferedImage {
+public fun screenshotArea(x:Int, y:Int, width:Int, height:Int): BufferedImage {
     log.debug("Taking screenshot of area x={}, y={}, width={}, height={}", x, y, width, height)
     return screenshot(Rectangle().apply { this.x = x;this.y = y;this.width = width;this.height = height })
 }
 /**
  * Takes a screenshot of the entire screen
  */
-fun screenshotFull(): BufferedImage {
+public fun screenshotFull(): BufferedImage {
     log.debug("Taking full screen screenshot")
     return screenshot(Rectangle(Toolkit.getDefaultToolkit().screenSize))
 }

@@ -20,14 +20,14 @@ import kotlin.math.roundToInt
  * @property alpha the alpha channel, `0..255`, not validated by the constructor;
  *   defaults to `255` (opaque).
  */
-data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 255) {
+public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 255) {
 
     /**
      * `[r, g, b, a]` with every channel mapped from `0..255` to `0f..1f`.
      *
      * @return a new 4-element `[r, g, b, a]` array, each channel `/ 255f`.
      */
-    fun normalized(): FloatArray =
+    public fun normalized(): FloatArray =
         floatArrayOf(red / 255f, green / 255f, blue / 255f, alpha / 255f)
 
 
@@ -41,7 +41,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
      *   `0.0` — this colour unchanged.
      * @return a new [Color]; the receiver is not modified.
      */
-    fun lightened(fraction: Double = 0.35): Color {
+    public fun lightened(fraction: Double = 0.35): Color {
         // A non-finite fraction would propagate through the channel maths and,
         // after coerceIn(0, 255), collapse every channel to 0 (black).
         val f = fraction.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.0
@@ -58,7 +58,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
      *   `0.0` — this colour unchanged.
      * @return a new [Color]; the receiver is not modified.
      */
-    fun darkened(fraction: Double = 0.35): Color {
+    public fun darkened(fraction: Double = 0.35): Color {
         // A non-finite fraction would propagate through the channel maths and,
         // after coerceIn(0, 255), collapse every channel to 0 (black).
         val f = fraction.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.0
@@ -73,14 +73,14 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
      * @param newAlpha the replacement alpha, coerced into `0..255`.
      * @return a copy with red/green/blue unchanged.
      */
-    fun withAlpha(newAlpha: Int): Color = copy(alpha = newAlpha.coerceIn(0, 255))
+    public fun withAlpha(newAlpha: Int): Color = copy(alpha = newAlpha.coerceIn(0, 255))
 
     /**
      * Inverts the RGB components while keeping [alpha] untouched.
      *
      * @return a new [Color] with `255 - ` each RGB channel; alpha unchanged.
      */
-    fun inverted(): Color = Color(255 - red, 255 - green, 255 - blue, alpha)
+    public fun inverted(): Color = Color(255 - red, 255 - green, 255 - blue, alpha)
 
     /**
      * Converts the colour to grayscale using standard ITU-R BT.601 luma weights.
@@ -88,7 +88,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
      * @return a new [Color] with `R = G = B` set to the BT.601 luma, alpha
      *   preserved.
      */
-    fun grayscale(): Color {
+    public fun grayscale(): Color {
         val gray = (0.299 * red + 0.587 * green + 0.114 * blue).roundToInt().coerceIn(0, 255)
         return Color(gray, gray, gray, alpha)
     }
@@ -103,7 +103,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
      *   `0f` — this colour unchanged, *not* clamped to [target].
      * @return a new [Color]; neither operand is modified.
      */
-    fun lerp(target: Color, fraction: Float): Color {
+    public fun lerp(target: Color, fraction: Float): Color {
         // A non-finite fraction would propagate through the channel maths and,
         // after coerceIn(0, 255), collapse every channel to 0; takeIf keeps the
         // non-finite case as "identity" rather than letting coerceIn pass NaN.
@@ -124,7 +124,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
      *
      * @return a value in `0.0f..1.0f`; alpha is ignored.
      */
-    fun luminance(): Float = (0.299f * red + 0.587f * green + 0.114f * blue) / 255f
+    public fun luminance(): Float = (0.299f * red + 0.587f * green + 0.114f * blue) / 255f
 
     /**
      * Encodes the colour channels into a single 32-bit ARGB `Int`.
@@ -133,7 +133,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
      *   blue 7..0. The result is a signed `Int`, so opaque white packs to `-1`.
      *   Channels are assumed to be in `0..255` — the caller's responsibility.
      */
-    fun toPackedInt(): Int = (alpha shl 24) or (red shl 16) or (green shl 8) or blue
+    public fun toPackedInt(): Int = (alpha shl 24) or (red shl 16) or (green shl 8) or blue
 
     /**
      * Upper-case, `#`-prefixed hex.
@@ -144,7 +144,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
      *   `#RRGGBB`.
      * @return the hex string.
      */
-    fun toHex(includeAlpha: Boolean = false): String {
+    public fun toHex(includeAlpha: Boolean = false): String {
         return if (includeAlpha) {
             String.format("#%02X%02X%02X%02X", alpha, red, green, blue)
         } else {
@@ -152,22 +152,22 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
         }
     }
 
-    companion object {
-        val WHITE = Color(255, 255, 255)
-        val BLACK = Color(0, 0, 0)
-        val RED = Color(255, 0, 0)
-        val GREEN = Color(0, 255, 0)
-        val BLUE = Color(0, 0, 255)
-        val YELLOW = Color(255, 255, 0)
-        val CYAN = Color(0, 255, 255)
-        val MAGENTA = Color(255, 0, 255)
-        val ORANGE = Color(255, 165, 0)
-        val PURPLE = Color(128, 0, 128)
-        val GRAY = Color(128, 128, 128)
-        val LIGHT_GRAY = Color(192, 192, 192)
-        val DARK_GRAY = Color(64, 64, 64)
+    public companion object {
+        public val WHITE: Color = Color(255, 255, 255)
+        public val BLACK: Color = Color(0, 0, 0)
+        public val RED: Color = Color(255, 0, 0)
+        public val GREEN: Color = Color(0, 255, 0)
+        public val BLUE: Color = Color(0, 0, 255)
+        public val YELLOW: Color = Color(255, 255, 0)
+        public val CYAN: Color = Color(0, 255, 255)
+        public val MAGENTA: Color = Color(255, 0, 255)
+        public val ORANGE: Color = Color(255, 165, 0)
+        public val PURPLE: Color = Color(128, 0, 128)
+        public val GRAY: Color = Color(128, 128, 128)
+        public val LIGHT_GRAY: Color = Color(192, 192, 192)
+        public val DARK_GRAY: Color = Color(64, 64, 64)
         /** Fully transparent - a panel/label with no visible background of its own. */
-        val TRANSPARENT = Color(0, 0, 0, 0)
+        public val TRANSPARENT: Color = Color(0, 0, 0, 0)
 
         /**
          * Builds a [Color] with every channel clamped into `0..255`. Prefer this
@@ -182,7 +182,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
          *   `255` (opaque).
          * @return a new [Color] with each channel coerced into `0..255`.
          */
-        fun of(red: Int, green: Int, blue: Int, alpha: Int = 255): Color =
+        public fun of(red: Int, green: Int, blue: Int, alpha: Int = 255): Color =
             Color(
                 red.coerceIn(0, 255),
                 green.coerceIn(0, 255),
@@ -203,7 +203,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
          *   treated as `0f`; defaults to `1f` (opaque).
          * @return a new [Color].
          */
-        fun fromNormalized(r: Float, g: Float, b: Float, a: Float = 1f): Color {
+        public fun fromNormalized(r: Float, g: Float, b: Float, a: Float = 1f): Color {
             // A non-finite channel would survive coerceIn (every comparison with
             // NaN is false) and then roundToInt to 0; takeIf maps it to 0f up
             // front so the clamp behaves.
@@ -220,7 +220,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
          *   values are valid, e.g. `-1` → opaque white.
          * @return the decoded [Color].
          */
-        fun fromPackedInt(argb: Int): Color {
+        public fun fromPackedInt(argb: Int): Color {
             val a = (argb shr 24) and 0xFF
             val r = (argb shr 16) and 0xFF
             val g = (argb shr 8) and 0xFF
@@ -240,7 +240,7 @@ data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 2
          *   lengths or contains non-hex digits (`NumberFormatException`, an
          *   `IllegalArgumentException`).
          */
-        fun fromHex(hex: String): Color {
+        public fun fromHex(hex: String): Color {
             val cleanHex = hex.removePrefix("#").removePrefix("0x")
             return when (cleanHex.length) {
                 3 -> { // RGB

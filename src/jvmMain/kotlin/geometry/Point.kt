@@ -11,15 +11,15 @@ private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.Point")
 /**
  * Represents a point in 2D space with an [x] and [y] coordinate
  */
-class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
+public class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
     /** Creates a new Point with the same coordinates as [point] */
-    constructor(point: Point) : this(point.x, point.y)
+    public constructor(point: Point) : this(point.x, point.y)
     /** The horizontal coordinate of this point */
-    var x
+    public var x: Double
         get() = first
         set(value) { first = value }
     /** The vertical coordinate of this point */
-    var y
+    public var y: Double
         get() = second
         set(value) { second = value }
     /**
@@ -27,7 +27,7 @@ class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
      * <br>
      * Returns a failed [Result] if either point contains a NaN value
      */
-    infix fun distanceFrom(other: Point): Result<Double> =
+    public infix fun distanceFrom(other: Point): Result<Double> =
         if(containsNaN || other.containsNaN) {
             log.warn("Cannot compute distance: one or both points contain NaN values")
             Result.failure(IllegalArgumentException("Point values must be numbers"))
@@ -37,15 +37,15 @@ class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
 /**
  * Represents a 2D size with a [width] and [height]
  */
-class Dimensions(width:Double = 0.0,height: Double = 0.0) : TwoDoubles(width,height){
+public class Dimensions(width:Double = 0.0,height: Double = 0.0) : TwoDoubles(width,height){
     /** Creates a new Dimensions with the same width and height as [dimensions] */
-    constructor(dimensions:Dimensions) : this(dimensions.width,dimensions.height)
+    public constructor(dimensions:Dimensions) : this(dimensions.width,dimensions.height)
     /** The horizontal size */
-    var width
+    public var width: Double
         get() = first
         set(value) { first = value }
     /** The vertical size */
-    var height
+    public var height: Double
         get() = second
         set(value) { second = value }
 }

@@ -13,7 +13,7 @@ package com.spartanlabs.geometry
  * @property origin the start of the half-line (parameter `t = 0`).
  * @property direction the direction of travel; not required to be normalised.
  */
-data class Ray(val origin: Point, val direction: Point) {
+public data class Ray(val origin: Point, val direction: Point) {
     /**
      * The point at parameter [t]: `origin + t * direction`.
      *
@@ -21,7 +21,7 @@ data class Ray(val origin: Point, val direction: Point) {
      *   lie behind the origin.
      * @return the point on this ray's supporting line at [t].
      */
-    fun pointAt(t: Double): Point =
+    public fun pointAt(t: Double): Point =
         Point(origin.x + t * direction.x, origin.y + t * direction.y)
 
     /**
@@ -32,6 +32,6 @@ data class Ray(val origin: Point, val direction: Point) {
      *   `length < EPSILON` or contains `NaN`; otherwise `Result.success` of a
      *   ray with the same [origin] and supporting line.
      */
-    fun unit(): Result<Ray> =
+    public fun unit(): Result<Ray> =
         direction.normalized().map { Ray(Point(origin.x, origin.y), it) }
 }

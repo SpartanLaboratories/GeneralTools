@@ -24,7 +24,7 @@ private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.Vectors")
  * working at such scales; exact orientation predicates are a possible future
  * enhancement.
  */
-const val EPSILON: Double = 1e-10
+public const val EPSILON: Double = 1e-10
 
 /**
  * Dot product `x * other.x + y * other.y`.
@@ -34,7 +34,7 @@ const val EPSILON: Double = 1e-10
  * @param other the vector to dot with this one.
  * @return the scalar dot product.
  */
-infix fun Point.dot(other: Point): Double = x * other.x + y * other.y
+public infix fun Point.dot(other: Point): Double = x * other.x + y * other.y
 
 /**
  * 2D scalar cross product (perp-dot) `x * other.y - y * other.x`.
@@ -46,14 +46,14 @@ infix fun Point.dot(other: Point): Double = x * other.x + y * other.y
  * @param other the vector to cross with this one.
  * @return the scalar (z-component) cross product.
  */
-infix fun Point.cross(other: Point): Double = x * other.y - y * other.x
+public infix fun Point.cross(other: Point): Double = x * other.y - y * other.x
 
 /**
  * Euclidean magnitude `sqrt(x * x + y * y)`.
  *
  * `NaN` if this point contains `NaN`.
  */
-val Point.length: Double get() = sqrt(x * x + y * y)
+public val Point.length: Double get() = sqrt(x * x + y * y)
 
 /**
  * Squared Euclidean magnitude `x * x + y * y`.
@@ -61,7 +61,7 @@ val Point.length: Double get() = sqrt(x * x + y * y)
  * Cheaper than [length] (no `sqrt`); prefer it when only relative comparisons
  * are needed. `NaN` if this point contains `NaN`.
  */
-val Point.lengthSquared: Double get() = x * x + y * y
+public val Point.lengthSquared: Double get() = x * x + y * y
 
 /**
  * This vector scaled to unit length.
@@ -71,7 +71,7 @@ val Point.lengthSquared: Double get() = x * x + y * y
  *   direction); otherwise `Result.success` of a new [Point] whose [length] is
  *   `1.0`.
  */
-fun Point.normalized(): Result<Point> {
+public fun Point.normalized(): Result<Point> {
     // A vector shorter than EPSILON has no well-defined direction: dividing by
     // its length would blow up to +/-Infinity or NaN. Guard the same degeneracy
     // TwoDoubles.divideBy guards, but return a Result instead of throwing
@@ -97,7 +97,7 @@ fun Point.normalized(): Result<Point> {
  * @return the component of this vector parallel to [axis], or `Point(0.0, 0.0)`
  *   when [axis] is zero-ish.
  */
-infix fun Point.projectedOnto(axis: Point): Point {
+public infix fun Point.projectedOnto(axis: Point): Point {
     if (axis.length < EPSILON) return Point(0.0, 0.0)
     val scale = (this dot axis) / (axis dot axis)
     return Point(axis.x * scale, axis.y * scale)

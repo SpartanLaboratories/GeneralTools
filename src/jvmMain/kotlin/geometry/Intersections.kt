@@ -15,9 +15,9 @@ private val log = LoggerFactory.getLogger("com.spartanlabs.geometry.Intersection
  * along-wall ray, a sliding swept-collision contact) is real and cannot be
  * expressed by a single nullable point.
  */
-sealed interface SegmentIntersection {
+public sealed interface SegmentIntersection {
     /** The two segments do not meet anywhere. */
-    data object None : SegmentIntersection
+    public data object None : SegmentIntersection
 
     /**
      * The two segments meet at exactly one [point] — a proper crossing, a
@@ -25,7 +25,7 @@ sealed interface SegmentIntersection {
      *
      * @property point the single intersection point.
      */
-    data class Touching(val point: Point) : SegmentIntersection
+    public data class Touching(val point: Point) : SegmentIntersection
 
     /**
      * The two segments are collinear and share the sub-segment [segment], which
@@ -34,7 +34,7 @@ sealed interface SegmentIntersection {
      * @property segment the overlapping portion, oriented along the first
      *   segment.
      */
-    data class Overlapping(val segment: Segment) : SegmentIntersection
+    public data class Overlapping(val segment: Segment) : SegmentIntersection
 }
 
 //endregion
@@ -57,7 +57,7 @@ sealed interface SegmentIntersection {
  *   degenerate ([Segment.length] `< EPSILON`) or contains `NaN`; otherwise
  *   `Result.success` of one [SegmentIntersection] variant.
  */
-fun segmentIntersectsSegment(s1: Segment, s2: Segment): Result<SegmentIntersection> {
+public fun segmentIntersectsSegment(s1: Segment, s2: Segment): Result<SegmentIntersection> {
     if (s1.a.containsNaN || s1.b.containsNaN || s2.a.containsNaN || s2.b.containsNaN) {
         log.warn("segmentIntersectsSegment: NaN coordinate in {} or {}", s1, s2)
         return Result.failure(IllegalArgumentException("Segments must have finite coordinates"))
@@ -128,7 +128,7 @@ fun segmentIntersectsSegment(s1: Segment, s2: Segment): Result<SegmentIntersecti
  *   otherwise `Result.success` of the boolean (a segment fully outside the box
  *   yields `success(false)`).
  */
-fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean> {
+public fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean> {
     boxProblem(box)?.let {
         log.warn("segmentIntersectsBox: {}", it)
         return Result.failure(IllegalArgumentException(it))
@@ -185,7 +185,7 @@ fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean> {
  *   otherwise `Result.success(tEntry)` where `tEntry > 0` is measured in units
  *   of `r.direction.length` (use [Ray.pointAt] or [Ray.unit]).
  */
-fun rayIntersectsBox(r: Ray, box: AxisAlignedBox): Result<Double?> {
+public fun rayIntersectsBox(r: Ray, box: AxisAlignedBox): Result<Double?> {
     boxProblem(box)?.let {
         log.warn("rayIntersectsBox: {}", it)
         return Result.failure(IllegalArgumentException(it))

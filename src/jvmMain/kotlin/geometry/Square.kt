@@ -13,7 +13,7 @@ package com.spartanlabs.geometry
  * comes from the interface default. The fields and constructor are unchanged,
  * so this is purely additive.
  */
-data class Square (
+public data class Square (
     /** The top-left (minimum-x, minimum-y) corner of the square. */
     var location:Point = Point(x = 0.0,y = 0.0),
     /** The width and height of the square */

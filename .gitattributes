@@ -1,2 +1,4 @@
 # Reference files compared byte-for-byte by the build (checkKotlinAbi) stay LF whatever core.autocrlf is.
 api/*.api text eol=lf
+# The stored Yarn lock stays LF whichever system wrote it; the build's lock check ignores line endings.
+kotlin-js-store/**/yarn.lock text eol=lf

@@ -85,6 +85,8 @@ named levels on every target; an unknown level fails the build, and left unset e
 ./gradlew jvmTest -PtestLevel=integration     # a JVM-only level: skip the web test tasks, which still start Node
 ```
 
+After a Kotlin Gradle plugin bump, run `./gradlew kotlinUpgradeYarnLock` and commit `kotlin-js-store/`.
+
 ## Releasing
 
 Releases are published to Maven Central **manually** by a maintainer; there is no CI publish workflow, and

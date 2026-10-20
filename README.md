@@ -68,6 +68,15 @@ downloads when it is missing; the first JS or Wasm test run also downloads Node.
 ./gradlew updateKotlinAbi       # rewrite the dumps after an intended API change; commit the diff
 ```
 
+Tests live in `com.spartanlabs.testing.<level>.<package>`, one folder per level: `gating`, `component`,
+`integration`, `deterministic`, `e2e`, `nonfunctional`, `uat`. `-PtestLevel=<level>[,<level>]` runs only the
+named levels on every target; an unknown level fails the build, and left unset every level runs.
+
+```sh
+./gradlew check -PtestLevel=gating,component
+./gradlew jvmTest -PtestLevel=integration     # a JVM-only level: skip the web test tasks, which still start Node
+```
+
 ## Releasing
 
 Releases are published to Maven Central **manually** by a maintainer — there is

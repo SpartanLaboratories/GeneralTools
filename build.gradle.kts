@@ -1,4 +1,5 @@
 import org.gradle.api.attributes.java.TargetJvmVersion
+import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -84,6 +85,31 @@ kotlin {
 }
 
 tasks.withType<Test>().configureEach { useJUnitPlatform() }   // JVM tests run on the JUnit 5 platform
+
+//region -PtestLevel
+val testLevels = listOf("gating", "component", "integration", "deterministic", "e2e", "nonfunctional", "uat")
+
+/** Parses `-PtestLevel`; blank entries are ignored, duplicates dropped, an unknown level is the failure. */
+fun parseTestLevels(raw: String?, known: List<String>): Result<List<String>> {
+    val requested = raw.orEmpty().split(',').map(String::trim).filter(String::isNotEmpty).distinct()
+    val unknown = requested.filterNot(known::contains)
+    return if (unknown.isEmpty()) Result.success(requested)
+    else Result.failure(IllegalArgumentException("Unknown -PtestLevel $unknown; expected a comma-separated subset of $known"))
+}
+
+val selectedTestLevels: List<String> =
+    parseTestLevels(providers.gradleProperty("testLevel").orNull, testLevels)
+        .getOrElse { throw GradleException(it.message ?: "Invalid -PtestLevel", it) }   // the one place the Result is unwrapped
+
+if (selectedTestLevels.isNotEmpty()) logger.lifecycle("Test levels selected: $selectedTestLevels")
+
+tasks.withType<AbstractTestTask>().configureEach {
+    if (selectedTestLevels.isNotEmpty()) {
+        filter.isFailOnNoMatchingTests = false   // a level with no tests on a target is a green no-op
+        selectedTestLevels.forEach { level -> filter.includeTestsMatching("com.spartanlabs.testing.$level.*") }
+    }
+}
+//endregion
 
 mavenPublishing {
     publishToMavenCentral()

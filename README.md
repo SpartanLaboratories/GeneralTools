@@ -54,8 +54,10 @@ Everything below is common code, available on the `jvm`, `js` and `wasmJs` targe
     and `capitalizeEveryWord`.
   - `UserActions` — AWT screenshot capture and input automation. **JVM only.**
   - `Color` — immutable RGBA value type: transforms plus hex / packed-int codecs.
+  - `ExperimentalForInheritanceGeneralToolsApi` — opt-in marker for subclassing `TwoDoubles`.
 - **`com.spartanlabs.geometry`**
-  - `Point` / `Dimensions`, `TwoDoubles` — 2D coordinate / size pairs.
+  - `Point` / `Dimensions` — 2D coordinate / size pairs.
+  - `TwoDoubles` — abstract base; subclassing is Experimental.
   - `AxisAlignedBox` — shared read-only box contract, implemented by `Square`
     (top-left origin) and `CenteredBox` (centre origin).
   - `Segment`, `Ray` — line primitives.
@@ -153,6 +155,9 @@ composites as immutable and do not mutate shared components):
 - `Square(location, dimensions)` — top-left origin.
 - `CenteredBox(center, halfExtents)` — centre origin; `CenteredBox.fromCorners(c1, c2)`.
 
+`TwoDoubles` is abstract. Subclassing it needs `@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)` and may
+change in a minor release; using `Point`, `Dimensions` or a `TwoDoubles` parameter needs no opt-in.
+
 `AxisAlignedBox` is the shared read-only contract (`min`, `max`, `center`,
 `size`, `contains(p)`); both `Square` and `CenteredBox` implement it, and the
 box-intersection functions accept either. Convert with `Square.toCenteredBox()`
@@ -232,3 +237,4 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | `kotlin-logging: initializing... active logger factory: Slf4jLoggerFactory` printed once on stdout | kotlin-logging 8 prints a startup line the first time any GeneralTools code that holds a logger runs | Start the JVM with `-Dkotlin-logging.logStartupMessage=false`, or set `KOTLIN_LOGGING_STARTUP_MESSAGE=false` (JS: the same name in `process.env`). |
 | New WARN lines when a geometry call returns a failed `Result`; alert or log-scrape rules written for the 2.x WARN text stop matching | Each expected failure now logs one WARN line through a shared helper: `<message>: <function>: <values>`, under the unchanged logger names. `TwoDoubles.divideBy(0.0)` still throws `IllegalArgumentException("Cannot divide by zero")` and logs at ERROR. | Match on logger name and level rather than text; silence `com.spartanlabs.geometry` in your backend if the volume is a problem. Exception messages are byte-identical to 2.x. |
 | `Unresolved reference: Logger` / `MessageBuilder` / `IJColor` from `com.spartanlabs.logging`; `NoClassDefFoundError` at runtime | The package is removed; it printed one green ANSI line and nothing else used it | Use slf4j or kotlin-logging, or `println("\u001b[92m$message\u001b[0m")` for the same output. |
+| `when (x) { is Point -> ...; is Dimensions -> ... }` over a `TwoDoubles` with no `else` reports a non-exhaustive `when` | `TwoDoubles` is no longer `sealed` | Add an `else` branch. |

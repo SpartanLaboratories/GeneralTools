@@ -171,6 +171,45 @@ as-built record once implementation ends.
 - **Why:** the sibling entries in README "Modules" (`UserActions`, `Color`, the geometry entries) use an em dash. The user
   chose (2026-10-20) consistency with them over the plan's ASCII hyphen.
 
+### `two-doubles` — commit (a) adds one import to `TwoDoubles.kt`, not two
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §7 "Commit (a) - unseal", `TwoDoubles.kt` row: "add the two
+  imports it needs (`ExperimentalForInheritanceGeneralToolsApi`)".
+- **What differs:** `TwoDoubles.kt` gains one import, `com.spartanlabs.generaltools.ExperimentalForInheritanceGeneralToolsApi`.
+  The other import of the §6.2 listing, `com.spartanlabs.generaltools.failure`, is not added.
+- **Why:** the row's parenthesis names only the marker, and nothing in commit (a) calls `failure`; it is first used by
+  commit (b)'s `divideBy`, which adds it. An import with no use in (a) would only produce an unused-import warning.
+
+### `two-doubles` — commit (a) gives `TwoDoubles` its own README "Modules" bullet
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §8, row (a), "Modules" column: "`TwoDoubles` line: 'abstract
+  base; subclassing is Experimental'", and "Migration rows" column, whose Fix cell reads "add an `else` branch".
+- **What differs:** the shared bullet "`Point` / `Dimensions`, `TwoDoubles` — 2D coordinate / size pairs." is split in
+  two: "`Point` / `Dimensions` — 2D coordinate / size pairs." and "`TwoDoubles` — abstract base; subclassing is
+  Experimental." The migration row's Fix cell starts with a capital: "Add an `else` branch."
+- **Why:** the README had no line for `TwoDoubles` alone, so the plan's "`TwoDoubles` line" is read as a bullet of its
+  own carrying the plan's text verbatim. The capital matches every other Fix cell of the migration table.
+
+### `two-doubles` — four `TwoDoubles` class-KDoc pieces land in the commit where each becomes true
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §6.2, the `TwoDoubles` listing and the table after it that says
+  which commit adds each element.
+- **What differs:** the listing's final class KDoc holds four pieces that the table assigns to no commit. The user decided
+  (2026-10-20) that each lands in the commit where it becomes true, using the §6.2 listing text:
+  - the `@property first` / `@property second` tags: commit (a);
+  - the `### Thread safety` section ("Instances are not synchronised."): commit (a), placed after "Subclassing
+    (Experimental)" until commit (c) adds "Equality and hash keys" before it;
+  - the rewritten intro paragraph ("Provides the in-place arithmetic, equality and destructuring shared by its
+    subclasses; ..."): commit (d), once destructuring exists. Until then the 2.x intro stays;
+  - the sentence "A subclass's state lives in [first] and [second]; give it a plain class and, if it needs value-returning
+    operators, extension functions such as those in the `com.spartanlabs.geometry.arithmetic` package.": commit (e),
+    once that package exists.
+- **Why:** the plan's table covers every other element of the listing per commit, and adding these four earlier would make
+  the KDoc describe members or a package that do not exist yet.
+- **Related, kept as written:** the marker's KDoc (§6.1, commit (a)) links `[SupportedExtension]`, which does not exist
+  until commit (e). The user decided (2026-10-20) to keep the link; it is unresolved in (a)-(d) and resolves when (e)
+  lands. It does not affect compilation or the dumps.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`
@@ -192,3 +231,27 @@ as-built record once implementation ends.
   (`com.spartanlabs.geometry.{Point,Vectors,Intersections,Segment,TwoDoubles}`).
   The message text embeds `Double.toString`, so `js` prints whole doubles without `.0` (`(0, 0)`, `Ray(origin=0, 0, ...)`)
   while `wasmJs` prints them as the JVM does (`(0.0, 0.0)`).
+
+### `two-doubles` — commit (a), A4: the klib dump diff is laid out differently from the §11 (a) prediction
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §11 row (a), "Expected dump delta (A4)", and §3 A4 ("the
+  implementer reconciles every line of `git diff -- api/` with the ledger, records any difference").
+- **JVM dump (`api/GeneralTools.api`):** matches the prediction line for line. `TwoDoubles` loses the two synthetic
+  accessor `<init>` forms and gains `protected fun <init> ()V`, `protected fun <init> (DD)V`,
+  `public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V` and
+  `protected fun <init> (Lcom/spartanlabs/geometry/TwoDoubles;)V`; the header stays `public abstract class`; the
+  annotation class `com/spartanlabs/generaltools/ExperimentalForInheritanceGeneralToolsApi` appears. `Point` and
+  `Dimensions` are unchanged.
+- **klib dump (`api/GeneralTools.klib.api`):** the content changes are the predicted ones, but the diff differs from the
+  prediction in three ways:
+  - the dump groups top-level declarations by kind, so the `TwoDoubles` block moves from after `Square` (among the
+    `final class` entries) to after `SegmentIntersection` (before them). `git diff -U0` shows the whole 26-line `sealed
+    class` block deleted and a 29-line `abstract class` block added, not a one-line modality change;
+  - the two constructor entries print without a visibility keyword: `constructor <init>(com.spartanlabs.geometry/TwoDoubles)`
+    and `constructor <init>(kotlin/Double = ..., kotlin/Double = ...)`, followed by a blank line;
+  - the annotation entry is `open annotation class com.spartanlabs.generaltools/ExperimentalForInheritanceGeneralToolsApi :
+    kotlin/Annotation` with a body line `constructor <init>()`, placed at the top of the dump.
+  Below the header and the new constructor lines, the block's 24 lines (21 member lines, two blank lines and the closing
+  brace) are byte-identical before and after.
+- **Status:** accepted under A4; difference recorded for the planner's ledger correction (decided 2026-10-20). The dumps
+  are kept exactly as `updateKotlinAbi` wrote them.

@@ -1,5 +1,6 @@
 package com.spartanlabs.geometry
 
+import com.spartanlabs.generaltools.ExperimentalForInheritanceGeneralToolsApi
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 /** Logger used for diagnostic output from this file's functions. */
@@ -9,10 +10,32 @@ private val log = KotlinLogging.logger("com.spartanlabs.geometry.TwoDoubles")
  * Base class for any type represented by a pair of Doubles, such as a 2D
  * point or a width/height pair. Provides shared arithmetic and comparison
  * operations for its subclasses.
+ *
+ * ### Using it
+ * Taking a `TwoDoubles` as a parameter, calling any member, and using [Point] or [Dimensions] need no
+ * opt-in. The class is abstract, so `TwoDoubles` itself cannot be instantiated, and it has no abstract
+ * members, so a subclass implements nothing.
+ *
+ * ### Subclassing (Experimental)
+ * Subclassing is gated by [ExperimentalForInheritanceGeneralToolsApi], an ERROR-level opt-in, because the
+ * seam has not yet been proven by a consumer and may change in a minor release. A subclass opts in with
+ * `@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)` and calls a `protected` constructor.
+ * These members are final, so every subclass keeps the invariants: [first], [second], [setTo], [modBy],
+ * [amplifyBy], [divideBy], the four assignment operators and [containsNaN]. [toString] stays open.
+ *
+ * ### Thread safety
+ * Instances are not synchronised.
+ *
+ * @property first the first component; `var`, written in place by every mutating member.
+ * @property second the second component; `var`.
  */
-public sealed class TwoDoubles(public var first: Double = 0.0, public var second:Double = 0.0){
-    /** Creates a new instance with the same values as [doubles] */
-    protected constructor(doubles: TwoDoubles): this(doubles.first, doubles.second)
+@SubclassOptInRequired(ExperimentalForInheritanceGeneralToolsApi::class)
+public abstract class TwoDoubles protected constructor(
+    public var first: Double = 0.0,
+    public var second: Double = 0.0,
+) {
+    /** Creates a new instance with the same values as [doubles]. */
+    protected constructor(doubles: TwoDoubles) : this(doubles.first, doubles.second)
     /** True if either [first] or [second] is NaN */
     public val containsNaN: Boolean get() = first.isNaN() || second.isNaN()
     /** Sets [first] and [second] to the given values */

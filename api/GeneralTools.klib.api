@@ -6,6 +6,10 @@
 // - Show declarations: true
 
 // Library unique name: <io.github.spartanlaboratories:GeneralTools>
+open annotation class com.spartanlabs.generaltools/ExperimentalForInheritanceGeneralToolsApi : kotlin/Annotation { // com.spartanlabs.generaltools/ExperimentalForInheritanceGeneralToolsApi|null[0]
+    constructor <init>() // com.spartanlabs.generaltools/ExperimentalForInheritanceGeneralToolsApi.<init>|<init>(){}[0]
+}
+
 abstract interface com.spartanlabs.geometry/AxisAlignedBox { // com.spartanlabs.geometry/AxisAlignedBox|null[0]
     abstract val center // com.spartanlabs.geometry/AxisAlignedBox.center|{}center[0]
         abstract fun <get-center>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/AxisAlignedBox.center.<get-center>|<get-center>(){}[0]
@@ -51,6 +55,35 @@ sealed interface com.spartanlabs.geometry/SegmentIntersection { // com.spartanla
         final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/SegmentIntersection.None.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.spartanlabs.geometry/SegmentIntersection.None.toString|toString(){}[0]
     }
+}
+
+abstract class com.spartanlabs.geometry/TwoDoubles { // com.spartanlabs.geometry/TwoDoubles|null[0]
+    constructor <init>(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.<init>|<init>(com.spartanlabs.geometry.TwoDoubles){}[0]
+    constructor <init>(kotlin/Double = ..., kotlin/Double = ...) // com.spartanlabs.geometry/TwoDoubles.<init>|<init>(kotlin.Double;kotlin.Double){}[0]
+
+    final val containsNaN // com.spartanlabs.geometry/TwoDoubles.containsNaN|{}containsNaN[0]
+        final fun <get-containsNaN>(): kotlin/Boolean // com.spartanlabs.geometry/TwoDoubles.containsNaN.<get-containsNaN>|<get-containsNaN>(){}[0]
+
+    final var first // com.spartanlabs.geometry/TwoDoubles.first|{}first[0]
+        final fun <get-first>(): kotlin/Double // com.spartanlabs.geometry/TwoDoubles.first.<get-first>|<get-first>(){}[0]
+        final fun <set-first>(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.first.<set-first>|<set-first>(kotlin.Double){}[0]
+    final var second // com.spartanlabs.geometry/TwoDoubles.second|{}second[0]
+        final fun <get-second>(): kotlin/Double // com.spartanlabs.geometry/TwoDoubles.second.<get-second>|<get-second>(){}[0]
+        final fun <set-second>(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.second.<set-second>|<set-second>(kotlin.Double){}[0]
+
+    final fun amplifyBy(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.amplifyBy|amplifyBy(kotlin.Double){}[0]
+    final fun divAssign(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.divAssign|divAssign(kotlin.Double){}[0]
+    final fun divideBy(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.divideBy|divideBy(kotlin.Double){}[0]
+    final fun minusAssign(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.minusAssign|minusAssign(com.spartanlabs.geometry.TwoDoubles){}[0]
+    final fun modBy(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.modBy|modBy(com.spartanlabs.geometry.TwoDoubles){}[0]
+    final fun modBy(kotlin/Double, kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.modBy|modBy(kotlin.Double;kotlin.Double){}[0]
+    final fun plusAssign(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.plusAssign|plusAssign(com.spartanlabs.geometry.TwoDoubles){}[0]
+    final fun setTo(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.setTo|setTo(com.spartanlabs.geometry.TwoDoubles){}[0]
+    final fun setTo(kotlin/Double, kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.setTo|setTo(kotlin.Double;kotlin.Double){}[0]
+    final fun timesAssign(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.timesAssign|timesAssign(kotlin.Double){}[0]
+    open fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/TwoDoubles.equals|equals(kotlin.Any?){}[0]
+    open fun hashCode(): kotlin/Int // com.spartanlabs.geometry/TwoDoubles.hashCode|hashCode(){}[0]
+    open fun toString(): kotlin/String // com.spartanlabs.geometry/TwoDoubles.toString|toString(){}[0]
 }
 
 final class com.spartanlabs.generaltools/Color { // com.spartanlabs.generaltools/Color|null[0]
@@ -240,32 +273,6 @@ final class com.spartanlabs.geometry/Square : com.spartanlabs.geometry/AxisAlign
     final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/Square.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/Square.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.spartanlabs.geometry/Square.toString|toString(){}[0]
-}
-
-sealed class com.spartanlabs.geometry/TwoDoubles { // com.spartanlabs.geometry/TwoDoubles|null[0]
-    final val containsNaN // com.spartanlabs.geometry/TwoDoubles.containsNaN|{}containsNaN[0]
-        final fun <get-containsNaN>(): kotlin/Boolean // com.spartanlabs.geometry/TwoDoubles.containsNaN.<get-containsNaN>|<get-containsNaN>(){}[0]
-
-    final var first // com.spartanlabs.geometry/TwoDoubles.first|{}first[0]
-        final fun <get-first>(): kotlin/Double // com.spartanlabs.geometry/TwoDoubles.first.<get-first>|<get-first>(){}[0]
-        final fun <set-first>(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.first.<set-first>|<set-first>(kotlin.Double){}[0]
-    final var second // com.spartanlabs.geometry/TwoDoubles.second|{}second[0]
-        final fun <get-second>(): kotlin/Double // com.spartanlabs.geometry/TwoDoubles.second.<get-second>|<get-second>(){}[0]
-        final fun <set-second>(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.second.<set-second>|<set-second>(kotlin.Double){}[0]
-
-    final fun amplifyBy(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.amplifyBy|amplifyBy(kotlin.Double){}[0]
-    final fun divAssign(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.divAssign|divAssign(kotlin.Double){}[0]
-    final fun divideBy(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.divideBy|divideBy(kotlin.Double){}[0]
-    final fun minusAssign(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.minusAssign|minusAssign(com.spartanlabs.geometry.TwoDoubles){}[0]
-    final fun modBy(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.modBy|modBy(com.spartanlabs.geometry.TwoDoubles){}[0]
-    final fun modBy(kotlin/Double, kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.modBy|modBy(kotlin.Double;kotlin.Double){}[0]
-    final fun plusAssign(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.plusAssign|plusAssign(com.spartanlabs.geometry.TwoDoubles){}[0]
-    final fun setTo(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.setTo|setTo(com.spartanlabs.geometry.TwoDoubles){}[0]
-    final fun setTo(kotlin/Double, kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.setTo|setTo(kotlin.Double;kotlin.Double){}[0]
-    final fun timesAssign(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.timesAssign|timesAssign(kotlin.Double){}[0]
-    open fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/TwoDoubles.equals|equals(kotlin.Any?){}[0]
-    open fun hashCode(): kotlin/Int // com.spartanlabs.geometry/TwoDoubles.hashCode|hashCode(){}[0]
-    open fun toString(): kotlin/String // com.spartanlabs.geometry/TwoDoubles.toString|toString(){}[0]
 }
 
 final const val com.spartanlabs.geometry/EPSILON // com.spartanlabs.geometry/EPSILON|{}EPSILON[0]

@@ -1,5 +1,6 @@
 package com.spartanlabs.geometry
 
+import com.spartanlabs.generaltools.ExperimentalForInheritanceGeneralToolsApi
 import com.spartanlabs.generaltools.failure
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.math.pow
@@ -10,7 +11,12 @@ private val log = KotlinLogging.logger("com.spartanlabs.geometry.Point")
 
 /**
  * Represents a point in 2D space with an [x] and [y] coordinate
+ *
+ * Final: equality is keyed on the concrete class, so to define another coordinate pair extend [TwoDoubles]
+ * (Experimental) instead of this class.
  */
+// Extending TwoDoubles is Experimental; using Point is not.
+@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)
 public class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
     /** Creates a new Point with the same coordinates as [point] */
     public constructor(point: Point) : this(point.x, point.y)
@@ -35,7 +41,12 @@ public class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
 }
 /**
  * Represents a 2D size with a [width] and [height]
+ *
+ * Final: equality is keyed on the concrete class, so to define another coordinate pair extend [TwoDoubles]
+ * (Experimental) instead of this class.
  */
+// Extending TwoDoubles is Experimental; using Point is not.
+@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)
 public class Dimensions(width:Double = 0.0,height: Double = 0.0) : TwoDoubles(width,height){
     /** Creates a new Dimensions with the same width and height as [dimensions] */
     public constructor(dimensions:Dimensions) : this(dimensions.width,dimensions.height)

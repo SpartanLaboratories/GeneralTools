@@ -8,8 +8,9 @@ import kotlin.test.assertTrue
 
 /**
  * Level 2 (Isolated Component Behaviour) coverage for TwoDoubles.
- * TwoDoubles is sealed and abstract, so its behavior is exercised here through
- * its concrete subclass Point. Point/Dimensions-specific behavior (x/y, width/height,
+ * TwoDoubles is abstract, so its behavior is exercised here through its concrete
+ * subclass Point; the subclassing seam is covered by TwoDoublesSubclassTest.
+ * Point/Dimensions-specific behavior (x/y, width/height,
  * distanceFrom, etc.) is covered separately in PointTest.
  */
 class TwoDoublesTest {

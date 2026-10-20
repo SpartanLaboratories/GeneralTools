@@ -1,67 +1,14 @@
+@file:JvmMultifileClass
+@file:JvmName("MiscKt")
+// Shares the JVM facade class MiscKt with MiscJvm.kt; keep the two file annotations in step.
+
 package com.spartanlabs.generaltools
 
-// Intended Function
-//      Java Standard Library
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileReader
-import java.net.MalformedURLException
-import java.net.URL
-import java.util.function.Predicate
-//      Kotlin Standard Library
+import kotlin.jvm.JvmMultifileClass
+import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
-
-// Programming Generics
-//      Logging
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-/** Logger used for diagnostic output from this file's functions. */
-private val log: Logger = LoggerFactory.getLogger("com.spartanlabs.generaltools.Misc")
-
-/**
- * Will capitalize the first letter of each word in this String
- */
-public fun String.capitalizeEveryWord(): String =
-    split(' ').map{it.capitalize()} .toString().let {
-        it.substring(1,it.length-1).replace(",","")
-    }
-/**
- * Takes a String that is supposed to be a valid URL and returns a URL
- * Throws a MalformedURLException if a String that is not a valid URL is given
- */
-@Throws(MalformedURLException::class) public fun String.asURL(): URL {
-    log.debug("Parsing '{}' as a URL", this)
-    return URL(this)
-}
-/**
- * Reads the text file at the specified location and returns a list of
- * Strings designating each line in the file which was read
- */
-public fun read(textFile:String): List<String> {
-    log.debug("Reading file at path '{}'", textFile)
-    val lines = BufferedReader(FileReader(File(textFile))).readLines()
-    log.debug("Read {} line(s) from '{}'", lines.size, textFile)
-    return lines
-}
-/**
- * Takes in a list of objects of a specified type as well as
- * a predicate that takes one of those objects and return a boolean
- * <br>
- * This function will then test each item in the list against the predicate
- * If any item returns true then the function will return true
- * If no items return true then the function will return false
- */
-public fun <T>evaluateList(list:Iterable<T>, validator: Predicate<T>):Boolean{
-    for(t in list)if(validator.test(t)){
-        log.trace("Item '{}' satisfied the predicate", t)
-        return true
-    }
-    log.trace("No items satisfied the predicate")
-    return false
-}
 
 /**
  * Takes in a string that describes the action that is being taken
@@ -71,14 +18,12 @@ public fun <T>evaluateList(list:Iterable<T>, validator: Predicate<T>):Boolean{
  */
 @OptIn(ExperimentalTime::class)
 public fun profile(nameOfAction:String, action:()->Unit): String = "$nameOfAction took ${measureTime(action).inWholeMilliseconds}ms"
-/** Logs the action name and how long it took to execute it*/
-public fun Logger.time(actionName:String,action:()->Unit): Unit = info(profile(actionName,action))
 
 /**
  * allows catching multiple exceptions following a runCatching
  * <br>
- * Note: this function is inline and public, so it can't reference the file's
- * private [log] instance directly - logging around exception recovery is left
+ * Note: this function is inline and public, so it can't reference a
+ * file-private logger directly - logging around exception recovery is left
  * to the caller.
  */
 public inline fun <R, T : R> Result<T>.onException(

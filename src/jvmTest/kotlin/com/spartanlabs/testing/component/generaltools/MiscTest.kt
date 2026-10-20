@@ -1,0 +1,62 @@
+package com.spartanlabs.testing.component.generaltools
+
+import com.spartanlabs.generaltools.forEvery
+import com.spartanlabs.generaltools.forEveryIndexed
+import com.spartanlabs.generaltools.onException
+import com.spartanlabs.generaltools.profile
+import com.spartanlabs.generaltools.trimIfLongerThan
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+/**
+ * Level 2 (Isolated Component Behaviour) coverage for the platform-neutral helpers in Misc.kt. They take
+ * lambdas as their only collaborators, so there is nothing to mock.
+ */
+class MiscTest {
+    @Test
+    fun `profile reports the action name and a duration`() {
+        val result = profile("sample action") { }
+        assertTrue(result.startsWith("sample action took"))
+        assertTrue(result.endsWith("ms"))
+    }
+
+    @Test
+    fun `onException transforms a matching exception`() {
+        val result = runCatching<Int> { throw IllegalStateException("boom") }
+            .onException(IllegalStateException::class) { -1 }
+        assertEquals(Result.success(-1), result)
+    }
+
+    @Test
+    fun `onException rethrows an unmatched exception`() {
+        val result = runCatching<Int> { throw IllegalStateException("boom") }
+            .onException(NumberFormatException::class) { -1 }
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+    }
+
+    @Test
+    fun `forEveryIndexed provides the index and item for each element`() {
+        val collected = mutableListOf<Pair<Int, String>>()
+        listOf("a", "b", "c") forEveryIndexed { index, item -> collected.add(index to item) }
+        assertEquals(listOf(0 to "a", 1 to "b", 2 to "c"), collected)
+    }
+
+    @Test
+    fun `forEvery visits every item`() {
+        val collected = mutableListOf<Int>()
+        listOf(1, 2, 3) forEvery { collected.add(it) }
+        assertEquals(listOf(1, 2, 3), collected)
+    }
+
+    @Test
+    fun `trimIfLongerThan trims strings longer than the given length`() {
+        assertEquals("hello", "hello world" trimIfLongerThan 5)
+    }
+
+    @Test
+    fun `trimIfLongerThan leaves shorter strings unchanged`() {
+        assertEquals("hi", "hi" trimIfLongerThan 5)
+    }
+}

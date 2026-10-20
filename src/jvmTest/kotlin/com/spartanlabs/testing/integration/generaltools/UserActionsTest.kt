@@ -1,7 +1,11 @@
-package com.spartanlabs.generaltools
+package com.spartanlabs.testing.integration.generaltools
 
+import com.spartanlabs.generaltools.cropImage
+import com.spartanlabs.generaltools.saveTo
+import com.spartanlabs.generaltools.screenshotArea
+import com.spartanlabs.generaltools.screenshotFull
+import com.spartanlabs.generaltools.to
 import org.junit.jupiter.api.Assumptions.assumeFalse
-import org.slf4j.LoggerFactory
 import java.awt.GraphicsEnvironment
 import java.awt.Toolkit
 import java.awt.image.BufferedImage
@@ -10,9 +14,11 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Level 3 (Integration & External Interfaces) coverage for UserActions.kt. It writes and copies real files and
+ * captures the real screen (the screenshot tests are skipped when headless).
+ */
 class UserActionsTest {
-    private val log = LoggerFactory.getLogger(UserActionsTest::class.java)
-
     private fun sampleImage(width: Int = 20, height: Int = 20): BufferedImage =
         BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB).apply {
             for (x in 0 until width) for (y in 0 until height) {
@@ -22,7 +28,6 @@ class UserActionsTest {
 
     @Test
     fun `cropImage returns an image with the requested dimensions`() {
-        log.info("Running cropImage test")
         val original = sampleImage(50, 50)
 
         val cropped = cropImage(original, 5, 5, 10, 10)
@@ -33,7 +38,6 @@ class UserActionsTest {
 
     @Test
     fun `BufferedImage to saves a png file at the given path`() {
-        log.info("Running BufferedImage#to test")
         val image = sampleImage()
         val tempPath = File.createTempFile("user-actions-test", "").absolutePath
 
@@ -48,7 +52,6 @@ class UserActionsTest {
 
     @Test
     fun `File saveTo copies a file with a png extension`() {
-        log.info("Running File#saveTo test")
         val source = sampleImage() to File.createTempFile("user-actions-source", "").absolutePath
         val destinationPath = File.createTempFile("user-actions-dest", "").absolutePath
         val destination = File("$destinationPath.png")
@@ -65,7 +68,6 @@ class UserActionsTest {
     @Test
     fun `screenshotFull captures an image the size of the screen`() {
         assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping screenshot test: no display available")
-        log.info("Running screenshotFull test")
         val screenSize = Toolkit.getDefaultToolkit().screenSize
 
         val screenshot = screenshotFull()
@@ -77,7 +79,6 @@ class UserActionsTest {
     @Test
     fun `screenshotArea captures the requested region`() {
         assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping screenshot test: no display available")
-        log.info("Running screenshotArea test")
 
         val screenshot = screenshotArea(0, 0, 10, 10)
 

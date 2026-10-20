@@ -124,3 +124,28 @@ as-built record once implementation ends.
 - **Why:** the clause was already gone. `kmp-build`'s `0f6ddde` rewrote the intro (`git log -S "logging wrapper"
   -- README.md` lists it as the last commit to touch the text), and the intro at `978c4a6` names no logging wrapper
   in any form. L6's "remove whichever form is present" therefore removes nothing.
+
+### `commonize` — commit 1 names the other file in `MiscJvm.kt`'s facade comment
+
+- **Plan:** [plan-commonize.md](plan-commonize.md) §5.4, `MiscJvm.kt`: "The same line comment about the facade sits under
+  its annotations", where the comment for `Misc.kt` reads `// Shares the JVM facade class MiscKt with MiscJvm.kt; keep the
+  two file annotations in step.`
+- **What differs:** in `MiscJvm.kt` the comment reads `// Shares the JVM facade class MiscKt with Misc.kt; keep the two
+  file annotations in step.` Only the file name differs.
+- **Why:** copied literally, the comment in `MiscJvm.kt` would say the file shares the facade with itself. Naming the
+  other half keeps the purpose of the comment: each file points at its partner.
+
+### `commonize` — commit 1 checks the `MiscKt` facade on its public members (`javap -public -s`)
+
+- **Plan:** [plan-commonize.md](plan-commonize.md) R3 ("`javap -s` of `MiscKt` before and after the split is identical")
+  and §9 "Per-commit extra checks", commit 1 and 2 (`javap -s ... | sort`, "expected: no output", with the note that
+  `javap` without `-p` lists public members only).
+- **What differs:** the facade criterion is "public members identical": `javap -public -s` of `MiscKt` before and after
+  the split, compared, plus the JVM dump check (`git diff --exit-code HEAD -- api/`). The plan's `javap -s` comparison
+  is not empty after the split: it loses the `static {};` initializer (with its `descriptor: ()V`) and the
+  `Compiled from "Misc.kt"` line.
+- **Why:** the plan assumed plain `javap` lists only public members. It also prints the class initializer and the
+  SourceFile line. After the split the private slf4j logger and its class initializer live in the part class
+  `MiscKt__MiscJvmKt`, and a multifile facade has no single source file. Neither line is API. The JVM dump and all ten
+  public signatures and descriptors on `MiscKt` are unchanged (assumption A7 as the architecture defines it), so the user
+  accepted the split (2026-10-20) on the public-members criterion.

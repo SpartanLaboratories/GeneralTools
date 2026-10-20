@@ -34,12 +34,14 @@ findings live in the file it names.
     Maven-only consumers switch to `GeneralTools-jvm`.
   - `TwoDoubles` is no longer `sealed`. Subclassing it is Experimental, behind an ERROR-level
     opt-in marker.
-  - `TwoDoubles.divideBy` returns a `Result` instead of throwing, and logs at WARN instead of
-    ERROR.
+  - `TwoDoubles.divideBy` divides in place and returns `Result<Unit>` instead of throwing. A zero
+    divisor leaves the value unchanged and logs at WARN instead of ERROR. It divides each component
+    directly, so its results can differ from 2.x's reciprocal product by one unit in the last place.
   - `evaluateList` takes a `(T) -> Boolean` and moves to common code.
   - The `com.spartanlabs.logging` package is removed.
-  - `Square` gets a new name, and its `location` and `dimensions` references become read-only
-    (`val`). The `Point` and `Dimensions` it holds stay mutable.
+  - `Square` is renamed `Rectangle`, and its `location` and `dimensions` references become
+    read-only (`val`). The `Point` and `Dimensions` it holds stay mutable.
+    `AxisAlignedBox.toSquare()` becomes `toRectangle()`.
   - `TwoDoubles` equality becomes lawful: NaN equals NaN, `-0.0` hashes like `0.0`, and `0.0`
     still equals `-0.0`.
   - `Color`'s public constructor validates its channels: a value outside `0..255` throws
@@ -50,10 +52,17 @@ findings live in the file it names.
 
   Each break is clean, with no deprecation cycle. The public API dump changes by exactly the
   signature changes in this set; the behaviour changes get tests of their own.
-- **Kept as in 2.x.** `Point` and `Dimensions` stay mutable, with their in-place members. `Color`
-  keeps its public constructor and its public `copy`.
-- **Added.** The renamed `Square` gains a method that returns an immutable copy of itself, as a new
-  immutable type.
+- **Kept as in 2.x.**
+  - `Point` and `Dimensions` stay mutable, with their in-place members.
+  - `/=` still throws `IllegalArgumentException` for a zero divisor, now without a log line.
+  - `Rectangle`'s `min` and `size` still return its live `location` and `dimensions`.
+  - `Color` keeps its public constructor and its public `copy`.
+- **Added.**
+  - `Rectangle.toImmutable()` returns an `ImmutableRectangle`, a new immutable type.
+  - `AxisAlignedBox` gains `minX`, `minY`, `maxX`, `maxY`, `width` and `height` accessors with
+    default bodies, and its `contains` becomes an operator (`p in box`).
+  - `Point` gains `unaryMinus`.
+  - Every `TwoDoubles` destructures into its two components.
 - **Not part of the change.** `src/test/resources/keys.txt` is already deleted on `master`. Moving
   the test sources neither moves nor modifies it, and bringing `master` into the branch removes it
   there.
@@ -544,12 +553,12 @@ call is stated with its options and a recommendation.
     unequal; only NaN-versus-NaN pairs become equal. The migration notes state it as a contract
     change. Because the types are mutable, a `Point` used as a hash key must not change while it
     is in the map; the KDoc carries that warning and points to the immutable copy as the safe key.
-  - `Square` gets a new name. Its `location` and `dimensions` references become `val`, so a holder
-    can no longer swap the parts, while the parts themselves stay mutable. It stays a
+  - `Square` is renamed `Rectangle`. Its `location` and `dimensions` references become `val`, so a
+    holder can no longer swap the parts, while the parts themselves stay mutable. It stays a
     `data class`: `copy()` remains a shallow copy that shares the parts, as in 2.x, and its KDoc
     says so.
-  - The renamed type's `toImmutable()` returns a new final, immutable type of four `Double`s (`x`,
-    `y`, `width`, `height`) that implements `AxisAlignedBox`.
+  - `Rectangle.toImmutable()` returns an `ImmutableRectangle`: a final, immutable type of four
+    `Double`s (`x`, `y`, `width`, `height`) that implements `AxisAlignedBox`.
     - Its `equals`, `hashCode` and `toString` are written by hand to follow the same equality
       contract; a generated data class would split `0.0` from `-0.0`. It is never equal to the
       mutable type.
@@ -559,7 +568,7 @@ call is stated with its options and a recommendation.
       defensively today.
   - `AxisAlignedBox` gains accessors with default bodies: `minX`, `minY`, `maxX`, `maxY`, `width`
     and `height` (Stable Core).
-    - The renamed type, `CenteredBox` and the immutable type override them without allocating.
+    - `Rectangle`, `CenteredBox` and `ImmutableRectangle` override them without allocating.
     - `contains` and the intersection functions read them, so the hot paths stop allocating per
       read. Without them, `rayIntersectsBox` makes up to nine allocations per call on a
       `CenteredBox`.
@@ -569,72 +578,60 @@ call is stated with its options and a recommendation.
     - they would spread through every `Point` parameter;
     - they cannot carry `equals`;
     - as an untried seam they would need an opt-in, which defeats a type meant to be handed out.
-  - There are no `Point`-returning `plus`, `minus`, `times` or `div` operators. Kotlin reports
-    `a += b` on a `var` as ambiguous when `plus` returns a subtype of the variable's type. Such
-    operators would therefore break every `var` holder that uses `+=` (none is known, but external
-    consumers are), and could not be added later in a minor either.
-  - `divAssign` gets a block body. Over a `Result`-returning `divideBy`, an expression body would no
-    longer return `Unit`.
+  - **Names.** `Rectangle` is the mutable box and `ImmutableRectangle` its immutable copy. The plain
+    name goes to the mutable type, as it does for `Point` and `Dimensions`, and `Immutable*` is the
+    convention of Guava and kotlinx.collections.immutable. `java.awt.Rectangle` (which
+    `UserActions.kt` imports), libGDX and SpartanGraphics' planned shape share the name; a file that
+    needs two of them imports one under an alias.
+  - **`divideBy`** divides in place and returns `Result<Unit>`, in the same family as `setTo`,
+    `modBy` and `amplifyBy`, with no factory hook. A discarded result is harmless: a success has
+    already happened, and a failure has already been logged with the value left unchanged. It
+    divides each component directly. `49.0 * (1/49.0)` is `0.9999999999999999` where
+    `49.0 / 49.0` is `1.0`, and a subnormal divisor's reciprocal overflows to Infinity. Results can
+    therefore differ from 2.x by one unit in the last place, and the migration notes say so.
+  - **`/=` with a zero divisor** throws `IllegalArgumentException("Cannot divide by zero")` without
+    logging, exactly as 2.x does apart from the dropped ERROR line. The operator throws and the
+    named function reports, as Kotlin's own `get` and `getOrNull` do. `divAssign` gets a block
+    body, because over a `Result`-returning `divideBy` an expression body would no longer return
+    `Unit`.
+  - **`Rectangle.min` and `size`** keep returning the live `location` and `dimensions`, as in 2.x,
+    while `max` and `center` return fresh points. An `AxisAlignedBox`-typed handle to a live
+    `Rectangle` therefore still exposes its parts; the immutable copy is the protection.
+  - **Operators.** Every operator that fits these types without making existing code ambiguous is
+    added:
+    - `Point.unaryMinus()` returns the negated point. `Dimensions` has none, because a negative size
+      is not a valid size.
+    - `component1()` and `component2()` on `TwoDoubles` return `first` and `second`, so
+      `val (x, y) = point` and `val (w, h) = dimensions` destructure, as Compose's `Offset` and
+      `Size` do. `Rectangle`, as a data class, already destructures into `location` and
+      `dimensions`.
+    - `AxisAlignedBox.contains` becomes an `operator`, so `p in box` reads naturally;
+      `box contains p` still works.
+
+    No downstream code declares its own operators on these types or destructures them, so none of
+    the additions shadows or changes existing code. Not added:
+    - `unaryPlus`, which has no meaning beyond identity and would either alias a mutable value or
+      copy it unannounced;
+    - `inc`, `dec`, `compareTo` and `rangeTo`, which have no geometric meaning;
+    - `get`, because the components have names and an index would add an out-of-range failure;
+    - `plus`, `minus`, `times` and `div` returning `Point` or `Dimensions`. With `plusAssign` and
+      its siblings present, Kotlin reports `a += b` on a `var` as ambiguous when `plus` returns a
+      subtype of the variable's type. They would therefore break every `var` holder that uses `+=`,
+      and could not be added later in a minor either.
 
   Evidence: [`mutable-geometry-model.md`](mutable-geometry-model.md).
-- **Trade-off that needs a call: the name pair.** The conversion is `toImmutable()` with any pair,
-  and `AxisAlignedBox.toSquare()` takes the new name.
-  1. `Rectangle` / `ImmutableRectangle`. It describes itself, and gives the plain name to the
-     mutable type, as `Point` and `Dimensions` have. `Immutable*` is the convention of Guava and
-     kotlinx.collections.immutable. The name is shared with `java.awt.Rectangle` (imported in this
-     repository's own `UserActions.kt`), libGDX, and SpartanGraphics' planned shape `Rectangle`.
-  2. `TopLeftBox` / `ImmutableTopLeftBox`. It uses the "Box" vocabulary of `AxisAlignedBox` and
-     `CenteredBox`, and no collision was found, but it is unfamiliar and long.
-  3. `MutableRectangle` / `Rectangle`. It uses Kotlin's `Mutable*` prefix, but `Point` would then be
-     mutable while `Rectangle` is immutable.
-  4. `Bounds` / `ImmutableBounds`.
-  5. `MutableRect` / `Rect`: Compose's pair, which collides with Compose and with SpartanGraphics.
+- **Trade-off that needs a call: import-gated arithmetic operators.** `plus`, `minus`, `times` and
+  `div` could be offered as extension operators in a separate package such as
+  `com.spartanlabs.geometry.operators`. Only a file that imports them meets the `+=` ambiguity, so
+  code that does not opt in is untouched.
+  - Offer them now, as a Supported Extension. Arithmetic then reads naturally where it is wanted,
+    with three costs:
+    - a file that imports the package and uses `+=` on a `var` holder stops compiling;
+    - a wildcard import brings them in silently;
+    - a later member `plus` would shadow them.
+  - Leave them out of 3.0.0. Any later minor can add them without a break, once a consumer asks.
 
-  Recommendation: 1.
-- **Trade-off that needs a call: `/=` when the divisor is zero.**
-  - Throw `IllegalArgumentException("Cannot divide by zero")` without logging. It is identical to
-    2.x, and matches Kotlin's own pairing of an operator that throws with a named function that
-    reports.
-  - Log at WARN and leave the value unchanged. That gives one zero policy for the type, but it
-    changes how `/=` behaves.
-  - IEEE division silently produces Infinity and NaN positions, and dropping the operator is a
-    further break.
-
-  No downstream code uses `/=` on a `Point`. Recommendation: throw.
-- **Trade-off that needs a call: `divideBy`'s shape.**
-  - Divide in place and return `Result<Unit>`. It belongs to the same family as `setTo`, `modBy`
-    and `amplifyBy`, and needs no factory hook. A discarded result is harmless: a success has
-    already happened, and a failure has already been logged with the value left unchanged.
-  - Return the receiver inside the `Result` (`Result<Point>` on `Point`). This needs a covariant
-    override of a `Result` return that no comparable code was found to use.
-  - Return a new instance. `p divideBy 2.0` written as a statement would then compile and do
-    nothing.
-
-  Recommendation: in place, `Result<Unit>`.
-- **Trade-off that needs a call: `divideBy`'s arithmetic.**
-  - Divide each component. `49.0 * (1/49.0)` is `0.9999999999999999` while `49.0 / 49.0` is `1.0`,
-    and a subnormal divisor's reciprocal overflows to Infinity. The change is at most one unit in
-    the last place on some inputs, inside a method whose contract already changes, and no known
-    caller depends on the last bit.
-  - Keep 2.x's reciprocal product, which leaves results bit-identical.
-
-  Recommendation: divide each component, with a migration note.
-- **Trade-off that needs a call: `min` and `size` of the renamed type.**
-  - Keep returning the live `location` and `dimensions`, as in 2.x. There is no behaviour change,
-    but an `AxisAlignedBox`-typed handle to a live box still exposes mutable parts.
-  - Return copies, as `max` and `center` already do. Every `AxisAlignedBox` handle then becomes
-    safe for reads, but it is a behaviour change beyond the listed breaks. No known caller reads
-    them.
-
-  Recommendation: keep them live; the immutable copy is the protection.
-- **Trade-off that needs a call: non-assigning operators.**
-  - None, for the reason above.
-  - `unaryMinus` only. It has no assign counterpart, so it never conflicts and could also be added
-    later without a break.
-  - Arithmetic without the ambiguity could come later as import-gated extension operators in a
-    separate package.
-
-  Recommendation: none in 3.0.0.
+  Recommendation: leave them out of 3.0.0.
 - **Rejected for `TwoDoubles`.** A recursive generic `TwoDoubles<T>`: it breaks every plain
   `TwoDoubles` reference. An interface: it cannot carry `equals`/`hashCode`.
 
@@ -712,19 +709,21 @@ call is stated with its options and a recommendation.
     rather than adopting the caller's instance.
   - `Actor.isAtDestination` (`==` on `Point`) changes only when both positions are NaN, where
     equality is now reflexive.
-  - The renamed type's `toString()` prints its new name.
+  - `Rectangle`'s `toString()` prints `Rectangle(...)` where 2.x printed `Square(...)`.
   - MyGameClient's `Portrait` builds a `Color` from channels it receives over the network. A value
     outside `0..255` now throws while rendering, so untrusted input belongs with `Color.of`, which
     clamps.
   - MyGameClient's own `Color.lightened` extension stays shadowed by the GeneralTools member of the
     same name, as it has been since 2.1.0.
 - **In this repository.**
-  - These files change: `TwoDoubles.kt`; `Square.kt`, which is renamed; `AxisAlignedBox.kt`;
-    `CenteredBox.kt`; `Intersections.kt` (the primitive accessors); `Color.kt` (validation and
-    `toHex`); and `Misc.kt`, which splits.
-  - `CenteredBox.kt` keeps its file name, so its JVM facade `CenteredBoxKt` stays.
-  - New: the immutable type, the marker, and the internal helpers.
-  - `Point.kt`, `Segment.kt` and `Vectors.kt` change only in logging and the failure helper.
+  - These files change: `TwoDoubles.kt`; `Square.kt`, which becomes `Rectangle.kt`;
+    `AxisAlignedBox.kt`; `CenteredBox.kt`; `Intersections.kt` (the primitive accessors); `Color.kt`
+    (validation and `toHex`); and `Misc.kt`, which splits.
+  - `Square.kt` declares no top-level functions, so renaming the file changes no JVM facade.
+    `CenteredBox.kt` keeps its file name, so its facade `CenteredBoxKt` stays.
+  - New: `ImmutableRectangle`, the marker, and the internal helpers.
+  - `Point.kt` gains `unaryMinus`. Otherwise it, `Segment.kt` and `Vectors.kt` change only in
+    logging and the failure helper.
   - `Ray.kt` is unchanged, and `UserActions.kt` moves without change.
   - `com.spartanlabs.logging` is deleted.
   - Every slf4j logger field in common code moves to kotlin-logging, and the 12 failure sites move
@@ -733,23 +732,29 @@ call is stated with its options and a recommendation.
     - `SquareTest`'s reassignment of `location`, which uses `setTo` instead;
     - `ColorTest`'s "primary constructor does not clamp", which now expects
       `IllegalArgumentException`;
-    - `PointTest`'s `divAssign`-by-zero test, only if `/=` stops throwing;
     - tests that name `Square`, which follow the rename.
+
+    `PointTest`'s `divAssign`-by-zero test already expects `IllegalArgumentException`, and `/=`
+    still throws it, so that test stays as it is.
 - **The dump ledger.** Against the 2.2.0 baseline:
   - `Square` (19 members) and the four `com.spartanlabs.logging` classes leave.
-  - The renamed type (24 members, no setters), the immutable type and the marker arrive.
+  - `Rectangle` (24 members, no setters), `ImmutableRectangle` and the marker arrive.
   - `AxisAlignedBox` gains six accessors (with `$DefaultImpls`), and `CenteredBox` six overrides.
-  - `CenteredBoxKt`'s two conversions take the new name.
+  - `CenteredBoxKt`'s two conversions name `Rectangle`, and `toSquare` becomes `toRectangle`.
   - `MiscKt.evaluateList` takes a `Function1`.
   - `TwoDoubles` loses its two synthetic constructors and `divideBy (D)V`. It gains three
-    `protected` constructors and `divideBy-IoAF18A (D)Ljava/lang/Object;`, and its `equals` and
-    `hashCode` become `final`.
-  - `Point`, `Dimensions`, `Segment`, `Ray`, `Color`, `IntersectionsKt`, `VectorsKt` and
-    `UserActionsKt` show no diff.
+    `protected` constructors, `divideBy-IoAF18A (D)Ljava/lang/Object;`, `component1 ()D` and
+    `component2 ()D`, and its `equals` and `hashCode` become `final`.
+  - `Point` gains `unaryMinus ()Lcom/spartanlabs/geometry/Point;`.
+  - `Dimensions`, `Segment`, `Ray`, `Color`, `IntersectionsKt`, `VectorsKt` and `UserActionsKt`
+    show no diff.
 
-  What the dump cannot show gets a test or a smoke-build check of its own: unsealing, the opt-in
-  gate, equality, `divideBy`'s semantics, `Color`'s validation, `trimIfLongerThan`,
-  `capitalizeEveryWord`, and the `/=` and `min`/`size` choices.
+  The JVM dump does not record the `operator` modifier, so `contains` becoming an operator leaves
+  it unchanged. What the dump cannot show gets a test or a smoke-build check of its own: unsealing,
+  the opt-in gate, equality, `divideBy`'s semantics, `/=` still throwing for a zero divisor,
+  `Rectangle.min` and `size` still returning the live parts, the operator forms (`-p`,
+  `val (x, y) = p`, `p in box`), `Color`'s validation, `trimIfLongerThan` and
+  `capitalizeEveryWord`.
 - **Documentation.** The README's intro, coordinates, modules, build-and-test, releasing, `Color`
   and geometry quick-reference sections change, and a migration-notes section is added.
   `docs/plans/1-color-methods/plan.md` and `docs/plans/3-geometry-primitives/plan.md` each get a

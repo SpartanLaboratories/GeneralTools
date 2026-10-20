@@ -666,8 +666,11 @@ call is stated with its options and a recommendation.
   be in `0..255` and throws `IllegalArgumentException` otherwise. `copy` goes through the same
   constructor, so it validates too and needs no copy-visibility annotation. `Color.of` still clamps.
   Every factory (`of`, `fromNormalized`, `fromPackedInt`, `fromHex`) and every transform already
-  produces in-range channels. A caller that passed out-of-range values, which 2.x accepted
-  silently, now gets an exception, and the migration notes name that behaviour change. A
+  produces in-range channels, with one exception: `fromHex` given a sign character, such as
+  `"#-1-1-1"`, parses each channel to `-1`. That input now throws `IllegalArgumentException`, which
+  `fromHex`'s KDoc already promises for non-hex digits. A caller that passed out-of-range values,
+  which 2.x accepted silently, now gets an exception, and the migration notes name both behaviour
+  changes. A
   validating public constructor keeps every existing `Color(...)` call compiling while enforcing
   the `0..255` contract that the 2.x KDoc only stated, so the dump keeps `Color`'s constructor and
   `copy`. The `internal` constructor studied in
@@ -723,9 +726,11 @@ call is stated with its options and a recommendation.
   - `Square.kt` declares no top-level functions, so renaming the file changes no JVM facade.
     `CenteredBox.kt` keeps its file name, so its facade `CenteredBoxKt` stays.
   - New: `ImmutableRectangle`, the marker, and the internal helpers.
-  - `Point.kt` gains `unaryMinus`. Otherwise it, `Segment.kt` and `Vectors.kt` change only in
-    logging and the failure helper.
-  - `Ray.kt` is unchanged, and `UserActions.kt` moves without change.
+  - Every source file gains explicit-API visibility modifiers. Beyond those, `Point.kt` gains
+    `unaryMinus`, and it, `Segment.kt` and `Vectors.kt` change only in logging and the failure
+    helper.
+  - `Ray.kt` and `UserActions.kt` change only by those modifiers, and `UserActions.kt` moves to
+    JVM-only code.
   - `com.spartanlabs.logging` is deleted.
   - Every slf4j logger field in common code moves to kotlin-logging, and the 12 failure sites move
     to the failure helper. `UserActions.kt` and the JVM part of `Misc` keep slf4j.

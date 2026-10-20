@@ -1,3 +1,6 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinMultiplatform
+import com.vanniktech.maven.publish.SourcesJar
 import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.Test
@@ -15,6 +18,7 @@ plugins {
 }
 
 group = "io.github.spartanlaboratories"
+version = "2.2.0"
 
 repositories {
     mavenCentral()
@@ -112,9 +116,11 @@ tasks.withType<AbstractTestTask>().configureEach {
 //endregion
 
 mavenPublishing {
-    publishToMavenCentral()
+    publishToMavenCentral()                     // upload only; releasing is the maintainer's explicit step
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GeneralTools", "2.2.0")
+    // The artifactId must equal rootProject.name (settings.gradle.kts): vanniktech rewrites the target artifact ids from it.
+    coordinates(project.group.toString(), "GeneralTools", project.version.toString())
+    configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty(), sourcesJar = SourcesJar.Sources()))
 
     pom {
         name.set("General Tools")

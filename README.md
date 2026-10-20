@@ -79,18 +79,21 @@ named levels on every target; an unknown level fails the build, and left unset e
 
 ## Releasing
 
-Releases are published to Maven Central **manually** by a maintainer — there is
-no CI publish workflow. With Sonatype (Central Portal) credentials and a GPG
-signing key configured as Gradle properties (`mavenCentralUsername` /
-`mavenCentralPassword`, `signingInMemoryKey` / `signingInMemoryKeyPassword`),
-bump the version in `build.gradle.kts`, then:
+Releases are published to Maven Central **manually** by a maintainer; there is no CI publish workflow, and
+nothing is uploaded or published until the maintainer explicitly starts the release. A Central release cannot
+be undone, so the upload and the release are separate steps.
 
-```sh
-./gradlew publishAndReleaseToMavenCentral
-```
+Put the Central Portal user token and a signing key-ring file in `~/.gradle/gradle.properties`:
+`mavenCentralUsername`, `mavenCentralPassword`, `signing.keyId`, `signing.password`, `signing.secretKeyRingFile`.
 
-Tag the released commit `X.Y.Z` and create a matching GitHub release for the
-record.
+1. Set `version` in `build.gradle.kts`, merge to `master`, and run `./gradlew check` (every level, every target).
+2. `./gradlew publishToMavenCentral` uploads one bundle to the Central Portal and stops; it logs the deployment id.
+   Do not use `publishAndReleaseToMavenCentral`: it publishes as soon as validation passes.
+3. In the Portal, wait for the deployment to be `VALIDATED`, then build a throwaway consumer against the staged
+   bundle through the Portal's download endpoint (Sonatype, "Manually Testing a Deployment Bundle").
+4. Press Publish in the Portal (or drop a bad bundle: `./gradlew dropMavenCentralDeployment --deployment-id=<id>`).
+   The artifacts appear on Maven Central 10 to 30 minutes later; resolve them once from plain `mavenCentral()`.
+5. Tag the merge commit on `master` `X.Y.Z` and create a matching GitHub release; its notes are the migration notes below.
 
 ## `Color` quick reference
 

@@ -15,23 +15,31 @@ see the [3.0.0 migration notes](#300-migration-notes).
 
 ## Maven coordinates
 
-Published to Maven Central as `io.github.spartanlaboratories:GeneralTools:2.2.0`.
+Published to Maven Central as `io.github.spartanlaboratories:GeneralTools:3.0.0`. The coordinate `GeneralTools`
+is the Gradle module-metadata root; each target has its own artifact:
 
-Gradle (Kotlin DSL):
+| Artifact | Contents |
+|---|---|
+| `GeneralTools` | Gradle module metadata that selects the variant of your target; contains no classes |
+| `GeneralTools-jvm` | the JVM jar |
+| `GeneralTools-js` | the JS klib |
+| `GeneralTools-wasm-js` | the Wasm/JS klib |
+
+Gradle (Kotlin DSL), in a JVM or a Multiplatform project; Gradle selects the variant:
 
 ```kotlin
 dependencies {
-    implementation("io.github.spartanlaboratories:GeneralTools:2.2.0")
+    implementation("io.github.spartanlaboratories:GeneralTools:3.0.0")   // in commonMain.dependencies of a multiplatform project
 }
 ```
 
-Maven:
+Maven does not read Gradle module metadata, so depend on the JVM artifact:
 
 ```xml
 <dependency>
     <groupId>io.github.spartanlaboratories</groupId>
-    <artifactId>GeneralTools</artifactId>
-    <version>2.2.0</version>
+    <artifactId>GeneralTools-jvm</artifactId>
+    <version>3.0.0</version>
 </dependency>
 ```
 
@@ -185,5 +193,6 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| A Maven build resolves `GeneralTools:3.0.0` but every `com.spartanlabs` import is unresolved | `GeneralTools` is now the multiplatform root: it holds Gradle module metadata and no classes, and Maven does not read it | Depend on `io.github.spartanlaboratories:GeneralTools-jvm:3.0.0`. Gradle builds need no change. |
 | A Kotlin/JS or Kotlin/Wasm build reports an incompatible klib ABI version for GeneralTools | The `js` and `wasm-js` klibs are built by Kotlin 2.4 and carry its ABI version; `languageVersion` cannot lower it | Build with Kotlin 2.4 or newer. Kotlin/Wasm is Beta, so its klib compatibility guarantees are not final. |
 | A JVM build reports that GeneralTools `was compiled with an incompatible version of Kotlin` (actual metadata version 2.2.0) | The JVM variant is compiled with language and API version 2.2 and requires `kotlin-stdlib` 2.2.0 | Build with Kotlin 2.1 or newer. |

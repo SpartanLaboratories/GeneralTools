@@ -1,0 +1,297 @@
+public final class com/spartanlabs/generaltools/Color {
+	public static final field Companion Lcom/spartanlabs/generaltools/Color$Companion;
+	public fun <init> (IIII)V
+	public synthetic fun <init> (IIIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun copy (IIII)Lcom/spartanlabs/generaltools/Color;
+	public static synthetic fun copy$default (Lcom/spartanlabs/generaltools/Color;IIIIILjava/lang/Object;)Lcom/spartanlabs/generaltools/Color;
+	public final fun darkened (D)Lcom/spartanlabs/generaltools/Color;
+	public static synthetic fun darkened$default (Lcom/spartanlabs/generaltools/Color;DILjava/lang/Object;)Lcom/spartanlabs/generaltools/Color;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAlpha ()I
+	public final fun getBlue ()I
+	public final fun getGreen ()I
+	public final fun getRed ()I
+	public final fun grayscale ()Lcom/spartanlabs/generaltools/Color;
+	public fun hashCode ()I
+	public final fun inverted ()Lcom/spartanlabs/generaltools/Color;
+	public final fun lerp (Lcom/spartanlabs/generaltools/Color;F)Lcom/spartanlabs/generaltools/Color;
+	public final fun lightened (D)Lcom/spartanlabs/generaltools/Color;
+	public static synthetic fun lightened$default (Lcom/spartanlabs/generaltools/Color;DILjava/lang/Object;)Lcom/spartanlabs/generaltools/Color;
+	public final fun luminance ()F
+	public final fun normalized ()[F
+	public final fun toHex (Z)Ljava/lang/String;
+	public static synthetic fun toHex$default (Lcom/spartanlabs/generaltools/Color;ZILjava/lang/Object;)Ljava/lang/String;
+	public final fun toPackedInt ()I
+	public fun toString ()Ljava/lang/String;
+	public final fun withAlpha (I)Lcom/spartanlabs/generaltools/Color;
+}
+
+public final class com/spartanlabs/generaltools/Color$Companion {
+	public final fun fromHex (Ljava/lang/String;)Lcom/spartanlabs/generaltools/Color;
+	public final fun fromNormalized (FFFF)Lcom/spartanlabs/generaltools/Color;
+	public static synthetic fun fromNormalized$default (Lcom/spartanlabs/generaltools/Color$Companion;FFFFILjava/lang/Object;)Lcom/spartanlabs/generaltools/Color;
+	public final fun fromPackedInt (I)Lcom/spartanlabs/generaltools/Color;
+	public final fun getBLACK ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getBLUE ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getCYAN ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getDARK_GRAY ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getGRAY ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getGREEN ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getLIGHT_GRAY ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getMAGENTA ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getORANGE ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getPURPLE ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getRED ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getTRANSPARENT ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getWHITE ()Lcom/spartanlabs/generaltools/Color;
+	public final fun getYELLOW ()Lcom/spartanlabs/generaltools/Color;
+	public final fun of (IIII)Lcom/spartanlabs/generaltools/Color;
+	public static synthetic fun of$default (Lcom/spartanlabs/generaltools/Color$Companion;IIIIILjava/lang/Object;)Lcom/spartanlabs/generaltools/Color;
+}
+
+public final class com/spartanlabs/generaltools/MiscKt {
+	public static final fun asURL (Ljava/lang/String;)Ljava/net/URL;
+	public static final fun capitalizeEveryWord (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun evaluateList (Ljava/lang/Iterable;Ljava/util/function/Predicate;)Z
+	public static final fun forEvery (Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)V
+	public static final fun forEveryIndexed (Ljava/util/Collection;Lkotlin/jvm/functions/Function2;)V
+	public static final fun onException (Ljava/lang/Object;[Lkotlin/reflect/KClass;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun profile (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)Ljava/lang/String;
+	public static final fun read (Ljava/lang/String;)Ljava/util/List;
+	public static final fun time (Lorg/slf4j/Logger;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static final fun trimIfLongerThan (Ljava/lang/String;I)Ljava/lang/String;
+}
+
+public final class com/spartanlabs/generaltools/UserActionsKt {
+	public static final fun cropImage (Ljava/awt/image/BufferedImage;IIII)Ljava/awt/image/BufferedImage;
+	public static final fun openInBrowser (Ljava/lang/String;)V
+	public static final fun saveTo (Ljava/io/File;Ljava/lang/String;)V
+	public static final fun screenshotArea (IIII)Ljava/awt/image/BufferedImage;
+	public static final fun screenshotBrowser (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
+	public static final fun screenshotFull ()Ljava/awt/image/BufferedImage;
+	public static final fun to (Ljava/awt/image/BufferedImage;Ljava/lang/String;)Ljava/io/File;
+}
+
+public abstract interface class com/spartanlabs/geometry/AxisAlignedBox {
+	public fun contains (Lcom/spartanlabs/geometry/Point;)Z
+	public abstract fun getCenter ()Lcom/spartanlabs/geometry/Point;
+	public abstract fun getMax ()Lcom/spartanlabs/geometry/Point;
+	public abstract fun getMin ()Lcom/spartanlabs/geometry/Point;
+	public abstract fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
+}
+
+public final class com/spartanlabs/geometry/AxisAlignedBox$DefaultImpls {
+	public static fun contains (Lcom/spartanlabs/geometry/AxisAlignedBox;Lcom/spartanlabs/geometry/Point;)Z
+}
+
+public final class com/spartanlabs/geometry/CenteredBox : com/spartanlabs/geometry/AxisAlignedBox {
+	public static final field Companion Lcom/spartanlabs/geometry/CenteredBox$Companion;
+	public fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)V
+	public final fun component1 ()Lcom/spartanlabs/geometry/Point;
+	public final fun component2 ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun contains (Lcom/spartanlabs/geometry/Point;)Z
+	public final fun copy (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/CenteredBox;
+	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/CenteredBox;Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;ILjava/lang/Object;)Lcom/spartanlabs/geometry/CenteredBox;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCenter ()Lcom/spartanlabs/geometry/Point;
+	public final fun getHalfExtents ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun getMax ()Lcom/spartanlabs/geometry/Point;
+	public fun getMin ()Lcom/spartanlabs/geometry/Point;
+	public fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/spartanlabs/geometry/CenteredBox$Companion {
+	public final fun fromCorners (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/CenteredBox;
+}
+
+public final class com/spartanlabs/geometry/CenteredBoxKt {
+	public static final fun toCenteredBox (Lcom/spartanlabs/geometry/Square;)Lcom/spartanlabs/geometry/CenteredBox;
+	public static final fun toSquare (Lcom/spartanlabs/geometry/AxisAlignedBox;)Lcom/spartanlabs/geometry/Square;
+}
+
+public final class com/spartanlabs/geometry/Dimensions : com/spartanlabs/geometry/TwoDoubles {
+	public fun <init> ()V
+	public fun <init> (DD)V
+	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/spartanlabs/geometry/Dimensions;)V
+	public final fun getHeight ()D
+	public final fun getWidth ()D
+	public final fun setHeight (D)V
+	public final fun setWidth (D)V
+}
+
+public final class com/spartanlabs/geometry/IntersectionsKt {
+	public static final fun rayIntersectsBox (Lcom/spartanlabs/geometry/Ray;Lcom/spartanlabs/geometry/AxisAlignedBox;)Ljava/lang/Object;
+	public static final fun segmentIntersectsBox (Lcom/spartanlabs/geometry/Segment;Lcom/spartanlabs/geometry/AxisAlignedBox;)Ljava/lang/Object;
+	public static final fun segmentIntersectsSegment (Lcom/spartanlabs/geometry/Segment;Lcom/spartanlabs/geometry/Segment;)Ljava/lang/Object;
+}
+
+public final class com/spartanlabs/geometry/Point : com/spartanlabs/geometry/TwoDoubles {
+	public fun <init> ()V
+	public fun <init> (DD)V
+	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/spartanlabs/geometry/Point;)V
+	public final fun distanceFrom-IoAF18A (Lcom/spartanlabs/geometry/Point;)Ljava/lang/Object;
+	public final fun getX ()D
+	public final fun getY ()D
+	public final fun setX (D)V
+	public final fun setY (D)V
+}
+
+public final class com/spartanlabs/geometry/Ray {
+	public fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)V
+	public final fun component1 ()Lcom/spartanlabs/geometry/Point;
+	public final fun component2 ()Lcom/spartanlabs/geometry/Point;
+	public final fun copy (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/Ray;
+	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/Ray;Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;ILjava/lang/Object;)Lcom/spartanlabs/geometry/Ray;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDirection ()Lcom/spartanlabs/geometry/Point;
+	public final fun getOrigin ()Lcom/spartanlabs/geometry/Point;
+	public fun hashCode ()I
+	public final fun pointAt (D)Lcom/spartanlabs/geometry/Point;
+	public fun toString ()Ljava/lang/String;
+	public final fun unit-d1pmJ48 ()Ljava/lang/Object;
+}
+
+public final class com/spartanlabs/geometry/Segment {
+	public fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)V
+	public final fun asRay-d1pmJ48 ()Ljava/lang/Object;
+	public final fun component1 ()Lcom/spartanlabs/geometry/Point;
+	public final fun component2 ()Lcom/spartanlabs/geometry/Point;
+	public final fun copy (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/Segment;
+	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/Segment;Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;ILjava/lang/Object;)Lcom/spartanlabs/geometry/Segment;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getA ()Lcom/spartanlabs/geometry/Point;
+	public final fun getB ()Lcom/spartanlabs/geometry/Point;
+	public final fun getDelta ()Lcom/spartanlabs/geometry/Point;
+	public final fun getLength ()D
+	public final fun getLengthSquared ()D
+	public fun hashCode ()I
+	public final fun pointAt (D)Lcom/spartanlabs/geometry/Point;
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/spartanlabs/geometry/SegmentIntersection {
+}
+
+public final class com/spartanlabs/geometry/SegmentIntersection$None : com/spartanlabs/geometry/SegmentIntersection {
+	public static final field INSTANCE Lcom/spartanlabs/geometry/SegmentIntersection$None;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/spartanlabs/geometry/SegmentIntersection$Overlapping : com/spartanlabs/geometry/SegmentIntersection {
+	public fun <init> (Lcom/spartanlabs/geometry/Segment;)V
+	public final fun component1 ()Lcom/spartanlabs/geometry/Segment;
+	public final fun copy (Lcom/spartanlabs/geometry/Segment;)Lcom/spartanlabs/geometry/SegmentIntersection$Overlapping;
+	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/SegmentIntersection$Overlapping;Lcom/spartanlabs/geometry/Segment;ILjava/lang/Object;)Lcom/spartanlabs/geometry/SegmentIntersection$Overlapping;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSegment ()Lcom/spartanlabs/geometry/Segment;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/spartanlabs/geometry/SegmentIntersection$Touching : com/spartanlabs/geometry/SegmentIntersection {
+	public fun <init> (Lcom/spartanlabs/geometry/Point;)V
+	public final fun component1 ()Lcom/spartanlabs/geometry/Point;
+	public final fun copy (Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/SegmentIntersection$Touching;
+	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/SegmentIntersection$Touching;Lcom/spartanlabs/geometry/Point;ILjava/lang/Object;)Lcom/spartanlabs/geometry/SegmentIntersection$Touching;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPoint ()Lcom/spartanlabs/geometry/Point;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/spartanlabs/geometry/Square : com/spartanlabs/geometry/AxisAlignedBox {
+	public fun <init> ()V
+	public fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)V
+	public synthetic fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/spartanlabs/geometry/Point;
+	public final fun component2 ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun contains (Lcom/spartanlabs/geometry/Point;)Z
+	public final fun copy (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/Square;
+	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/Square;Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;ILjava/lang/Object;)Lcom/spartanlabs/geometry/Square;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCenter ()Lcom/spartanlabs/geometry/Point;
+	public final fun getDimensions ()Lcom/spartanlabs/geometry/Dimensions;
+	public final fun getLocation ()Lcom/spartanlabs/geometry/Point;
+	public fun getMax ()Lcom/spartanlabs/geometry/Point;
+	public fun getMin ()Lcom/spartanlabs/geometry/Point;
+	public fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun hashCode ()I
+	public final fun setDimensions (Lcom/spartanlabs/geometry/Dimensions;)V
+	public final fun setLocation (Lcom/spartanlabs/geometry/Point;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class com/spartanlabs/geometry/TwoDoubles {
+	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (DDLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lcom/spartanlabs/geometry/TwoDoubles;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun amplifyBy (D)V
+	public final fun divAssign (D)V
+	public final fun divideBy (D)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContainsNaN ()Z
+	public final fun getFirst ()D
+	public final fun getSecond ()D
+	public fun hashCode ()I
+	public final fun minusAssign (Lcom/spartanlabs/geometry/TwoDoubles;)V
+	public final fun modBy (DD)V
+	public final fun modBy (Lcom/spartanlabs/geometry/TwoDoubles;)V
+	public final fun plusAssign (Lcom/spartanlabs/geometry/TwoDoubles;)V
+	public final fun setFirst (D)V
+	public final fun setSecond (D)V
+	public final fun setTo (DD)V
+	public final fun setTo (Lcom/spartanlabs/geometry/TwoDoubles;)V
+	public final fun timesAssign (D)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/spartanlabs/geometry/VectorsKt {
+	public static final field EPSILON D
+	public static final fun cross (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)D
+	public static final fun dot (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)D
+	public static final fun getLength (Lcom/spartanlabs/geometry/Point;)D
+	public static final fun getLengthSquared (Lcom/spartanlabs/geometry/Point;)D
+	public static final fun normalized (Lcom/spartanlabs/geometry/Point;)Ljava/lang/Object;
+	public static final fun projectedOnto (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/Point;
+}
+
+public final class com/spartanlabs/logging/IJColor : java/lang/Enum {
+	public static final field INFO Lcom/spartanlabs/logging/IJColor;
+	public final fun getColorCode ()Ljava/lang/String;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getReset ()Ljava/lang/String;
+	public final fun plus (Ljava/lang/String;)Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/spartanlabs/logging/IJColor;
+	public static fun values ()[Lcom/spartanlabs/logging/IJColor;
+}
+
+public final class com/spartanlabs/logging/Logger {
+	public fun <init> ()V
+	public final fun getInfo ()Lcom/spartanlabs/logging/MessageBuilder;
+	public final fun getPrintToConsole ()Z
+	public final fun info (Ljava/lang/String;)V
+	public final fun setPrintToConsole (Z)V
+}
+
+public final class com/spartanlabs/logging/LoggerKt {
+	public static final fun main ()V
+	public static synthetic fun main ([Ljava/lang/String;)V
+}
+
+public final class com/spartanlabs/logging/MessageBuilder {
+	public fun <init> (ZZZZLcom/spartanlabs/logging/IJColor;)V
+	public synthetic fun <init> (ZZZZLcom/spartanlabs/logging/IJColor;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getColor ()Lcom/spartanlabs/logging/IJColor;
+	public final fun modify (Ljava/lang/String;)Ljava/lang/String;
+}
+

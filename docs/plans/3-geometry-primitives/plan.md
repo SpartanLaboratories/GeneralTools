@@ -1,5 +1,7 @@
 # Plan: issue #3 — geometry Segment / Ray / box primitives + intersection tests + Point vector ops
 
+> **2026-10-19:** In GeneralTools 3.0.0, `Square` becomes `Rectangle` (with `ImmutableRectangle` and primitive accessors on `AxisAlignedBox`), `TwoDoubles` is unsealed with a new equality contract, and the geometry moves to Kotlin Multiplatform common code; see [the 3.0.0 design](../7-kotlin-multiplatform/architecture.md).
+
 > Issue title uses "Aabb"; this plan ships the centre-origin box as
 > **`CenteredBox`** behind a shared **`AxisAlignedBox`** interface (see **D1**).
 

@@ -1,0 +1,2 @@
+# Reference files compared byte-for-byte by the build (checkKotlinAbi) stay LF whatever core.autocrlf is.
+api/*.api text eol=lf

@@ -1,5 +1,7 @@
 # Plan: finish issue #1 — Color downstream methods (tests, fixes, release)
 
+> **2026-10-19:** In GeneralTools 3.0.0, `Color` moves to Kotlin Multiplatform common code, its public constructor validates every channel against `0..255`, and `toHex` no longer uses `String.format`; see [the 3.0.0 design](../7-kotlin-multiplatform/architecture.md).
+
 ## Header / Association
 
 - **Covers:** `SpartanLaboratories/GeneralTools#1` — "Color Methods used

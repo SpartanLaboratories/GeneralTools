@@ -28,7 +28,8 @@ findings live in the file it names.
   `UserActions` stay JVM-only.
 - **Logging.** Common code logs through kotlin-logging, which delegates to slf4j on the JVM, so a
   consumer's logging backend keeps working unchanged. One internal helper logs each expected
-  failure at WARN and builds its `Result.failure`; every failure site goes through it.
+  failure at WARN and builds its `Result.failure`; every failure site goes through it. Exception
+  messages stay as in 2.x, and the WARN line keeps the diagnostic values 2.x logged.
 - **Breaking changes, and only these.**
   - The library becomes multiplatform. Gradle consumers resolve the right variant automatically;
     Maven-only consumers switch to `GeneralTools-jvm`.
@@ -63,6 +64,9 @@ findings live in the file it names.
     default bodies, and its `contains` becomes an operator (`p in box`).
   - `Point` gains `unaryMinus`.
   - Every `TwoDoubles` destructures into its two components.
+  - `plus`, `minus`, `times` and `div` for `Point` and `Dimensions` ship as extension operators in
+    `com.spartanlabs.geometry.arithmetic`, which a file opts into by importing them. They are a
+    Supported Extension, marked with the new `@SupportedExtension` annotation.
 - **Not part of the change.** `src/test/resources/keys.txt` is already deleted on `master`. Moving
   the test sources neither moves nor modifies it, and bringing `master` into the branch removes it
   there.
@@ -458,9 +462,13 @@ call is stated with its options and a recommendation.
   - Loggers keep their explicit names
     (`KotlinLogging.logger("com.spartanlabs.geometry.Intersections")`), so existing logback rules
     still match and JS and Wasm get real names.
-  - One `internal fun <T> KLogger.failure(message: String): Result<T>` builds the
-    `IllegalArgumentException`, logs the message at WARN and returns the failure. All 12 failure
-    sites use it.
+  - One `internal fun <T> KLogger.failure(message: String, detail: (() -> Any?)? = null): Result<T>`
+    builds the `IllegalArgumentException` from `message`, logs at WARN and returns the failure. The
+    WARN line is `message`, followed by the rendered `detail` when one is given. `detail` is
+    evaluated only when WARN is enabled, and it never reaches the exception.
+  - All 12 failure sites use the helper. Each passes its 2.x exception message unchanged as
+    `message`, and the diagnostics its 2.x log line carried (the function name and the offending
+    values) as `detail`. So the exception text stays as in 2.x and the WARN line keeps the values.
   - Logback stays the JVM test backend.
 
   Evidence: [`kotlin-logging-adoption.md`](kotlin-logging-adoption.md).
@@ -528,8 +536,14 @@ call is stated with its options and a recommendation.
     `failOnNoMatchingTests = false`. Left unset, `check` runs every level on every target.
 
   Evidence: [`kmp-test-levels-and-names.md`](kmp-test-levels-and-names.md).
-- **Names.** All 182 backtick test names stay. They contain only letters, digits, spaces, hyphens
-  and apostrophes, which JS and Wasm accept from language version 2.1.
+- **Names.** The 182 backtick test names contain only letters, digits, spaces, hyphens and
+  apostrophes, which JS and Wasm accept from language version 2.1, so the new targets force no
+  rename.
+  - The seven names that mention `Square` or `toSquare` follow the rename to `Rectangle` and
+    `toRectangle`, and `SquareTest` becomes `RectangleTest`.
+  - ColorTest's `primary constructor does not clamp out-of-range channels` takes a name that states
+    its new assertion.
+  - Every other name stays verbatim.
 - **Rejected.**
   - Per-level test tasks per target: the plugin adds every test run to `check`, so each test would
     run once per level, and web test tasks cannot be registered by hand.
@@ -615,24 +629,52 @@ call is stated with its options and a recommendation.
       copy it unannounced;
     - `inc`, `dec`, `compareTo` and `rangeTo`, which have no geometric meaning;
     - `get`, because the components have names and an index would add an out-of-range failure;
-    - `plus`, `minus`, `times` and `div` returning `Point` or `Dimensions`. With `plusAssign` and
-      its siblings present, Kotlin reports `a += b` on a `var` as ambiguous when `plus` returns a
-      subtype of the variable's type. They would therefore break every `var` holder that uses `+=`,
-      and could not be added later in a minor either.
+    - `plus`, `minus`, `times` and `div` as *members* returning `Point` or `Dimensions`. With
+      `plusAssign` and its siblings present, Kotlin reports `a += b` on a `var` as ambiguous when
+      `plus` returns a subtype of the variable's type. Members would therefore break every `var`
+      holder that uses `+=` in every file, and could not be added later in a minor either. The
+      import-gated form below confines that cost to files that opt in.
 
   Evidence: [`mutable-geometry-model.md`](mutable-geometry-model.md).
-- **Trade-off that needs a call: import-gated arithmetic operators.** `plus`, `minus`, `times` and
-  `div` could be offered as extension operators in a separate package such as
-  `com.spartanlabs.geometry.operators`. Only a file that imports them meets the `+=` ambiguity, so
-  code that does not opt in is untouched.
-  - Offer them now, as a Supported Extension. Arithmetic then reads naturally where it is wanted,
-    with three costs:
-    - a file that imports the package and uses `+=` on a `var` holder stops compiling;
-    - a wildcard import brings them in silently;
-    - a later member `plus` would shadow them.
-  - Leave them out of 3.0.0. Any later minor can add them without a break, once a consumer asks.
-
-  Recommendation: leave them out of 3.0.0.
+- **Import-gated arithmetic.** `plus`, `minus`, `times` and `div` for `Point` and `Dimensions` ship
+  as extension operators in `com.spartanlabs.geometry.arithmetic` (one file, `Arithmetic.kt`).
+  - **Gating.** A file sees them only when it imports the package or one of its members. Code that
+    does not import them resolves exactly as in 2.x: an extension outside its declaring package
+    needs an import, and a member always wins over an extension
+    ([`mutable-geometry-model.md`](mutable-geometry-model.md) claims 1 to 3).
+  - **Which combinations.** Those with a geometric meaning in this library:
+    - `Point + Point` and `Point - Point`: vector sum and difference;
+    - `Point + Dimensions` and `Point - Dimensions`: a corner offset by a size, which are the
+      library's own `Rectangle.max` and `CenteredBox.min`/`max` formulas;
+    - `Point * Double`, `Point / Double` and `Double * Point`;
+    - `Dimensions + Dimensions`, `Dimensions - Dimensions`, `Dimensions * Double`,
+      `Dimensions / Double` and `Double * Dimensions`.
+  - **Semantics.** Each operator returns a new value and leaves its operands unchanged. `div` by
+    zero (`0.0` or `-0.0`) throws `IllegalArgumentException("Cannot divide by zero")` without
+    logging, as `/=` does. It divides each component directly, so `p / k` equals what `p /= k`
+    leaves.
+  - **Not offered:**
+    - `Dimensions ± Point`, because a size offset by a position has no meaning;
+    - component-wise products;
+    - operators on consumers' own `TwoDoubles` subclasses, which have no factory to build a
+      result. For those subclasses, the package is the worked example to follow.
+  - **Package name.** `arithmetic` rather than `operators`: the operators that cause no ambiguity
+    (`unaryMinus`, `componentN`, `contains`) stay members, and the package gates only the
+    value-returning arithmetic.
+  - **Accepted costs**, which the KDoc and the migration notes state:
+    - in a file that imports the package, `+=`, `-=`, `*=` and `/=` on a `var` `Point` or
+      `Dimensions` holder are ambiguous and stop compiling. A `val` holder is unaffected.
+    - a wildcard import of the package brings every operator in, and an IDE may add the import
+      when `p + q` does not resolve.
+    - a member operator added later would shadow the extension.
+  - **Tier.** The operators are a Supported Extension: a likely but non-core need, with the same
+    compatibility guarantee as Stable Core. They carry the new `@SupportedExtension` annotation, and
+    the `TwoDoubles` subclassing seam moves onto it when it graduates. The annotation:
+    - lives in `com.spartanlabs.generaltools`;
+    - is `@MustBeDocumented`;
+    - has `BINARY` retention, so a consumer's IDE shows it from the compiled library;
+    - targets classes, functions, properties and type aliases;
+    - is not an opt-in.
 - **Rejected for `TwoDoubles`.** A recursive generic `TwoDoubles<T>`: it breaks every plain
   `TwoDoubles` reference. An interface: it cannot carry `equals`/`hashCode`.
 
@@ -675,6 +717,9 @@ call is stated with its options and a recommendation.
   the `0..255` contract that the 2.x KDoc only stated, so the dump keeps `Color`'s constructor and
   `copy`. The `internal` constructor studied in
   [`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md) is not used.
+- **Supported Extension marker.** `@SupportedExtension`, in `com.spartanlabs.generaltools` beside
+  the opt-in marker, documents the tier and gates nothing; the import-gated arithmetic package is
+  its first user. Its shape is under "Geometry model".
 - **Opt-in marker.** `ExperimentalForInheritanceGeneralToolsApi` in `com.spartanlabs.generaltools`,
   declared `@RequiresOptIn(level = ERROR)`, `@Retention(BINARY)` and `@Target()`. It can therefore
   only be passed to `@SubclassOptInRequired` or `@OptIn`, as with kotlinx.serialization's
@@ -725,7 +770,8 @@ call is stated with its options and a recommendation.
     (validation and `toHex`); and `Misc.kt`, which splits.
   - `Square.kt` declares no top-level functions, so renaming the file changes no JVM facade.
     `CenteredBox.kt` keeps its file name, so its facade `CenteredBoxKt` stays.
-  - New: `ImmutableRectangle`, the marker, and the internal helpers.
+  - New: `ImmutableRectangle`, the opt-in marker, `@SupportedExtension`, the arithmetic file
+    `geometry/arithmetic/Arithmetic.kt`, and the internal helpers.
   - Every source file gains explicit-API visibility modifiers. Beyond those, `Point.kt` gains
     `unaryMinus`, and it, `Segment.kt` and `Vectors.kt` change only in logging and the failure
     helper.
@@ -737,14 +783,21 @@ call is stated with its options and a recommendation.
   - Tests that change by design:
     - `SquareTest`'s reassignment of `location`, which uses `setTo` instead;
     - `ColorTest`'s "primary constructor does not clamp", which now expects
-      `IllegalArgumentException`;
-    - tests that name `Square`, which follow the rename.
+      `IllegalArgumentException` and takes a name that says so;
+    - tests that name `Square`, which follow the rename in their code and their names.
 
     `PointTest`'s `divAssign`-by-zero test already expects `IllegalArgumentException`, and `/=`
     still throws it, so that test stays as it is.
 - **The dump ledger.** Against the 2.2.0 baseline:
   - `Square` (19 members) and the four `com.spartanlabs.logging` classes leave.
-  - `Rectangle` (24 members, no setters), `ImmutableRectangle` and the marker arrive.
+  - `Rectangle` (24 members, no setters), `ImmutableRectangle`, the opt-in marker and the
+    `SupportedExtension` annotation arrive.
+  - The facade `com/spartanlabs/geometry/arithmetic/ArithmeticKt` arrives with twelve operator
+    functions:
+    - `plus` and `minus`, each for `Point` with `Point`, `Point` with `Dimensions`, and
+      `Dimensions` with `Dimensions`;
+    - `times` and `div` on each type with a `Double`;
+    - `times` with a `Double` receiver for each type.
   - `AxisAlignedBox` gains six accessors (with `$DefaultImpls`), and `CenteredBox` six overrides.
   - `CenteredBoxKt`'s two conversions name `Rectangle`, and `toSquare` becomes `toRectangle`.
   - `MiscKt.evaluateList` takes a `Function1`.
@@ -759,8 +812,8 @@ call is stated with its options and a recommendation.
   it unchanged. What the dump cannot show gets a test or a smoke-build check of its own: unsealing,
   the opt-in gate, equality, `divideBy`'s semantics, `/=` still throwing for a zero divisor,
   `Rectangle.min` and `size` still returning the live parts, the operator forms (`-p`,
-  `val (x, y) = p`, `p in box`), `Color`'s validation, `trimIfLongerThan` and
-  `capitalizeEveryWord`.
+  `val (x, y) = p`, `p in box`), the import gating of the arithmetic operators, `Color`'s
+  validation, `trimIfLongerThan` and `capitalizeEveryWord`.
 - **Documentation.** The README's intro, coordinates, modules, build-and-test, releasing, `Color`
   and geometry quick-reference sections change, and a migration-notes section is added.
   `docs/plans/1-color-methods/plan.md` and `docs/plans/3-geometry-primitives/plan.md` each get a

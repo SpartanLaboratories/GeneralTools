@@ -473,10 +473,11 @@ call is stated with its options and a recommendation.
 ### Cross-platform behaviour
 
 - **Found.** The tests that move to `commonTest` keep their expectations on `jvm`, `js` and
-  `wasmJs`, with four exceptions whose subject changes by design: the `Point.toString` test, the
-  `divAssign`-by-zero test (the `divideBy` break), the `Square` test that reassigns `location` (the
-  read-only references), and the `Color` test that expects the constructor not to clamp (the
-  constructor now validates). Tests that name `Square` follow its rename. The one platform
+  `wasmJs`, with three exceptions whose subject changes by design: the `Point.toString` test, the
+  `Square` test that reassigns `location` (the read-only references), and the `Color` test that
+  expects the constructor not to clamp (the constructor now validates). The `divAssign`-by-zero
+  test keeps its expectation, because `/=` still throws. Tests that name `Square` follow its
+  rename. The one platform
   difference a test meets: `Point(1.0, 2.0).toString()` is `"1.0, 2.0"` on the JVM and Wasm but
   `"1, 2"` on JS, which prints a `Double` with JavaScript's number formatting. Evidence:
   [`cross-platform-behaviour-parity.md`](cross-platform-behaviour-parity.md).

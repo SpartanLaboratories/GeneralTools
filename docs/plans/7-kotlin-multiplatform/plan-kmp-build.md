@@ -34,7 +34,7 @@
 | # | Requirement | Acceptance check |
 |---|---|---|
 | R1 | `api/GeneralTools.api` holds the JVM API of tag `2.2.0`, committed before any source or build change: first as the binary-compatibility-validator `0.18.2` dump made with the tag's own build in a scratch copy outside the repository (C1), then restated as the dump the Kotlin Gradle plugin writes for the same classes (C1b), which is the file `checkKotlinAbi` compares against. The restatement is admitted only by the class-file comparison of section 6.3. | `git diff --stat 2.2.0 HEAD -- src/main` is empty at both commits; the file contains the `MiscKt`, `Square`, `logging/Logger` and `distanceFrom-IoAF18A` lines; C1b removes exactly one line (the `TwoDoubles` synthetic default-arguments constructor, section 3) and its body carries the evidence of section 6.3. |
-| R2 | The module is `kotlin("multiplatform") 2.4.21` with targets `jvm()`, `js { nodejs() }` and `@OptIn(ExperimentalWasmDsl::class) wasmJs { nodejs() }`; `kotlin("jvm")` and `java-library` are gone. No Android, native or browser target. The Gradle wrapper stays 9.0.0. | `./gradlew tasks --all` lists `jvmTest`, `jsNodeTest`, `wasmJsNodeTest`; `grep -E 'java-library|kotlin\("jvm"\)' build.gradle.kts` prints nothing. |
+| R2 | The module is `kotlin("multiplatform") 2.4.21` with targets `jvm()`, `js { nodejs() }` and `@OptIn(ExperimentalWasmDsl::class) wasmJs { nodejs() }`; `kotlin("jvm")` and `java-library` are gone. No Android, native or browser target. The Gradle wrapper stays 9.0.0. | `./gradlew tasks --all` lists `jvmTest`, `jsNodeTest`, `wasmJsNodeTest`; the R2 grep of section 9 (Level 1, C2) prints nothing: no line outside a comment names `java-library` or `kotlin("jvm")` (the `plugins {}` comment of 6.2 names both to explain the replacement). |
 | R3 | `languageVersion` and `apiVersion` are exactly 2.2 on the `kotlin {}` extension; `commonMain` declares `api(kotlin-stdlib:2.2.0)`; `jsMain` and `wasmJsMain` declare `api(kotlin-stdlib)` at the plugin's version; `coreLibrariesVersion` is not lowered. | `dependencies --configuration jvmCompileClasspath` shows `kotlin-stdlib:2.2.0` with no `->`; `jsCompileClasspath` and `wasmJsCompileClasspath` show `2.2.0 -> 2.4.21`. |
 | R4 | JVM output is bytecode 17 (toolchain 17, `jvmTarget` 17) and the JVM variant carries an explicit `org.gradle.jvm.version = 17`. | `javap -v` on a compiled class: `major version: 61`, `mv=[2,2,0]`; the published `-jvm` module lists `org.gradle.jvm.version` 17 (spike S4). |
 | R5 | Dependencies sit in source sets: `jvmMain` `api(slf4j-api:2.0.16)` and `implementation(org.apache.directory.studio:org.apache.commons.io:2.4)`; `commonTest` `implementation(kotlin("test"))`; `jvmTest` `implementation(logback-classic:1.5.13)`. kotlin-logging is **not** added (the `logging` unit adds it). | The `-jvm` module metadata (spike S4) lists slf4j-api in the API variant, commons-io only in the runtime variant. |
@@ -42,7 +42,7 @@
 | R7 | `-PtestLevel=<level>[,<level>]` adds `includeTestsMatching("com.spartanlabs.testing.<level>.*")` to every `AbstractTestTask` and sets `failOnNoMatchingTests = false`; levels are `gating`, `component`, `integration`, `deterministic`, `e2e`, `nonfunctional`, `uat`; an unknown level fails the build; unset runs everything. | The matrix in section 9 (Level 1, C4). |
 | R8 | The `mavenPublishing {}` block stays; vanniktech is `0.37.0`; `group` and `version` are set on the project and feed `coordinates(...)`; `configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty(), sourcesJar = SourcesJar.Sources()))` pins the empty-javadoc policy. The publication setup lands at version `2.2.0` (C5a), and the bump to `3.0.0` is a commit of its own (C5b). The artifacts are `GeneralTools`, `GeneralTools-jvm`, `GeneralTools-js`, `GeneralTools-wasm-js`. Nothing is uploaded or published until the maintainer explicitly starts the release. | After C5a, `./gradlew properties -q` prints `group: io.github.spartanlaboratories` and `version: 2.2.0`; after C5b, `version: 3.0.0`; the file-repository rehearsal (S4) shows the four artifact directories. No command in this plan names a `MavenCentral` task. |
 | R9 | CI uses `actions/checkout@v7`, `actions/setup-java@v6` (Temurin 17), `gradle/actions/setup-gradle@v6`, no Node step, no `chmod` step; the executable bit of `gradlew` is committed. | `git ls-files -s gradlew` prints `100755`; the first Actions run is green on `ubuntu-latest`. |
-| R10 | `kotlin-js-store/yarn.lock` (and whatever else the Kotlin plugin writes into `kotlin-js-store/`) is committed. | After `./gradlew build` on a clean checkout, `git status --short kotlin-js-store` is empty. |
+| R10 | `kotlin-js-store/yarn.lock` (and whatever else the Kotlin plugin writes into `kotlin-js-store/`) is committed, stored with LF line endings. The empty `kotlin-js-store/wasm/` directory the plugin creates has nothing to commit. | After `./gradlew build` on a clean checkout, `git status --short kotlin-js-store` is empty; `git ls-files --eol kotlin-js-store/yarn.lock` shows `i/lf`. |
 | R11 | All 14 main files move to `src/jvmMain/kotlin` and all 17 test files to `src/jvmTest/kotlin`, each keeping its subdirectory and **unchanged**; `src/test/resources/logback-test.xml` moves to `src/jvmTest/resources/`. Nothing is common yet; `js`/`wasmJs` compile empty. | `git diff --cached -M --name-status` shows 32 `R100` lines for the moves; `src/main` and `src/test` no longer exist; 185 tests pass in `jvmTest`. |
 | R12 | README: rewritten intro; "Maven coordinates", "Build & test" and "Releasing" rewritten; `## 3.0.0 migration notes` created with this unit's three rows (Maven artifact, web Kotlin 2.4 floor, JVM metadata floor). | Proof-read; section 8. |
 | R13 | The spikes of section 9 (Level 3) are run before the commits they gate, and their outcomes are recorded in the commit bodies. | Commit bodies of C1b, C2, C3 and C5a carry the S1/S2/S3/S4 outcomes. |
@@ -112,6 +112,23 @@ All paths are at the start of the unit (after the `master` merge); line numbers 
   A caller links by name and descriptor, and those are unchanged. Kotlin consumers' reading of the metadata is what the
   `release` smoke matrix checks (architecture A3).
 
+**What the migrated build does while the web targets have no sources** (the C2 tree, and Scratch A as section 9 defines it)
+
+- `./gradlew build` runs `kotlinNodeJsSetup`, `kotlinYarnSetup`, `kotlinNpmInstall` and `kotlinStoreYarnLock`, and `jsNodeTest` and
+  `wasmJsNodeTest` report SKIPPED. The build writes `kotlin-js-store/yarn.lock` (the Mocha tooling closure; the same file S2 wrote with
+  its spike tests) and an empty `kotlin-js-store/wasm/` into the repository. On Windows the lock has CRLF line endings, as yarn writes
+  `build/js/yarn.lock` there. The wasm lock (`build/wasm/yarn.lock`) holds no package, so the plugin stores none.
+- With `abiValidation()`, `updateKotlinAbi` writes `api/GeneralTools.klib.api` as an empty (0-byte) file and leaves
+  `api/GeneralTools.api` byte-identical to C1b. `checkKotlinAbi` fails while the klib file is missing (`Expected file with ABI
+  declarations 'api\GeneralTools.klib.api' does not exist.`) and passes once it exists. With a public common function, the klib dump is
+  a header (`// Klib ABI Dump`, `// Targets: [js, wasmJs]`, the signature version,
+  `// Library unique name: <io.github.spartanlaboratories:GeneralTools>`) plus one line for the function.
+- Gradle 9.0.0 fails `./gradlew checkKotlinAbi updateKotlinAbi` run as one invocation ("Task ':checkKotlinAbi' uses this output of task
+  ':updateKotlinAbi' without declaring an explicit or implicit dependency"); run as separate invocations, both tasks work.
+- A signed publish of the 21 published files to a file repository writes, beside each file, its `.asc` and the checksums `.md5`, `.sha1`,
+  `.sha256` and `.sha512`, and the same four checksums beside each `.asc`: Gradle's own checksum set for any repository.
+- The published `GeneralTools-js` module also depends on `org.jetbrains.kotlin:kotlin-dom-api-compat:2.4.21`.
+
 **Verified outside-world facts this unit rests on** (sources and quotes in
 [`research/kmp-build-and-kotlin-compat.md`](research/kmp-build-and-kotlin-compat.md) and
 [`research/kmp-maven-central-publishing.md`](research/kmp-maven-central-publishing.md); checked again for this plan
@@ -132,6 +149,24 @@ where noted):
   binary-compatibility-validator counts every `protected` member as public
   ([KotlinMetadataVisibilities.kt @ 0.18.2](https://github.com/Kotlin/binary-compatibility-validator/blob/0.18.2/src/main/kotlin/api/KotlinMetadataVisibilities.kt)).
   Read on 2026-10-20; quoted in [`research/README.md`](research/README.md), "API mechanics and proof of the API change".
+- `checkKotlinAbi` needs a committed reference for every dump the plugin writes, the klib dump included: "Expected file with ABI
+  declarations '...' does not exist." ([KotlinAbiCheckTaskImpl.kt @ v2.4.21](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/tasks/abi/KotlinAbiCheckTaskImpl.kt)).
+- The Yarn lock check compares the generated lock with the stored one line by line, ignoring line endings
+  (`contentEqualsIgnoringLineEndings` in [LockStoreTask.kt @ v2.4.21](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/targets/js/npm/LockStoreTask.kt)).
+  It copies the lock only when no stored lock exists or auto-replace is on, and stores no lock that lists no package ("No NPM
+  dependencies detected, and stored lockfile does not exist - skipping copy",
+  [LockCopyTask.kt @ v2.4.21](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/targets/js/yarn/LockCopyTask.kt)).
+  The defaults are mismatch report `FAIL`, report-new-lock `false` and auto-replace `false`
+  ([BaseYarnRootExtension.kt @ v2.4.21](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/targets/web/yarn/BaseYarnRootExtension.kt)).
+- vanniktech 0.37.0 trims checksums only in the Central bundle: "When publishing to Maven Central, redundant checksum files are now
+  excluded by default: checksums of `.asc` signature files ... and the `sha256`/`sha512` checksums"
+  ([CHANGELOG @ 0.37.0](https://github.com/vanniktech/gradle-maven-publish-plugin/blob/0.37.0/CHANGELOG.md)); the filter is
+  `shouldIncludeInDeployment`, applied to the files of the local repository that goes into the deployment
+  ([central/DeploymentFiles.kt @ 0.37.0](https://github.com/vanniktech/gradle-maven-publish-plugin/blob/0.37.0/plugin/src/main/kotlin/com/vanniktech/maven/publish/central/DeploymentFiles.kt)).
+  The bundle therefore carries `.asc`, `.md5` and `.sha1` beside each file, which is what Central requires.
+- The plugin adds `kotlin-dom-api-compat` to Kotlin/JS compilations unless `kotlin.js.stdlib.dom.api.included` is `false`; the default
+  is `true` ([PropertiesProvider.kt @ v2.4.21](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/plugin/PropertiesProvider.kt)).
+  The sources above were read on 2026-10-20.
 - `KotlinMultiplatform(javadocJar: JavadocJar = JavadocJar.Empty(), sourcesJar: SourcesJar = SourcesJar.Sources(), androidVariantsToPublish)`
   is in `com.vanniktech.maven.publish`; `coordinates(groupId, artifactId, version)` and `configure(platform)` are members of the
   `mavenPublishing {}` receiver; signing is required unless the version ends in `-SNAPSHOT`
@@ -152,11 +187,9 @@ where noted):
 | A2 (architecture) | `js` and `wasmJs` compile and test at `languageVersion`/`apiVersion` 2.2 under KGP 2.4.21. Settled by spike S2, which needs a scratch common source because the committed tree has none. | The pins move to `jvm { compilerOptions { ... } }` and the top-level `compilerOptions` block is dropped; the JVM compilation remains the gate for what common code may use. |
 | A8 (architecture) | The published `-jvm` module shows slf4j-api in the API variant, commons-io only at runtime, `kotlin-stdlib` 2.2.0, `org.gradle.jvm.version` 17. Spike S4 checks this as far as a local file-repository publish shows it; the kotlin-logging line cannot be checked until the `logging` unit adds the dependency, and the `release` unit re-runs the same procedure. | The dependency scopes in the source-set blocks are corrected. |
 | A9 (architecture) | vanniktech `0.37.0` signs the four publications with the keyring-file properties and runs under the configuration cache. Spike S5 (needs the maintainer's key ring; run with Gradle reading the user-home properties, never printing them). | The README "Releasing" text and the properties change; no source change. |
-| U1 | `checkKotlinAbi`/`updateKotlinAbi` run with no sources in `commonMain`, `jsMain` and `wasmJsMain`, i.e. with `js`/`wasmJs` compilations that produce no klib. Spike S3. | Contingency in section 10: this unit declares `jvm()` only, and the web targets, their stdlib lines and the Yarn lock arrive with `commonize`'s first common sources; `abiValidation()` still lands here, against the JVM-only build. |
 | U2 | `implementation(kotlin("test"))` in `commonTest` plus `useJUnitPlatform()` resolves the JUnit 5 variant for `jvmTest`, and Gradle 9.0.0 finds the JUnit platform launcher without an explicit dependency (as today's build does). | Add `runtimeOnly("org.junit.platform:junit-platform-launcher:1.10.1")` to `jvmTest` (platform 1.10.1 matches Jupiter 5.10.1 from `kotlin-test-junit5` 2.4.21). |
 | U3 | `val jsMain by getting { ... }` style access works for `jsMain`/`wasmJsMain` in the Kotlin DSL when the targets are declared earlier in the same `kotlin {}` block. | Use `sourceSets.getByName("jsMain").dependencies { ... }`. |
-| U4 | The Yarn lock written on Windows is accepted unchanged on `ubuntu-latest` (`yarnLockMismatchReport` defaults to `FAIL`). | Regenerate on Linux (WSL or container) with `./gradlew kotlinUpgradeYarnLock` and commit the result. |
-| U5 | With no web test sources, `jsNodeTest` and `wasmJsNodeTest` are `NO-SOURCE` and need no Node download; whether the committed tree itself can produce `kotlin-js-store/yarn.lock` is unknown. Spike S2 produces it in the scratch with a throwaway common test. | The lock is produced the same way via `./gradlew kotlinUpgradeYarnLock`; if neither writes it, C6 is deferred to the first `commonize` commit that has web tests. |
+| U4 | The Yarn lock written on Windows lists the same packages as the one the build resolves on `ubuntu-latest` (`yarnLockMismatchReport` defaults to `FAIL`; line endings do not count, section 6.5). | Regenerate on Linux (WSL or container) with `./gradlew kotlinUpgradeYarnLock` and commit the result. |
 
 A3 (Kotlin 2.2.0/2.1.20 consumer compiles) and A4-A7, A10-A12 belong to other units.
 
@@ -198,6 +231,11 @@ Why the web lines exist: an explicit `kotlin-stdlib` in `commonMain` switches of
 Wasm compilers reject a stdlib klib older than themselves. Gradle resolves the web compile classpaths to the higher version, and the web
 variants publish both requirements (the shape Okio publishes). `jvmTest` also resolves stdlib 2.4.21 (through `kotlin-test`), so the
 test run does not prove the 2.2.0 floor; the release smoke matrix does.
+
+The plugin also adds `kotlin-dom-api-compat`, at its own version, to the `js` compilation (`kotlin.js.stdlib.dom.api.included`
+defaults to `true`), so the published `js` variant lists `org.jetbrains.kotlin:kotlin-dom-api-compat:2.4.21` beside the two stdlib
+requirements. The library calls no DOM API; the dependency is the plugin's default for every Kotlin/JS library, and a Kotlin/JS
+consumer's own plugin adds the same artifact to its compilation.
 
 ### 6.2 The end-state `build.gradle.kts`
 
@@ -394,9 +432,15 @@ The Actions run is the proof that it landed: without the bit and without the ste
 
 ### 6.5 Line endings
 
-`.gitattributes` fixes the reference files to LF (`api/*.api text eol=lf`, and from C6 `kotlin-js-store/**/yarn.lock text eol=lf`): `checkKotlinAbi`
-and the Yarn lock check compare files, and a developer's `core.autocrlf=true` would otherwise check them out as CRLF and report a
-difference that is not one.
+`.gitattributes` fixes the reference files to LF: `api/*.api text eol=lf` (C1), and from C6 `kotlin-js-store/**/yarn.lock text eol=lf`.
+
+- **The dumps.** `checkKotlinAbi` compares the committed dumps with the LF files the plugin writes; the rule keeps the checked-out
+  dumps LF whatever `core.autocrlf` is. The rule covers `api/GeneralTools.klib.api` too, empty or not.
+- **The Yarn lock.** The build writes the lock with the platform's line endings (CRLF on Windows), and its lock check compares lines,
+  ignoring line endings; it never rewrites a stored lock that exists (section 3). Line endings therefore cause no mismatch on any
+  system. The rule keeps the stored lock LF in the repository whichever system wrote it, so a lock regenerated on Windows by
+  `kotlinUpgradeYarnLock` shows only its real changes, not a whole-file line-ending change. `**` also covers a
+  `kotlin-js-store/wasm/yarn.lock`, which the plugin writes only once the `wasmJs` side has npm dependencies.
 
 ### 6.6 Publication layout
 
@@ -518,7 +562,12 @@ Made after S1 has passed (section 6.3), and before C2.
 ### C3 - ABI validation
 
 - **modify `build.gradle.kts`**: add the `//region API proof` block (`@OptIn(ExperimentalAbiValidation::class) abiValidation()`) and the `ExperimentalAbiValidation` import.
-- **`api/GeneralTools.api`: no change** (R6). **`api/GeneralTools.klib.api`**: written only if S3 shows `checkKotlinAbi` fails without it; otherwise not created (`commonize` creates it).
+- **`api/GeneralTools.api`: no change** (R6).
+- **create `api/GeneralTools.klib.api`** exactly as `./gradlew updateKotlinAbi` writes it: an empty (0-byte) file. `checkKotlinAbi` needs a
+  committed reference for the klib dump even while `js` and `wasmJs` have no sources (section 3). From the first `commonMain` code on
+  (`logging` commit 1, internal declarations only), the file holds what the plugin writes for the web klibs, expected to be the header
+  alone until `commonize` brings the first public declarations. Run `checkKotlinAbi` and `updateKotlinAbi` as separate invocations:
+  Gradle 9.0.0 fails the two in one invocation.
 - **modify `README.md`**: add `checkKotlinAbi`/`updateKotlinAbi` lines to "Build & test".
 
 ### C4 - `-PtestLevel`
@@ -530,6 +579,9 @@ Made after S1 has passed (section 6.3), and before C2.
 
 - **modify `build.gradle.kts`**: add `version = "2.2.0"` below `group`, so the version that was written into `coordinates(...)` moves onto the project unchanged; in
   `mavenPublishing {}` replace the `coordinates(...)` line with the derived form of 6.2 and add `configure(KotlinMultiplatform(...))` with the three vanniktech imports.
+  The block also gains its two comments from 6.2: `// upload only; releasing is the maintainer's explicit step` at the end of the
+  `publishToMavenCentral()` line, and `// The artifactId must equal rootProject.name (settings.gradle.kts): vanniktech rewrites the target artifact ids from it.`
+  above `coordinates(...)`. After C5a, the `mavenPublishing {}` block reads as in 6.2.
 - **modify `README.md`**: "Releasing" (section 8).
 
 ### C5b - version bump
@@ -539,8 +591,12 @@ Made after S1 has passed (section 6.3), and before C2.
 
 ### C6 - Yarn lock
 
-- **create `kotlin-js-store/yarn.lock`** (plus any other file the plugin writes into `kotlin-js-store/`, committed as written), produced by S2 or by `./gradlew kotlinUpgradeYarnLock`.
-- **modify `.gitattributes`**: add `kotlin-js-store/**/yarn.lock text eol=lf`.
+- **modify `.gitattributes`** first: below the existing rule, add the comment line
+  `# The stored Yarn lock stays LF whichever system wrote it; the build's lock check ignores line endings.` and the rule
+  `kotlin-js-store/**/yarn.lock text eol=lf` (6.5).
+- **create `kotlin-js-store/yarn.lock`**: the lock the build has written into the working tree since C2 (the same file S2 wrote), staged
+  after the `.gitattributes` change so that the index stores it with LF line endings. The empty `kotlin-js-store/wasm/` directory is not
+  committed: git tracks no empty directory, and the plugin stores no wasm lock while `wasmJs` has no npm dependencies.
 - **modify `README.md`**: one maintenance sentence in "Build & test" (a Kotlin Gradle plugin bump needs `./gradlew kotlinUpgradeYarnLock` and a commit of `kotlin-js-store/`).
 
 ### C7 - CI and wrapper
@@ -691,9 +747,11 @@ inside the new root. Verification is therefore build-level.
 
 ### Level 1 - gating (run before each commit; Git Bash at the repository root)
 
-Common to C2-C7: `git status --short` lists only the paths of that commit; no `docs/plans/` file is staged except
-`docs/plans/7-kotlin-multiplatform/final-implementation.md` when the commit carries the entry that describes its own work (the planning
-documents landed in C1 and C1b, and the other units' plans land with their units); `./gradlew clean build --configuration-cache` ends `BUILD SUCCESSFUL`.
+Common to C2-C7: `git status --short` lists only the paths of that commit, plus `?? kotlin-js-store/` in C2-C5 (the build writes it from
+C2 on, and C6 commits it; it is never staged before C6). No `docs/plans/` file is staged except
+`docs/plans/7-kotlin-multiplatform/final-implementation.md` when the commit carries the entry that describes its own work, and in C2 the
+planning documents named in the section 11 C2 row (the other units' plans land with their units). `./gradlew clean build --configuration-cache`
+ends `BUILD SUCCESSFUL`. `checkKotlinAbi` and `updateKotlinAbi` always run as separate invocations.
 Helper: `count() { grep -ho "$2=\"[0-9]*\"" "$1"/TEST-*.xml 2>/dev/null | awk -F'"' '{s+=$2} END {print s+0}'; }`.
 No command here names a task containing `MavenCentral`.
 
@@ -708,9 +766,17 @@ No command here names a task containing `MavenCentral`.
   - `grep -c ' TRACE com.spartanlabs.generaltools.Misc ' build/test-results/jvmTest/TEST-com.spartanlabs.generaltools.MiscTest.xml` is above 0 (the logback file loaded from `src/jvmTest/resources`).
   - `javap -v -cp build/classes/kotlin/jvm/main com.spartanlabs.geometry.Point | grep -E 'major version|mv='` shows `major version: 61` and `mv=[2,2,0]`.
   - `./gradlew dependencies --configuration jvmCompileClasspath | grep kotlin-stdlib` -> `2.2.0` without `->`; the same for `jsCompileClasspath` and `wasmJsCompileClasspath` -> `2.2.0 -> 2.4.21`.
-  - `./gradlew jsNodeTest wasmJsNodeTest` succeed (NO-SOURCE is expected).
-- **C3:** `./gradlew updateKotlinAbi && git diff --exit-code -- api/` exits 0 (JVM dump byte-identical to the C1b baseline; if S3 produced a klib file it is the only new file). Negative control (do not commit):
-  delete one line from `api/GeneralTools.api`, `./gradlew checkKotlinAbi` fails showing that line, then `git checkout -- api/GeneralTools.api`. `./gradlew check --dry-run | grep checkKotlinAbi`.
+  - `./gradlew jsNodeTest wasmJsNodeTest` succeed; with no web test sources both report SKIPPED, and their Node and Yarn setup still runs.
+  - R2: `grep -E 'java-library|kotlin\("jvm"\)' build.gradle.kts | grep -vE '^\s*//'` prints nothing.
+  - `git status --short kotlin-js-store` prints `?? kotlin-js-store/`, and nothing under it is staged (C6 commits it).
+  - `git diff --cached --name-status` lists the 32 `R100` renames, `M build.gradle.kts`, `M README.md` and `M` for the four planning
+    documents named in the section 11 C2 row, nothing else.
+- **C3:** `./gradlew updateKotlinAbi && git diff --exit-code -- api/` exits 0 (JVM dump byte-identical to the C1b baseline), and
+  `git status --short api/` shows only the new `api/GeneralTools.klib.api`, which is empty (`test ! -s api/GeneralTools.klib.api`); then, as a
+  separate invocation, `./gradlew checkKotlinAbi` passes. Negative controls (do not commit): delete one line from `api/GeneralTools.api`,
+  `./gradlew checkKotlinAbi` fails showing that line, then `git checkout -- api/GeneralTools.api`; move `api/GeneralTools.klib.api` aside,
+  `./gradlew checkKotlinAbi` fails with "Expected file with ABI declarations ... does not exist", then move it back.
+  `./gradlew check --dry-run | grep checkKotlinAbi`.
 - **C4 matrix** (input -> expected; `./gradlew cleanJvmTest jvmTest -PtestLevel=...` then `count`):
 
   | `-PtestLevel` | Expected |
@@ -725,11 +791,17 @@ No command here names a task containing `MavenCentral`.
 
   Also `./gradlew check -PtestLevel=component --configuration-cache` twice (the second reports the cache reused).
 - **C5a:** `./gradlew properties -q | grep -E '^(group|version):'` prints the group and `version: 2.2.0`; `./gradlew tasks --group publishing` lists `publishToMavenCentral`,
-  `publishAndReleaseToMavenCentral` and the four publication tasks (listing only; never run them); `./gradlew build`.
+  `publishAndReleaseToMavenCentral` and the four publication tasks (listing only; never run them); `grep -n "upload only; releasing is the maintainer's explicit step" build.gradle.kts`
+  prints the `publishToMavenCentral()` line and `grep -n 'The artifactId must equal rootProject.name' build.gradle.kts` the line above `coordinates(...)`; `./gradlew build`.
 - **C5b:** the same `properties` line prints `version: 3.0.0`; `git show --stat HEAD` lists only `build.gradle.kts` and `README.md`; `./gradlew build`.
-- **C6:** `git ls-files kotlin-js-store`; `./gradlew build` leaves `git status --short kotlin-js-store` empty.
+- **C6:** after staging, `git ls-files --eol kotlin-js-store/yarn.lock` shows `i/lf` and `attr/text eol=lf`, and `git diff --cached --name-only`
+  lists `.gitattributes`, `kotlin-js-store/yarn.lock` and `README.md` (and `final-implementation.md` if the commit carries an entry), nothing else. After the commit, replace the working copy with git's
+  LF checkout (`rm kotlin-js-store/yarn.lock && git checkout -- kotlin-js-store/yarn.lock`); `./gradlew build` then passes on Windows (the
+  build's CRLF lock against the stored LF one: no mismatch) and leaves `git status --short kotlin-js-store` empty.
 - **C7:** `git ls-files -s gradlew` is `100755`; proof-read the YAML (no local runner); the first Actions run is the check (Level 4b).
 - **README (every commit that edits it):** code fences balanced; `grep -n '2\.2\.0' README.md` shows 2.2.0 only where 2.x is meant; no sentence names a command the tree at that commit lacks.
+  The one clause carried ahead is the `./gradlew build` comment's "and check the public API dump": it enters with the line in C2 and holds
+  from C3 (section 10).
 
 ### Level 2 - component
 
@@ -765,15 +837,20 @@ None. No production class or function changes; the only new function is the buil
   ```
   Condition 4 for the `TwoDoubles` line is the rule in section 3. All four hold -> C1b as specified in section 7. Any condition fails, or
   a differing dump line other than the `TwoDoubles` one appears -> stop and report (6.3); nothing is committed.
-- **S3 (U1):** same tree, `./gradlew checkKotlinAbi updateKotlinAbi`. Record whether the tasks run, whether any `api/*.klib.api` is written and what it contains, and whether
-  `checkKotlinAbi` passes without it. Outcomes: (a) passes, no klib file -> C3 as planned; (b) a header-only klib dump is written and `checkKotlinAbi` needs it -> C3 also commits it; (c) the task fails on
-  missing klibs -> contingency in section 10.
-- **S2 (A2, U5, web runners, Yarn lock):** add the spike files, then
-  1. `./gradlew compileKotlinJs compileKotlinWasmJs compileCommonMainKotlinMetadata --info 2>&1 | grep -E -- '-language-version|-api-version'` -> `2.2` on every compile task, and all three tasks succeed (use the metadata compile task name that `tasks --all` lists if it differs).
-  2. `./gradlew check --configuration-cache`: `jvmTest`, `jsNodeTest`, `wasmJsNodeTest` each run the spike tests (XML under `build/test-results/<task>/`); the backtick name is accepted on all three.
-  3. `./gradlew check -PtestLevel=uat` runs only the `uat` spike test on each target; `-PtestLevel=integration` is green with 0 tests (the web tasks still start Node).
-  4. `kotlin-js-store/` now exists: copy it to the repository for C6; run `check` again and confirm the lock is unchanged.
-  5. `./gradlew updateKotlinAbi` with the spike present: note the klib dump header and format (information for `commonize`).
+- **S3 (the klib dump while the web targets have no sources):** same tree, three separate invocations (Gradle 9.0.0 fails the two ABI
+  tasks in one): `./gradlew checkKotlinAbi` fails because the klib reference is missing; `./gradlew updateKotlinAbi` writes
+  `api/GeneralTools.klib.api` as an empty file and leaves `api/GeneralTools.api` as C1b has it; `./gradlew checkKotlinAbi` then passes. That
+  is the state C3 commits (section 7).
+- **S2 (A2, web runners, Yarn lock):** add the spike files, then
+  1. `./gradlew compileKotlinJs compileKotlinWasmJs compileCommonMainKotlinMetadata --rerun-tasks --debug 2>&1 | grep -E -- '-language-version|-api-version'`:
+     the `[KOTLIN]` argument lines carry `-api-version 2.2 -language-version 2.2` for all three compilations, and all three tasks succeed
+     (`--info` prints no compiler arguments under the Kotlin daemon; use the metadata compile task name that `tasks --all` lists if it differs).
+  2. `./gradlew updateKotlinAbi` with the spike present, before any `check`: the spike's public `halve` changes both scratch dumps. Note the
+     klib dump header and format (information for `commonize`).
+  3. `./gradlew check --configuration-cache`: `jvmTest`, `jsNodeTest`, `wasmJsNodeTest` each run the spike tests (XML under `build/test-results/<task>/`); the backtick name is accepted on all three.
+  4. `./gradlew check -PtestLevel=uat` runs only the `uat` spike test on each target; `-PtestLevel=integration` is green with 0 tests (the web tasks still start Node).
+  5. `kotlin-js-store/` now exists in the scratch; run `check` again and confirm the lock is unchanged. Nothing is copied into the
+     repository: the repository's own build writes the same lock from C2 on, and C6 commits that one.
 - **S4 (A8, R4, R5, R8; local publish):** an init script **outside the repository**, `$SCRATCH/smoke.init.gradle`:
   ```groovy
   allprojects {
@@ -795,11 +872,14 @@ None. No production class or function changes; the only new function is the buil
     `slf4j-api` 2.0.16 and not commons-io; the runtime variant lists `org.apache.commons.io` 2.4; the `-jvm` POM lists stdlib and slf4j at `compile`, commons-io at `runtime`;
   - the root `.module` redirects (`available-at`) its JVM variants to `GeneralTools-jvm` and carries `org.gradle.jvm.version` 17 on them;
   - `GeneralTools-js-<v>.module` and `GeneralTools-wasm-js-<v>.module` list `kotlin-stdlib` twice (2.2.0 and 2.4.21) and neither slf4j nor commons-io;
+    `GeneralTools-js-<v>.module` also lists `org.jetbrains.kotlin:kotlin-dom-api-compat:2.4.21`, which the plugin adds to Kotlin/JS (6.1);
   - the file names show the real version, not `unspecified`.
   The `logging` unit repeats this procedure to check that kotlin-logging appears only in the runtime variant.
 - **S5 (A9; only on the maintainer's machine, where the user-home properties exist):** with the real version `3.0.0`, run the S4 command twice with `--configuration-cache`:
-  every publication's files are accompanied by `.asc` (`find build/smoke-repo -name '*.asc' | sort`), there are no `.asc.sha256`/`.asc.sha512` files, `gpg --verify` of one `.asc` succeeds when `gpg` is installed, and
-  the second run reports the cache reused. Never echo or record the property values. A failure message mentioning the key ring is first checked with `--no-configuration-cache` before any README change.
+  every publication's files are accompanied by `.asc` (`find build/smoke-repo -name '*.asc' | sort`: 21 files), `gpg --verify` of one `.asc` succeeds when `gpg` is installed, and
+  the second run reports the cache reused. The file repository also holds `.md5`, `.sha1`, `.sha256` and `.sha512` beside every file,
+  each `.asc` included: that is Gradle's checksum set for any repository. vanniktech 0.37.0 trims it to `.md5` and `.sha1`, with no
+  checksum of an `.asc`, only in the bundle it uploads to the Central Portal (section 3); the `release` unit checks the bundle itself. Never echo or record the property values. A failure message mentioning the key ring is first checked with `--no-configuration-cache` before any README change.
 
 Decisions from S1-S5 are written into the commit bodies of C1b/C2/C3/C5a and, for deviations from this plan, appended to `final-implementation.md`.
 
@@ -810,7 +890,7 @@ None as a test class; the C4 input/output matrix is the deterministic mapping fo
 ### Level 4b - end-to-end
 
 Push of C7: the Actions run on `ubuntu-latest` (`gh run list --branch feat/issue-7-kotlin-multiplatform --limit 1`, then `gh run view <id> --log-failed` on failure) runs `./gradlew build`
-from a clean checkout: JDK 17 Temurin, no `chmod`, wrapper bit, `jvmTest` with 185 tests (UserActionsTest skipped headless, as today), web tasks (NO-SOURCE until `commonize`), `checkKotlinAbi`,
+from a clean checkout: JDK 17 Temurin, no `chmod`, wrapper bit, `jvmTest` with 185 tests (UserActionsTest skipped headless, as today), web test tasks (SKIPPED until `commonize`), `checkKotlinAbi`,
 unchanged `kotlin-js-store/`. It is also the first Linux run of the committed Yarn lock (U4).
 
 ### Level 4c - non-functional
@@ -834,13 +914,16 @@ None for this unit; user acceptance of the README wording happens at PR review.
 
 ## 10. Risks and edge cases
 
-- **Empty web klibs and `abiValidation()` (U1).** If `checkKotlinAbi`/`updateKotlinAbi` fail while `js`/`wasmJs` have no sources (S3 outcome c), this unit declares the `jvm()` target only:
-  `js { nodejs() }`, `wasmJs { nodejs() }`, the `jsMain`/`wasmJsMain` stdlib lines and C6 (`kotlin-js-store/`) move to `commonize`'s first commit that adds common sources, where the web targets get
-  their first code. `abiValidation()` then lands in C3 as planned, against a JVM-only build, so the JVM proof stays in this unit and `explicit-api` and `logging` keep `checkKotlinAbi`. KGP 2.4.21 offers no
-  switch that turns klib validation off alone (`AbiValidationKlibKindExtension` is deprecated at ERROR level there). The outcome and the moved blocks are recorded in C2's body and in
-  `final-implementation.md`.
-- **A2 untestable in the committed tree.** The committed unit has no common source, so `compileKotlinJs`/`compileKotlinWasmJs` are `NO-SOURCE` there and `jsNodeTest`/`wasmJsNodeTest` have nothing to run. The first real proof is `commonize`;
-  S2 is the earlier, scratch-only proof. Fallback for a failed A2 is in section 4.
+- **The empty klib dump.** While `js` and `wasmJs` have no sources, the committed `api/GeneralTools.klib.api` is an empty file, and
+  `checkKotlinAbi` needs it: deleting it fails the build. KGP 2.4.21 offers no switch that turns klib validation off alone
+  (`AbiValidationKlibKindExtension` is deprecated at ERROR level there). The file changes for the first time with the first
+  `commonMain` code (`logging` commit 1), which must commit what `updateKotlinAbi` then writes.
+- **A2 untestable in the committed tree.** The committed unit has no common source, so the web compilations have nothing to compile and
+  `jsNodeTest`/`wasmJsNodeTest` report SKIPPED. The first real proof is `commonize`; S2 is the earlier, scratch-only proof. Fallback for a
+  failed A2 is in section 4.
+- **`kotlin-js-store/` before C6.** From C2 on, every build writes `kotlin-js-store/yarn.lock` (and an empty `wasm/`) into the working
+  tree. It stays untracked through C2-C5 and is never staged there; C6 commits it with its `.gitattributes` rule. Until then no stored lock
+  exists in a fresh clone, so the build writes one and reports nothing (report-new-lock is off by default); CI behaves the same.
 - **Acceptance criterion timing.** Architecture §2's "`jsNodeTest` and `wasmJsNodeTest` all run" holds from `commonize` on, not after this unit.
 - **KGP 2.4.21 + vanniktech 0.37.0 + Gradle 9.0.0** is individually supported but unproven together (A9). The vanniktech artifactId rewrite throws if a publication name is unexpected; the defaults and `rootProject.name` avoid that.
 - **A published `3.0.0` is permanent.** The maintainer's user-home properties hold Central credentials; any `MavenCentral` task would upload. This plan runs none; rehearsals use a file repository only.
@@ -854,12 +937,13 @@ None for this unit; user acceptance of the README wording happens at PR review.
 - **Two dump tools.** The committed baseline is the plugin's listing. A switch to binary-compatibility-validator (architecture section 12)
   compares that tool's dump of the then-current classes with the committed file first, since the two list `protected` members of sealed
   and enum classes differently.
-- **Yarn lock portability and churn (U4).** A Kotlin Gradle plugin bump makes the committed lock stale and the build fails (`FAIL` is the default) until `kotlinUpgradeYarnLock` is run and committed. CI downloads Node (nodejs.org) and Yarn (GitHub releases) on every run; an outage fails the build.
+- **Yarn lock portability and churn (U4).** A Kotlin Gradle plugin bump makes the committed lock stale and the build fails (`FAIL` is the default) until `kotlinUpgradeYarnLock` is run and committed. Line endings never cause a mismatch (6.5); a difference in the packages the Windows and Linux builds resolve would. CI downloads Node (nodejs.org) and Yarn (GitHub releases) on every run; an outage fails the build.
 - **Intermediate-commit README.** The README describes the finished 3.0.0 shape (common code on three targets) while C2-C7 still hold JVM-only sources; the branch is not released between those commits, and `commonize` completes the "Modules" section.
+  The same holds for the `./gradlew build` line's "and check the public API dump", which C2 carries and which is true from C3, the next commit.
 - **`./gradlew test`** no longer exists as the way to run tests; the README names `jvmTest`, `allTests` and `check`.
 - **Rename hazard.** Moving files with `git mv` keeps history only if the contents are untouched; any edit in C2 turns a `R100` into an add/delete pair.
 - **Cross-repo:** none in this unit. MyGameTools' `--include-build` rehearsal (`release`) substitutes `io.github.spartanlaboratories:GeneralTools` because `group` and `project.name` equal the coordinate.
-- **Planning documents.** C1 carries `architecture.md`, `impact.md` and the dated pointer notes in the two earlier plans with this plan, and C1b carries the text of this plan, `architecture.md` and `impact.md` that describes the restated baseline; the other units' plans stay out of C1-C7 and land with their units; `final-implementation.md` rides with the commit whose work each entry describes.
+- **Planning documents.** C1 carries `architecture.md`, `impact.md` and the dated pointer notes in the two earlier plans with this plan, C1b carries the text of this plan, `architecture.md` and `impact.md` that describes the restated baseline, and C2 carries their text that defines C2's checks and the klib, lock and checksum rules of the later commits; the other units' plans stay out of C1-C7 and land with their units; `final-implementation.md` rides with the commit whose work each entry describes.
 
 ---
 
@@ -872,12 +956,12 @@ Branch: `feat/issue-7-kotlin-multiplatform`. The `manager` performs every git st
 | C0 | `Merge branch 'master' into feat/issue-7-kotlin-multiplatform` (merge commit `a0ca73e`, already on the branch and pushed; not part of this unit's diff) | removes `src/test/resources/keys.txt` | n/a | `git ls-files src/test/resources` lists only `logback-test.xml` |
 | C1 | `build: add the 2.2.0 baseline API dump` | `api/GeneralTools.api`, `.gitattributes`, this plan, `architecture.md`, `impact.md`, the dated pointers in the two earlier plans | creates the JVM baseline; no klib dump | section 7 C1 procedure; R1 greps |
 | C1b | `build: restate the baseline API dump as the Kotlin plugin lists it` | `api/GeneralTools.api`; `plan-kmp-build.md`, `architecture.md`, `impact.md`, `final-implementation.md` | one line removed (`TwoDoubles` synthetic default-arguments constructor); no klib dump | S1 conditions 1-4 (section 6.3) in the body; `git diff --cached --numstat` `0 1` |
-| C2 | `build: migrate to Kotlin Multiplatform with jvm, js and wasmJs targets` | `build.gradle.kts`, 32 `git mv`, README intro/build/migration rows 2-3 | none (not yet measured; C3 measures it) | Level 1 C2; 185 tests |
-| C3 | `build: check the public API dump with the Kotlin Gradle plugin` | `abiValidation()`, README lines; klib file only per S3 | JVM byte-identical to C1b; klib none (or header-only) | `updateKotlinAbi` + `git diff --exit-code -- api/`; negative control |
+| C2 | `build: migrate to Kotlin Multiplatform with jvm, js and wasmJs targets` | `build.gradle.kts`, 32 `git mv`, README intro/build/migration rows 2-3; `plan-kmp-build.md`, `architecture.md` and `impact.md` in their current text (C2's checks and the later commits' klib, lock and checksum rules), and `final-implementation.md` with its entries; not `kotlin-js-store/` | none (not yet measured; C3 measures it) | Level 1 C2; 185 tests; web test tasks SKIPPED; `kotlin-js-store/` untracked |
+| C3 | `build: check the public API dump with the Kotlin Gradle plugin` | `abiValidation()`, README lines, `api/GeneralTools.klib.api` (empty) | JVM byte-identical to C1b; klib dump file created empty | `updateKotlinAbi`, then `git diff --exit-code -- api/` and a separate `checkKotlinAbi`; two negative controls |
 | C4 | `build: select test levels with -PtestLevel` | `-PtestLevel` region, README | none | C4 matrix |
-| C5a | `build: configure the multiplatform publication` | `version = "2.2.0"` on the project, derived `coordinates`, `KotlinMultiplatform` configuration, README "Releasing" | none | S4 inspection (S5 on the maintainer's machine) |
+| C5a | `build: configure the multiplatform publication` | `version = "2.2.0"` on the project, derived `coordinates`, `KotlinMultiplatform` configuration, the two 6.2 comments in `mavenPublishing {}`, README "Releasing" | none | S4 inspection (S5 on the maintainer's machine); the comment greps |
 | C5b | `build: bump version to 3.0.0` | the `version` line only, README "Maven coordinates" and migration row 1 | none | `properties` prints `version: 3.0.0` |
-| C6 | `build: commit kotlin-js-store/yarn.lock` | lock file(s), `.gitattributes`, README sentence | none | `build` leaves `kotlin-js-store/` clean |
+| C6 | `build: commit kotlin-js-store/yarn.lock` | `kotlin-js-store/yarn.lock` (LF in the index), the `.gitattributes` rule, README sentence; not the empty `wasm/` | none | `i/lf`; `build` leaves `kotlin-js-store/` clean, also over the LF checkout on Windows |
 | C7 | `ci: build on Temurin 17 with current actions and an executable wrapper` | `Build.yml`, `gradlew` mode | none | Actions run |
 
 Each commit builds and passes `./gradlew build` on its own. Spike scratch trees, the init script and the throwaway spike sources are never committed. If any commit deviates from this table, the deviation and its reason are appended to
@@ -899,11 +983,14 @@ Each commit builds and passes `./gradlew build` on its own. Spike scratch trees,
   - the `val commonMain by getting { dependencies { api(kotlin-stdlib:2.2.0) ... } }` block, into which `implementation("io.github.oshai:kotlin-logging:8.0.4")` is added;
   - `jvmTest` with logback `1.5.13` and `src/jvmTest/resources/logback-test.xml`;
   - the S4 publish-inspection procedure to re-run for the kotlin-logging scope (A8);
+  - `api/GeneralTools.klib.api`, committed empty: the unit's first `commonMain` code changes what the plugin writes for it, so that commit
+    runs `updateKotlinAbi` (its own invocation) and commits the new file;
   - the README migration section (`## 3.0.0 migration notes`, columns Symptom | Cause | Fix) to append rows to.
 - **To `commonize` (4):**
   - the empty `commonMain`/`commonTest` source sets (`kotlin("test")` in `commonTest`), the web `api(kotlin-stdlib)` lines already in place, so moves into `commonMain` need no build change;
   - the `jvmMain`/`jvmTest` roots to `git mv` out of; `-PtestLevel`;
-  - `checkKotlinAbi` active (its first klib dump, `api/GeneralTools.klib.api`, is created or first populated there, per S3);
+  - `checkKotlinAbi` active, with `api/GeneralTools.klib.api` holding no declaration (empty from C3, or the plugin's header from `logging`
+    commit 1); `commonize` gives it its first declarations;
   - the committed `kotlin-js-store/` which the first web test run must leave unchanged (a legitimate diff is committed with `commonize`);
   - the README "Build & test" and "Releasing" text; `commonize` owns "Modules".
 - **To `two-doubles`, `box-model`, `generaltools-breaks` (5-7):** the same source-set blocks and `api/` workflow (`updateKotlinAbi`, review the diff against §11.3); the README migration section.
@@ -919,7 +1006,7 @@ Each commit builds and passes `./gradlew build` on its own. Spike scratch trees,
 
 1. Preconditions: `master` merged (C0); working tree free of unrelated changes in the paths this unit edits; JDK 17-24 on `PATH`; network for Gradle, Node, Yarn.
 2. Produce the baseline (section 7, C1) and commit C1.
-3. Build Scratch A and run S1 (with its class-file comparison), S3, S2, S4 (S5 on the maintainer's machine); decide the S3 outcome.
+3. Build Scratch A and run S1 (with its class-file comparison), S3, S2, S4 (S5 on the maintainer's machine); S3 fixes C3's klib file.
 4. Land C1b as soon as S1 has passed; land C2-C7 once the remaining spikes have run, each after its Level 1 checks.
 5. Push (by the `manager`); read the Actions result; fix forward in a new commit.
 
@@ -930,13 +1017,13 @@ the consumers' Kotlin (2.5 deprecates 2.2 as a language version); a TestKit test
 
 ## 14. Known gaps
 
-- The Gradle DSL in 6.2 (accessor style, `@OptIn` on statements, the attribute block, `coreLibrariesVersion` inside `sourceSets`) is checked against KGP and vanniktech sources
-  and has run once, in Scratch A with no common sources (`updateKotlinAbi`, section 3); S2 is its first run with common and web sources, and the C2 Level 1 run its first in the repository.
+- The full 6.2 script (`abiValidation()`, `-PtestLevel`, the derived publication) has run in Scratch A only; C3, C4 and C5a are its first
+  runs in the repository.
 - The Kotlin-metadata flags that differ for the data classes' generated `equals`, `hashCode` and `toString` (section 3) are not decoded; the `release` smoke matrix (Kotlin 2.2.0 and 2.1.20 consumers) is the check that consumers read them.
-- Whether the Kotlin Gradle plugin's ABI tool tolerates `js`/`wasmJs` compilations without klibs is not established (U1); neither is what it writes for them.
-- Whether `kotlin-js-store/yarn.lock` can be produced from the committed tree (no web tests) or only from Scratch A is not established (U5); the exact contents of `kotlin-js-store/` (a `wasm/` lock may exist) are unknown.
+- What the klib dump holds once the web klibs carry only internal declarations (expected: the header alone) is not observed; `logging`
+  commit 1 shows it.
 - JS/Wasm klib ABI error text for migration row 2 is described, not quoted; row 3's floor (Kotlin 2.1) rests on the metadata rule, with the 2.1.20 consumer proof in `release` (A3).
-- A9 needs the maintainer's key ring; the README "Releasing" text states the keyring-file properties before S5 has run.
+- A9 is shown for a signed publish to a file repository (S5); the upload to the Central Portal and its validation are first exercised by `release`.
 - The cold-build wall time and CI memory on the web targets are unknown.
 
 ---

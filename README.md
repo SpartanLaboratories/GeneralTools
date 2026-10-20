@@ -1,8 +1,17 @@
 # GeneralTools
 
-A small Kotlin/JVM library of generic helpers — string/file/list utilities,
-AWT-based user-action automation, an immutable RGBA `Color` value type, simple
-2D geometry, and a lightweight logging wrapper.
+A small Kotlin Multiplatform library of generic helpers: an immutable RGBA `Color` value type, simple 2D
+geometry and string, list and timing utilities, usable from common code on the JVM, JS and Wasm/JS; and,
+on the JVM only, file and URL helpers and AWT-based user-action automation.
+
+| Target | Artifact | You need |
+|---|---|---|
+| JVM | `GeneralTools-jvm` | Java 17 or newer; build with Kotlin 2.1 or newer |
+| JS (tested on Node) | `GeneralTools-js` | Kotlin 2.4 or newer |
+| Wasm/JS | `GeneralTools-wasm-js` | Kotlin 2.4 or newer; Kotlin/Wasm is Beta, so its klib compatibility guarantees are not final |
+
+`read`, `asURL`, the slf4j `Logger.time` extension and `UserActions` exist on the JVM only. Upgrading from 2.x:
+see the [3.0.0 migration notes](#300-migration-notes).
 
 ## Maven coordinates
 
@@ -46,12 +55,16 @@ Maven:
 
 ## Build & test
 
-```sh
-./gradlew build
-./gradlew test
-```
+Gradle 9 runs on a JDK 17 to 24. The build compiles and tests with a JDK 17 toolchain, which Gradle
+downloads when it is missing; the first JS or Wasm test run also downloads Node.js and Yarn.
 
-Tests run on the JUnit 5 platform with `kotlin.test`.
+```sh
+./gradlew build                 # compile and test every target, and check the public API dump
+./gradlew jvmTest               # JVM tests (JUnit 5 platform)
+./gradlew jsNodeTest            # JS tests on Node
+./gradlew wasmJsNodeTest        # Wasm/JS tests on Node
+./gradlew allTests              # all three targets, one report
+```
 
 ## Releasing
 
@@ -150,3 +163,13 @@ when (val r = segmentIntersectsSegment(
     is SegmentIntersection.Overlapping -> r.segment          // Segment((1,0), (2,0))
 }
 ```
+
+## 3.0.0 migration notes
+
+3.0.0 is a major release. The library is now Kotlin Multiplatform, and the breaking changes listed here are clean
+breaks: there is no deprecation cycle. Find your symptom in the first column.
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| A Kotlin/JS or Kotlin/Wasm build reports an incompatible klib ABI version for GeneralTools | The `js` and `wasm-js` klibs are built by Kotlin 2.4 and carry its ABI version; `languageVersion` cannot lower it | Build with Kotlin 2.4 or newer. Kotlin/Wasm is Beta, so its klib compatibility guarantees are not final. |
+| A JVM build reports that GeneralTools `was compiled with an incompatible version of Kotlin` (actual metadata version 2.2.0) | The JVM variant is compiled with language and API version 2.2 and requires `kotlin-stdlib` 2.2.0 | Build with Kotlin 2.1 or newer. |

@@ -155,7 +155,10 @@ Not adopted, by design:
   2.1.20 compiler reads its metadata.
 - **JS and Wasm.** Kotlin 2.4 or newer, because a klib carries the ABI version of the compiler that
   built it. Kotlin/Wasm is Beta, and klib binary-compatibility guarantees are not final, so the web
-  variants carry a weaker practical promise than the JVM variant.
+  variants carry a weaker practical promise than the JVM variant. The `js` variant also brings
+  `org.jetbrains.kotlin:kotlin-dom-api-compat:2.4.21`, which the Kotlin plugin adds to every Kotlin/JS
+  compilation by default; a Kotlin/JS consumer's own plugin adds the same artifact, so the consumer
+  resolves one version of it.
 
 ---
 

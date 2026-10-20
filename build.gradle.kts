@@ -1,13 +1,15 @@
+import org.gradle.api.attributes.java.TargetJvmVersion
+import org.gradle.api.tasks.testing.Test
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
-    // kotlin-dsl is for projects that write Gradle plugins/build logic - it implicitly pulls in
-    // gradleApi(), which bundles Gradle's own embedded SLF4J provider and conflicts with
-    // logback-classic on the test classpath. This is a general-purpose library, not a Gradle
-    // plugin, so it uses the plain Kotlin JVM plugin instead.
-    // NOTE: pick the Kotlin version your codebase actually needs (e.g. to support the
-    // "UnionTypes" language feature below) - 2.1.0 is a placeholder.
-    kotlin("jvm") version "2.2.0"
-    `java-library`
-    id("com.vanniktech.maven.publish") version "0.36.0"
+    // One Kotlin Multiplatform module replaces kotlin("jvm") + java-library (java-library is an error in a
+    // multiplatform project on Gradle 8.7+). kotlin-dsl is still not used: this is a library, not a Gradle plugin,
+    // and kotlin-dsl's gradleApi() bundles an SLF4J provider that conflicts with logback on the test classpath.
+    kotlin("multiplatform") version "2.4.21"
+    id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 group = "io.github.spartanlaboratories"
@@ -16,15 +18,66 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    // The library only needs the slf4j API - consumers choose their own logging backend.
-    api("org.slf4j:slf4j-api:2.0.16")
-    implementation("org.apache.directory.studio:org.apache.commons.io:2.4")          // Files Utility
+//region Compatibility floors
+// The oldest consumers: Kotlin 2.2.0 (MyGameTools) and Kotlin 2.1.20 (MyGameClient via gametools) can read language/API 2.2.
+val languageFloor = KotlinVersion.KOTLIN_2_2
+val stdlibFloor = "2.2.0"
+val jvmFloor = 17
+//endregion
 
-    // Logback is only needed to actually see log output while running the test suite.
-    testApi(kotlin("test"))
-    testImplementation("ch.qos.logback:logback-classic:1.5.13")
+kotlin {
+    jvmToolchain(jvmFloor)
+
+    //region Pins
+    // Metadata and API checks follow the floor on every target. The js/wasmJs ABI version still follows this compiler (2.4),
+    // which is why web consumers need Kotlin 2.4; coreLibrariesVersion is NOT lowered because the web compilers reject an older stdlib klib.
+    compilerOptions {
+        languageVersion.set(languageFloor)
+        apiVersion.set(languageFloor)
+    }
+    //endregion
+
+    //region Targets
+    jvm {
+        compilerOptions { jvmTarget.set(JvmTarget.fromTarget(jvmFloor.toString())) }
+        // A multiplatform JVM publication declares no org.gradle.jvm.version; declare it so a JVM 11 consumer
+        // fails at resolution rather than with UnsupportedClassVersionError.
+        attributes { attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, jvmFloor) }
+    }
+    js { nodejs() }
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs { nodejs() }
+    //endregion
+
+    //region Dependencies by source set
+    sourceSets {
+        val webStdlib = "org.jetbrains.kotlin:kotlin-stdlib:$coreLibrariesVersion"
+
+        val commonMain by getting {
+            dependencies {
+                api("org.jetbrains.kotlin:kotlin-stdlib:$stdlibFloor")
+                // implementation(kotlin-logging) is added here by the `logging` unit.
+            }
+        }
+        val jsMain by getting { dependencies { api(webStdlib) } }
+        val wasmJsMain by getting { dependencies { api(webStdlib) } }
+        val jvmMain by getting {
+            dependencies {
+                // The library only needs the slf4j API - consumers choose their own logging backend.
+                api("org.slf4j:slf4j-api:2.0.16")
+                implementation("org.apache.directory.studio:org.apache.commons.io:2.4")   // Files Utility
+            }
+        }
+        val commonTest by getting { dependencies { implementation(kotlin("test")) } }
+        val jvmTest by getting {
+            // Logback is only needed to actually see log output while running the JVM tests.
+            dependencies { implementation("ch.qos.logback:logback-classic:1.5.13") }
+        }
+    }
+    //endregion
 }
+
+tasks.withType<Test>().configureEach { useJUnitPlatform() }   // JVM tests run on the JUnit 5 platform
 
 mavenPublishing {
     publishToMavenCentral()
@@ -56,8 +109,4 @@ mavenPublishing {
             developerConnection.set("scm:git:ssh://git@github.com/SpartanLaboratories/GeneralTools.git")
         }
     }
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

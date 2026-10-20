@@ -70,7 +70,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api("org.jetbrains.kotlin:kotlin-stdlib:$stdlibFloor")
-                // implementation(kotlin-logging) is added here by the `logging` unit.
+                // Runtime-only on the JVM variant; kotlin-logging's jvm artifact does not bring slf4j - jvmMain's api(slf4j-api) supplies it.
+                implementation("io.github.oshai:kotlin-logging:8.0.4")   // exact version, no range; internal use only, never api
             }
         }
         val jsMain by getting { dependencies { api(webStdlib) } }

@@ -64,3 +64,14 @@ as-built record once implementation ends.
   and nothing else") forbid the extra space; every other "resulting text" row in §7 keeps the original spacing
   (e.g. `IJColor(public val colorCode:String)`, `setTo(new: TwoDoubles): Unit =    setTo(...)`). The compiled class
   is unaffected either way.
+
+### `logging` — commit 1 replaces `kmp-build`'s placeholder comment in the `commonMain` block
+
+- **Plan:** [plan-logging.md](plan-logging.md) §6 "Commit 1", `build.gradle.kts`: "add one line" (the
+  kotlin-logging `implementation`) "with the comment that it is runtime-only on the JVM variant and that `jvmMain`'s
+  `api(slf4j-api)` is what supplies slf4j ... Nothing else in the build changes."
+- **What differs:** besides the added dependency line and its comment, the `commonMain` block's placeholder comment
+  ``// implementation(kotlin-logging) is added here by the `logging` unit.`` (left by `kmp-build`) is removed; the
+  required comment takes its place on the line above the dependency.
+- **Why:** the placeholder marks where this unit's line goes and states it is still to come; kept, it would describe
+  a dependency that is now present. No other line of the build script changes.

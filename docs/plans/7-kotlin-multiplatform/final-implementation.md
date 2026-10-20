@@ -161,3 +161,25 @@ as-built record once implementation ends.
   `explicit-api` and `logging` left them". Re-spacing the line would be a formatting change beyond the expression. This
   follows the `explicit-api` precedent above (`TwoDoubles` line 13 keeps `second:Double`). The compiled code is the same
   either way.
+
+## Observations
+
+### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`
+
+- **Plan:** [plan-commonize.md](plan-commonize.md) §9 "Level 5 - UAT and exploratory": after commit 7, run
+  `./gradlew jsNodeTest wasmJsNodeTest -i` and record one WARN line per target and the kotlin-logging startup line.
+- **Run (2026-10-20):** `./gradlew jsNodeTest wasmJsNodeTest -i` on the commit-7 tree, with `build/test-results` removed
+  first so both tasks executed. Both green (186 tests each). kotlin-logging 8.0.4; Node 24.16.0 (js), Node 26.2.0 (wasmJs).
+- **Startup line, identical on both targets** (once per test process, printed to standard out under the first test that
+  logs, `PointTest.distanceFrom fails when either point contains NaN`):
+  `kotlin-logging: initializing... active logger factory: DirectLoggerFactory`
+- **`wasmJs`:** the WARN line goes to standard out, unprefixed:
+  `WARN: [com.spartanlabs.geometry.Point] Point values must be numbers: Point.distanceFrom: NaN coordinate in (0.0, 0.0) or (NaN, 1.0)`
+- **`js`:** the WARN line goes to standard error, prefixed with the console level:
+  `[warn] WARN: [com.spartanlabs.geometry.Point] Point values must be numbers: Point.distanceFrom: NaN coordinate in (0, 0) or (NaN, 1)`
+- **Also seen:** the `divideBy` ERROR line renders the same way: `ERROR: [com.spartanlabs.geometry.TwoDoubles] Attempted to
+  divide a Point by zero` on `wasmJs` (standard out) and `[error] ERROR: [...]` on `js` (standard error). Each target
+  printed 13 WARN lines and 1 ERROR line, the same set on both, carrying the 2.x logger names
+  (`com.spartanlabs.geometry.{Point,Vectors,Intersections,Segment,TwoDoubles}`).
+  The message text embeds `Double.toString`, so `js` prints whole doubles without `.0` (`(0, 0)`, `Ray(origin=0, 0, ...)`)
+  while `wasmJs` prints them as the JVM does (`(0.0, 0.0)`).

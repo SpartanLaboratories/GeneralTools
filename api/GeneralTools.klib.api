@@ -19,6 +19,40 @@ abstract interface com.spartanlabs.geometry/AxisAlignedBox { // com.spartanlabs.
     open fun contains(com.spartanlabs.geometry/Point): kotlin/Boolean // com.spartanlabs.geometry/AxisAlignedBox.contains|contains(com.spartanlabs.geometry.Point){}[0]
 }
 
+sealed interface com.spartanlabs.geometry/SegmentIntersection { // com.spartanlabs.geometry/SegmentIntersection|null[0]
+    final class Overlapping : com.spartanlabs.geometry/SegmentIntersection { // com.spartanlabs.geometry/SegmentIntersection.Overlapping|null[0]
+        constructor <init>(com.spartanlabs.geometry/Segment) // com.spartanlabs.geometry/SegmentIntersection.Overlapping.<init>|<init>(com.spartanlabs.geometry.Segment){}[0]
+
+        final val segment // com.spartanlabs.geometry/SegmentIntersection.Overlapping.segment|{}segment[0]
+            final fun <get-segment>(): com.spartanlabs.geometry/Segment // com.spartanlabs.geometry/SegmentIntersection.Overlapping.segment.<get-segment>|<get-segment>(){}[0]
+
+        final fun component1(): com.spartanlabs.geometry/Segment // com.spartanlabs.geometry/SegmentIntersection.Overlapping.component1|component1(){}[0]
+        final fun copy(com.spartanlabs.geometry/Segment = ...): com.spartanlabs.geometry/SegmentIntersection.Overlapping // com.spartanlabs.geometry/SegmentIntersection.Overlapping.copy|copy(com.spartanlabs.geometry.Segment){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/SegmentIntersection.Overlapping.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/SegmentIntersection.Overlapping.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.spartanlabs.geometry/SegmentIntersection.Overlapping.toString|toString(){}[0]
+    }
+
+    final class Touching : com.spartanlabs.geometry/SegmentIntersection { // com.spartanlabs.geometry/SegmentIntersection.Touching|null[0]
+        constructor <init>(com.spartanlabs.geometry/Point) // com.spartanlabs.geometry/SegmentIntersection.Touching.<init>|<init>(com.spartanlabs.geometry.Point){}[0]
+
+        final val point // com.spartanlabs.geometry/SegmentIntersection.Touching.point|{}point[0]
+            final fun <get-point>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/SegmentIntersection.Touching.point.<get-point>|<get-point>(){}[0]
+
+        final fun component1(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/SegmentIntersection.Touching.component1|component1(){}[0]
+        final fun copy(com.spartanlabs.geometry/Point = ...): com.spartanlabs.geometry/SegmentIntersection.Touching // com.spartanlabs.geometry/SegmentIntersection.Touching.copy|copy(com.spartanlabs.geometry.Point){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/SegmentIntersection.Touching.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/SegmentIntersection.Touching.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.spartanlabs.geometry/SegmentIntersection.Touching.toString|toString(){}[0]
+    }
+
+    final object None : com.spartanlabs.geometry/SegmentIntersection { // com.spartanlabs.geometry/SegmentIntersection.None|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/SegmentIntersection.None.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/SegmentIntersection.None.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.spartanlabs.geometry/SegmentIntersection.None.toString|toString(){}[0]
+    }
+}
+
 final class com.spartanlabs.generaltools/Color { // com.spartanlabs.generaltools/Color|null[0]
     constructor <init>(kotlin/Int, kotlin/Int, kotlin/Int, kotlin/Int = ...) // com.spartanlabs.generaltools/Color.<init>|<init>(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
 
@@ -87,6 +121,32 @@ final class com.spartanlabs.generaltools/Color { // com.spartanlabs.generaltools
     }
 }
 
+final class com.spartanlabs.geometry/CenteredBox : com.spartanlabs.geometry/AxisAlignedBox { // com.spartanlabs.geometry/CenteredBox|null[0]
+    constructor <init>(com.spartanlabs.geometry/Point, com.spartanlabs.geometry/Dimensions) // com.spartanlabs.geometry/CenteredBox.<init>|<init>(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Dimensions){}[0]
+
+    final val center // com.spartanlabs.geometry/CenteredBox.center|{}center[0]
+        final fun <get-center>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/CenteredBox.center.<get-center>|<get-center>(){}[0]
+    final val halfExtents // com.spartanlabs.geometry/CenteredBox.halfExtents|{}halfExtents[0]
+        final fun <get-halfExtents>(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/CenteredBox.halfExtents.<get-halfExtents>|<get-halfExtents>(){}[0]
+    final val max // com.spartanlabs.geometry/CenteredBox.max|{}max[0]
+        final fun <get-max>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/CenteredBox.max.<get-max>|<get-max>(){}[0]
+    final val min // com.spartanlabs.geometry/CenteredBox.min|{}min[0]
+        final fun <get-min>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/CenteredBox.min.<get-min>|<get-min>(){}[0]
+    final val size // com.spartanlabs.geometry/CenteredBox.size|{}size[0]
+        final fun <get-size>(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/CenteredBox.size.<get-size>|<get-size>(){}[0]
+
+    final fun component1(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/CenteredBox.component1|component1(){}[0]
+    final fun component2(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/CenteredBox.component2|component2(){}[0]
+    final fun copy(com.spartanlabs.geometry/Point = ..., com.spartanlabs.geometry/Dimensions = ...): com.spartanlabs.geometry/CenteredBox // com.spartanlabs.geometry/CenteredBox.copy|copy(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Dimensions){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/CenteredBox.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/CenteredBox.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.spartanlabs.geometry/CenteredBox.toString|toString(){}[0]
+
+    final object Companion { // com.spartanlabs.geometry/CenteredBox.Companion|null[0]
+        final fun fromCorners(com.spartanlabs.geometry/Point, com.spartanlabs.geometry/Point): com.spartanlabs.geometry/CenteredBox // com.spartanlabs.geometry/CenteredBox.Companion.fromCorners|fromCorners(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Point){}[0]
+    }
+}
+
 final class com.spartanlabs.geometry/Dimensions : com.spartanlabs.geometry/TwoDoubles { // com.spartanlabs.geometry/Dimensions|null[0]
     constructor <init>(com.spartanlabs.geometry/Dimensions) // com.spartanlabs.geometry/Dimensions.<init>|<init>(com.spartanlabs.geometry.Dimensions){}[0]
     constructor <init>(kotlin/Double = ..., kotlin/Double = ...) // com.spartanlabs.geometry/Dimensions.<init>|<init>(kotlin.Double;kotlin.Double){}[0]
@@ -129,6 +189,30 @@ final class com.spartanlabs.geometry/Ray { // com.spartanlabs.geometry/Ray|null[
     final fun pointAt(kotlin/Double): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Ray.pointAt|pointAt(kotlin.Double){}[0]
     final fun toString(): kotlin/String // com.spartanlabs.geometry/Ray.toString|toString(){}[0]
     final fun unit(): kotlin/Result<com.spartanlabs.geometry/Ray> // com.spartanlabs.geometry/Ray.unit|unit(){}[0]
+}
+
+final class com.spartanlabs.geometry/Segment { // com.spartanlabs.geometry/Segment|null[0]
+    constructor <init>(com.spartanlabs.geometry/Point, com.spartanlabs.geometry/Point) // com.spartanlabs.geometry/Segment.<init>|<init>(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Point){}[0]
+
+    final val a // com.spartanlabs.geometry/Segment.a|{}a[0]
+        final fun <get-a>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Segment.a.<get-a>|<get-a>(){}[0]
+    final val b // com.spartanlabs.geometry/Segment.b|{}b[0]
+        final fun <get-b>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Segment.b.<get-b>|<get-b>(){}[0]
+    final val delta // com.spartanlabs.geometry/Segment.delta|{}delta[0]
+        final fun <get-delta>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Segment.delta.<get-delta>|<get-delta>(){}[0]
+    final val length // com.spartanlabs.geometry/Segment.length|{}length[0]
+        final fun <get-length>(): kotlin/Double // com.spartanlabs.geometry/Segment.length.<get-length>|<get-length>(){}[0]
+    final val lengthSquared // com.spartanlabs.geometry/Segment.lengthSquared|{}lengthSquared[0]
+        final fun <get-lengthSquared>(): kotlin/Double // com.spartanlabs.geometry/Segment.lengthSquared.<get-lengthSquared>|<get-lengthSquared>(){}[0]
+
+    final fun asRay(): kotlin/Result<com.spartanlabs.geometry/Ray> // com.spartanlabs.geometry/Segment.asRay|asRay(){}[0]
+    final fun component1(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Segment.component1|component1(){}[0]
+    final fun component2(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Segment.component2|component2(){}[0]
+    final fun copy(com.spartanlabs.geometry/Point = ..., com.spartanlabs.geometry/Point = ...): com.spartanlabs.geometry/Segment // com.spartanlabs.geometry/Segment.copy|copy(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Point){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/Segment.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/Segment.hashCode|hashCode(){}[0]
+    final fun pointAt(kotlin/Double): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Segment.pointAt|pointAt(kotlin.Double){}[0]
+    final fun toString(): kotlin/String // com.spartanlabs.geometry/Segment.toString|toString(){}[0]
 }
 
 final class com.spartanlabs.geometry/Square : com.spartanlabs.geometry/AxisAlignedBox { // com.spartanlabs.geometry/Square|null[0]
@@ -192,12 +276,17 @@ final val com.spartanlabs.geometry/length // com.spartanlabs.geometry/length|@co
 final val com.spartanlabs.geometry/lengthSquared // com.spartanlabs.geometry/lengthSquared|@com.spartanlabs.geometry.Point{}lengthSquared[0]
     final fun (com.spartanlabs.geometry/Point).<get-lengthSquared>(): kotlin/Double // com.spartanlabs.geometry/lengthSquared.<get-lengthSquared>|<get-lengthSquared>@com.spartanlabs.geometry.Point(){}[0]
 
+final fun (com.spartanlabs.geometry/AxisAlignedBox).com.spartanlabs.geometry/toSquare(): com.spartanlabs.geometry/Square // com.spartanlabs.geometry/toSquare|toSquare@com.spartanlabs.geometry.AxisAlignedBox(){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/cross(com.spartanlabs.geometry/Point): kotlin/Double // com.spartanlabs.geometry/cross|cross@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/dot(com.spartanlabs.geometry/Point): kotlin/Double // com.spartanlabs.geometry/dot|dot@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/normalized(): kotlin/Result<com.spartanlabs.geometry/Point> // com.spartanlabs.geometry/normalized|normalized@com.spartanlabs.geometry.Point(){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/projectedOnto(com.spartanlabs.geometry/Point): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/projectedOnto|projectedOnto@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
+final fun (com.spartanlabs.geometry/Square).com.spartanlabs.geometry/toCenteredBox(): com.spartanlabs.geometry/CenteredBox // com.spartanlabs.geometry/toCenteredBox|toCenteredBox@com.spartanlabs.geometry.Square(){}[0]
 final fun (kotlin/String).com.spartanlabs.generaltools/trimIfLongerThan(kotlin/Int): kotlin/String // com.spartanlabs.generaltools/trimIfLongerThan|trimIfLongerThan@kotlin.String(kotlin.Int){}[0]
 final fun <#A: kotlin/Any?> (kotlin.collections/Collection<#A>).com.spartanlabs.generaltools/forEvery(kotlin/Function1<#A, kotlin/Unit>) // com.spartanlabs.generaltools/forEvery|forEvery@kotlin.collections.Collection<0:0>(kotlin.Function1<0:0,kotlin.Unit>){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> (kotlin.collections/Collection<#A>).com.spartanlabs.generaltools/forEveryIndexed(kotlin/Function2<kotlin/Int, #A, kotlin/Unit>) // com.spartanlabs.generaltools/forEveryIndexed|forEveryIndexed@kotlin.collections.Collection<0:0>(kotlin.Function2<kotlin.Int,0:0,kotlin.Unit>){0§<kotlin.Any?>}[0]
 final fun com.spartanlabs.generaltools/profile(kotlin/String, kotlin/Function0<kotlin/Unit>): kotlin/String // com.spartanlabs.generaltools/profile|profile(kotlin.String;kotlin.Function0<kotlin.Unit>){}[0]
+final fun com.spartanlabs.geometry/rayIntersectsBox(com.spartanlabs.geometry/Ray, com.spartanlabs.geometry/AxisAlignedBox): kotlin/Result<kotlin/Double?> // com.spartanlabs.geometry/rayIntersectsBox|rayIntersectsBox(com.spartanlabs.geometry.Ray;com.spartanlabs.geometry.AxisAlignedBox){}[0]
+final fun com.spartanlabs.geometry/segmentIntersectsBox(com.spartanlabs.geometry/Segment, com.spartanlabs.geometry/AxisAlignedBox): kotlin/Result<kotlin/Boolean> // com.spartanlabs.geometry/segmentIntersectsBox|segmentIntersectsBox(com.spartanlabs.geometry.Segment;com.spartanlabs.geometry.AxisAlignedBox){}[0]
+final fun com.spartanlabs.geometry/segmentIntersectsSegment(com.spartanlabs.geometry/Segment, com.spartanlabs.geometry/Segment): kotlin/Result<com.spartanlabs.geometry/SegmentIntersection> // com.spartanlabs.geometry/segmentIntersectsSegment|segmentIntersectsSegment(com.spartanlabs.geometry.Segment;com.spartanlabs.geometry.Segment){}[0]
 final inline fun <#A: kotlin/Any?, #B: #A> (kotlin/Result<#B>).com.spartanlabs.generaltools/onException(kotlin/Array<out kotlin.reflect/KClass<out kotlin/Throwable>>..., kotlin/Function1<kotlin/Throwable, #B>): kotlin/Result<#B> // com.spartanlabs.generaltools/onException|onException@kotlin.Result<0:1>(kotlin.Array<out|kotlin.reflect.KClass<out|kotlin.Throwable>>...;kotlin.Function1<kotlin.Throwable,0:1>){0§<kotlin.Any?>;1§<0:0>}[0]

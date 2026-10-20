@@ -533,26 +533,108 @@ call is stated with its options and a recommendation.
     `Point` between holders keeps working. The immutable model in
     [`immutable-geometry-model.md`](immutable-geometry-model.md) is therefore not used; its
     findings on equality, on the opt-in tier and on Kotlin's operator rules still apply.
-  - `TwoDoubles` is no longer `sealed`. Subclassing it is Experimental, through
+  - `TwoDoubles` becomes an `abstract class` with `protected` constructors and no abstract members.
+    Subclassing it is Experimental, through
     `@SubclassOptInRequired(ExperimentalForInheritanceGeneralToolsApi::class)`, and graduates once a
     consumer builds on it. Using `Point`, `Dimensions` or any `TwoDoubles` value needs no opt-in.
+    `equals` and `hashCode` are `final`. `first`, `second` and the in-place verbs stay final, as
+    they are today, and `toString` stays open.
   - Equality requires the same concrete class and IEEE-equal components, except that NaN equals
     NaN; `-0.0` hashes like `0.0`, and every NaN alike. No pair that is equal in 2.x becomes
     unequal; only NaN-versus-NaN pairs become equal. The migration notes state it as a contract
     change. Because the types are mutable, a `Point` used as a hash key must not change while it
-    is in the map.
+    is in the map; the KDoc carries that warning and points to the immutable copy as the safe key.
   - `Square` gets a new name. Its `location` and `dimensions` references become `val`, so a holder
-    can no longer swap the parts, while the parts themselves stay mutable.
-  - The renamed type provides a method that returns an immutable copy of itself, as a new immutable
-    type.
-- **Answered by question 9** ([`mutable-geometry-model.md`](mutable-geometry-model.md)):
-  - `divideBy`'s return shape on a mutable type, what `/=` does when the divisor is zero, and
-    whether non-assigning operators such as `div` belong.
-  - The immutable copy type: its parts, its relation to `AxisAlignedBox` and `CenteredBox`, and its
-    stability tier.
-  - Whether `AxisAlignedBox` still serves as a read-only view when it returns live mutable parts,
-    and whether read-only interfaces earn a place.
-  - Names for the renamed `Square` and for the immutable copy type.
+    can no longer swap the parts, while the parts themselves stay mutable. It stays a
+    `data class`: `copy()` remains a shallow copy that shares the parts, as in 2.x, and its KDoc
+    says so.
+  - The renamed type's `toImmutable()` returns a new final, immutable type of four `Double`s (`x`,
+    `y`, `width`, `height`) that implements `AxisAlignedBox`.
+    - Its `equals`, `hashCode` and `toString` are written by hand to follow the same equality
+      contract; a generated data class would split `0.0` from `-0.0`. It is never equal to the
+      mutable type.
+    - Its `min`, `max`, `center` and `size` return fresh `Point` and `Dimensions` values.
+    - It is Stable Core: a final value type rather than an extension seam, stored the way JavaFX,
+      korlibs and OPENRNDR store a rectangle, and needed wherever MyGameTools copies geometry
+      defensively today.
+  - `AxisAlignedBox` gains accessors with default bodies: `minX`, `minY`, `maxX`, `maxY`, `width`
+    and `height` (Stable Core).
+    - The renamed type, `CenteredBox` and the immutable type override them without allocating.
+    - `contains` and the intersection functions read them, so the hot paths stop allocating per
+      read. Without them, `rayIntersectsBox` makes up to nine allocations per call on a
+      `CenteredBox`.
+  - `AxisAlignedBox` is a shape contract, not a read-only guarantee. The immutable copy is what a
+    library hands out when its callers must not mutate. There are no `ReadOnlyPoint` or
+    `ReadOnlySquare` interfaces:
+    - they would spread through every `Point` parameter;
+    - they cannot carry `equals`;
+    - as an untried seam they would need an opt-in, which defeats a type meant to be handed out.
+  - There are no `Point`-returning `plus`, `minus`, `times` or `div` operators. Kotlin reports
+    `a += b` on a `var` as ambiguous when `plus` returns a subtype of the variable's type. Such
+    operators would therefore break every `var` holder that uses `+=` (none is known, but external
+    consumers are), and could not be added later in a minor either.
+  - `divAssign` gets a block body. Over a `Result`-returning `divideBy`, an expression body would no
+    longer return `Unit`.
+
+  Evidence: [`mutable-geometry-model.md`](mutable-geometry-model.md).
+- **Trade-off that needs a call: the name pair.** The conversion is `toImmutable()` with any pair,
+  and `AxisAlignedBox.toSquare()` takes the new name.
+  1. `Rectangle` / `ImmutableRectangle`. It describes itself, and gives the plain name to the
+     mutable type, as `Point` and `Dimensions` have. `Immutable*` is the convention of Guava and
+     kotlinx.collections.immutable. The name is shared with `java.awt.Rectangle` (imported in this
+     repository's own `UserActions.kt`), libGDX, and SpartanGraphics' planned shape `Rectangle`.
+  2. `TopLeftBox` / `ImmutableTopLeftBox`. It uses the "Box" vocabulary of `AxisAlignedBox` and
+     `CenteredBox`, and no collision was found, but it is unfamiliar and long.
+  3. `MutableRectangle` / `Rectangle`. It uses Kotlin's `Mutable*` prefix, but `Point` would then be
+     mutable while `Rectangle` is immutable.
+  4. `Bounds` / `ImmutableBounds`.
+  5. `MutableRect` / `Rect`: Compose's pair, which collides with Compose and with SpartanGraphics.
+
+  Recommendation: 1.
+- **Trade-off that needs a call: `/=` when the divisor is zero.**
+  - Throw `IllegalArgumentException("Cannot divide by zero")` without logging. It is identical to
+    2.x, and matches Kotlin's own pairing of an operator that throws with a named function that
+    reports.
+  - Log at WARN and leave the value unchanged. That gives one zero policy for the type, but it
+    changes how `/=` behaves.
+  - IEEE division silently produces Infinity and NaN positions, and dropping the operator is a
+    further break.
+
+  No downstream code uses `/=` on a `Point`. Recommendation: throw.
+- **Trade-off that needs a call: `divideBy`'s shape.**
+  - Divide in place and return `Result<Unit>`. It belongs to the same family as `setTo`, `modBy`
+    and `amplifyBy`, and needs no factory hook. A discarded result is harmless: a success has
+    already happened, and a failure has already been logged with the value left unchanged.
+  - Return the receiver inside the `Result` (`Result<Point>` on `Point`). This needs a covariant
+    override of a `Result` return that no comparable code was found to use.
+  - Return a new instance. `p divideBy 2.0` written as a statement would then compile and do
+    nothing.
+
+  Recommendation: in place, `Result<Unit>`.
+- **Trade-off that needs a call: `divideBy`'s arithmetic.**
+  - Divide each component. `49.0 * (1/49.0)` is `0.9999999999999999` while `49.0 / 49.0` is `1.0`,
+    and a subnormal divisor's reciprocal overflows to Infinity. The change is at most one unit in
+    the last place on some inputs, inside a method whose contract already changes, and no known
+    caller depends on the last bit.
+  - Keep 2.x's reciprocal product, which leaves results bit-identical.
+
+  Recommendation: divide each component, with a migration note.
+- **Trade-off that needs a call: `min` and `size` of the renamed type.**
+  - Keep returning the live `location` and `dimensions`, as in 2.x. There is no behaviour change,
+    but an `AxisAlignedBox`-typed handle to a live box still exposes mutable parts.
+  - Return copies, as `max` and `center` already do. Every `AxisAlignedBox` handle then becomes
+    safe for reads, but it is a behaviour change beyond the listed breaks. No known caller reads
+    them.
+
+  Recommendation: keep them live; the immutable copy is the protection.
+- **Trade-off that needs a call: non-assigning operators.**
+  - None, for the reason above.
+  - `unaryMinus` only. It has no assign counterpart, so it never conflicts and could also be added
+    later without a break.
+  - Arithmetic without the ambiguity could come later as import-gated extension operators in a
+    separate package.
+
+  Recommendation: none in 3.0.0.
 - **Rejected for `TwoDoubles`.** A recursive generic `TwoDoubles<T>`: it breaks every plain
   `TwoDoubles` reference. An interface: it cannot carry `equals`/`hashCode`.
 
@@ -580,7 +662,8 @@ call is stated with its options and a recommendation.
      exhaustive `when` needs an `else`), the opt-in gate, equality, logging, `Color`'s validation
      and `trimIfLongerThan`.
 
-  Question 10 sets out the ledger of dump lines for the mutable model.
+  The ledger of dump lines for the mutable model is under "Downstream impact and pre-publish
+  verification" below.
 - **`Color` keeps a public constructor that validates.** An `init` block requires every channel to
   be in `0..255` and throws `IllegalArgumentException` otherwise. `copy` goes through the same
   constructor, so it validates too and needs no copy-visibility annotation. `Color.of` still clamps.
@@ -602,29 +685,83 @@ call is stated with its options and a recommendation.
 
 ### Downstream impact and pre-publish verification
 
-- **What carries over.** [`downstream-blast-radius.md`](downstream-blast-radius.md) maps the
-  consumers, their Kotlin floors and MyGameClient's own `Color.lightened` extension, which the
-  GeneralTools member of the same name (there since 2.1.0) shadows. Its sweep assumes immutable
-  `Point` and `Dimensions`.
-- **What the mutable model changes.** MyGameTools' 40 in-place mutation sites keep compiling, and
-  `GameObject.location` keeps sharing one `Point` with `VisibleObject.area`. What breaks instead:
-  - the rename of `Square`, which 14 MyGameTools files import;
-  - the read-only `location` and `dimensions` references, which `VisibleObject` assigns through
-    `area.dimensions`;
-  - the published `gametools` 5.0.0's references to the old class name.
+- **Found.** Downstream, the break is the rename plus one assignment.
+  - 66 source lines in 22 files stop compiling: 39 lines in 14 files in MyGameTools, and 27 in 8
+    in MyGameClient.
+  - `VisibleObject`'s `area.dimensions = value` no longer compiles against a `val` reference.
+  - MyGameTools' 40 in-place mutations, and every `Color(...)` call, keep compiling.
+  - MyGameServer, WebTools and SpartanGraphics need nothing.
+  - No downstream code uses `divideBy`, `/=`, `evaluateList`, `com.spartanlabs.logging`,
+    `Color.copy`, `min` or `size` of a `Square`, an exhaustive `when` over `TwoDoubles`, or Java.
 
-  MyGameClient's 19 `Color(...)` calls keep compiling; a value outside `0..255` now throws.
-  Question 10 settles the counts, the silent changes, the in-repository verdicts and the ledger of
-  dump lines ([`downstream-under-mutable-model.md`](downstream-under-mutable-model.md)).
-- **Logging in this repository.** Every slf4j logger field in common code moves to kotlin-logging,
-  and the 12 failure sites move to the failure helper. `UserActions.kt` and the JVM part of `Misc`
-  keep slf4j.
+  MyGameTools' migration is about 17 files and 45 lines, plus a CHANGELOG entry. `Square` appears
+  in MyGameTools' public API, so the migration is a major for MyGameTools' own consumers. Evidence:
+  [`downstream-under-mutable-model.md`](downstream-under-mutable-model.md). The consumer map and
+  Kotlin floors in [`downstream-blast-radius.md`](downstream-blast-radius.md) still hold.
+- **Published `gametools` beside 3.0.0.** Every published `gametools` (5.0.0 and 5.1.0) references
+  `com/spartanlabs/geometry/Square`.
+  - A build that resolves one of them with GeneralTools 3.0.0 fails at runtime with
+    `NoClassDefFoundError` at the first `new Square`. That happens when constructing any `Actor` or
+    `Alive` (through `VisibleObject`'s constructor), a `TiledMap` or a `ZoneGrid`.
+  - Every `Point`, `Dimensions`, `TwoDoubles` and `Color` reference in them keeps linking.
+
+  The release notes say that no published `gametools` runs beside GeneralTools 3.0.0, and that
+  MyGameTools' consumers wait for a MyGameTools release built on it.
+- **Silent changes.** Each goes in the migration notes.
+  - `VisibleObject.dimensions = d` becomes `area.dimensions.setTo(d)`, which copies the values
+    rather than adopting the caller's instance.
+  - `Actor.isAtDestination` (`==` on `Point`) changes only when both positions are NaN, where
+    equality is now reflexive.
+  - The renamed type's `toString()` prints its new name.
+  - MyGameClient's `Portrait` builds a `Color` from channels it receives over the network. A value
+    outside `0..255` now throws while rendering, so untrusted input belongs with `Color.of`, which
+    clamps.
+  - MyGameClient's own `Color.lightened` extension stays shadowed by the GeneralTools member of the
+    same name, as it has been since 2.1.0.
+- **In this repository.**
+  - These files change: `TwoDoubles.kt`; `Square.kt`, which is renamed; `AxisAlignedBox.kt`;
+    `CenteredBox.kt`; `Intersections.kt` (the primitive accessors); `Color.kt` (validation and
+    `toHex`); and `Misc.kt`, which splits.
+  - `CenteredBox.kt` keeps its file name, so its JVM facade `CenteredBoxKt` stays.
+  - New: the immutable type, the marker, and the internal helpers.
+  - `Point.kt`, `Segment.kt` and `Vectors.kt` change only in logging and the failure helper.
+  - `Ray.kt` is unchanged, and `UserActions.kt` moves without change.
+  - `com.spartanlabs.logging` is deleted.
+  - Every slf4j logger field in common code moves to kotlin-logging, and the 12 failure sites move
+    to the failure helper. `UserActions.kt` and the JVM part of `Misc` keep slf4j.
+  - Tests that change by design:
+    - `SquareTest`'s reassignment of `location`, which uses `setTo` instead;
+    - `ColorTest`'s "primary constructor does not clamp", which now expects
+      `IllegalArgumentException`;
+    - `PointTest`'s `divAssign`-by-zero test, only if `/=` stops throwing;
+    - tests that name `Square`, which follow the rename.
+- **The dump ledger.** Against the 2.2.0 baseline:
+  - `Square` (19 members) and the four `com.spartanlabs.logging` classes leave.
+  - The renamed type (24 members, no setters), the immutable type and the marker arrive.
+  - `AxisAlignedBox` gains six accessors (with `$DefaultImpls`), and `CenteredBox` six overrides.
+  - `CenteredBoxKt`'s two conversions take the new name.
+  - `MiscKt.evaluateList` takes a `Function1`.
+  - `TwoDoubles` loses its two synthetic constructors and `divideBy (D)V`. It gains three
+    `protected` constructors and `divideBy-IoAF18A (D)Ljava/lang/Object;`, and its `equals` and
+    `hashCode` become `final`.
+  - `Point`, `Dimensions`, `Segment`, `Ray`, `Color`, `IntersectionsKt`, `VectorsKt` and
+    `UserActionsKt` show no diff.
+
+  What the dump cannot show gets a test or a smoke-build check of its own: unsealing, the opt-in
+  gate, equality, `divideBy`'s semantics, `Color`'s validation, `trimIfLongerThan`,
+  `capitalizeEveryWord`, and the `/=` and `min`/`size` choices.
+- **Documentation.** The README's intro, coordinates, modules, build-and-test, releasing, `Color`
+  and geometry quick-reference sections change, and a migration-notes section is added.
+  `docs/plans/1-color-methods/plan.md` and `docs/plans/3-geometry-primitives/plan.md` each get a
+  dated one-line note at the top pointing to this folder.
 - **Pre-publish sequence**, on the maintainer's machine. Steps 1 to 3 gate step 4.
   1. A throwaway MyGameTools migration in a scratch clone, built against this repository through
      `--include-build`. It settles API gaps while additions are still free.
   2. Publish to a file repository under `build/` and run a consumer smoke matrix against it:
      Kotlin 2.2.0 JVM, Kotlin 2.1.20 JVM, Kotlin 2.4 multiplatform, and plain Maven on
-     `GeneralTools-jvm`. Re-run the migrated clone against the same repository.
+     `GeneralTools-jvm`. Re-run the migrated clone against the same repository. Load a published
+     `gametools-core` 5.1.0 against the new artifacts once, so the migration notes quote the real
+     error.
   3. Upload without releasing, and repeat both checks against the Portal's download endpoint.
   4. Press Publish, then check once from plain `mavenCentral()`.
   5. Tag and release.

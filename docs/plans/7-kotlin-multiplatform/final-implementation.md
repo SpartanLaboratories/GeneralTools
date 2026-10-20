@@ -114,3 +114,13 @@ as-built record once implementation ends.
   "... negative / non-finite `box.size`; each failure also logs one WARN line, see Logging):".
 - **Why:** appending literally after the sentence's closing `):` broke the colon that leads into the table. The user
   chose (2026-10-20) the in-parentheses wording, which keeps that lead-in.
+
+### `logging` — commit 3 has no README intro clause to remove
+
+- **Plan:** [plan-logging.md](plan-logging.md) §6 "Commit 3", `README.md`: "remove the clause naming a 'lightweight
+  logging wrapper' from the intro, in whatever form `kmp-build` left it" (assumption L6).
+- **What differs:** commit 3 does not edit the README intro. The commit removes only the `com.spartanlabs.logging`
+  Modules bullet and appends the removal migration row.
+- **Why:** the clause was already gone. `kmp-build`'s `0f6ddde` rewrote the intro (`git log -S "logging wrapper"
+  -- README.md` lists it as the last commit to touch the text), and the intro at `978c4a6` names no logging wrapper
+  in any form. L6's "remove whichever form is present" therefore removes nothing.

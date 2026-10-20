@@ -58,8 +58,6 @@ Maven does not read Gradle module metadata, so depend on the JVM artifact:
     `normalized()`, `projectedOnto`.
   - `segmentIntersectsSegment`, `segmentIntersectsBox`, `rayIntersectsBox`
     intersection tests.
-- **`com.spartanlabs.logging`**
-  - `Logger`, `MessageBuilder`.
 
 ## Build & test
 
@@ -228,3 +226,4 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | A JVM build reports that GeneralTools `was compiled with an incompatible version of Kotlin` (actual metadata version 2.2.0) | The JVM variant is compiled with language and API version 2.2 and requires `kotlin-stdlib` 2.2.0 | Build with Kotlin 2.1 or newer. |
 | `kotlin-logging: initializing... active logger factory: Slf4jLoggerFactory` printed once on stdout | kotlin-logging 8 prints a startup line the first time any GeneralTools code that holds a logger runs | Start the JVM with `-Dkotlin-logging.logStartupMessage=false`, or set `KOTLIN_LOGGING_STARTUP_MESSAGE=false` (JS: the same name in `process.env`). |
 | New WARN lines when a geometry call returns a failed `Result`; alert or log-scrape rules written for the 2.x WARN text stop matching | Each expected failure now logs one WARN line through a shared helper: `<message>: <function>: <values>`, under the unchanged logger names. `TwoDoubles.divideBy(0.0)` still throws `IllegalArgumentException("Cannot divide by zero")` and logs at ERROR. | Match on logger name and level rather than text; silence `com.spartanlabs.geometry` in your backend if the volume is a problem. Exception messages are byte-identical to 2.x. |
+| `Unresolved reference: Logger` / `MessageBuilder` / `IJColor` from `com.spartanlabs.logging`; `NoClassDefFoundError` at runtime | The package is removed; it printed one green ANSI line and nothing else used it | Use slf4j or kotlin-logging, or `println("\u001b[92m$message\u001b[0m")` for the same output. |

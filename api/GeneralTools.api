@@ -264,33 +264,3 @@ public final class com/spartanlabs/geometry/VectorsKt {
 	public static final fun projectedOnto (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/Point;
 }
 
-public final class com/spartanlabs/logging/IJColor : java/lang/Enum {
-	public static final field INFO Lcom/spartanlabs/logging/IJColor;
-	public final fun getColorCode ()Ljava/lang/String;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public final fun getReset ()Ljava/lang/String;
-	public final fun plus (Ljava/lang/String;)Ljava/lang/String;
-	public static fun valueOf (Ljava/lang/String;)Lcom/spartanlabs/logging/IJColor;
-	public static fun values ()[Lcom/spartanlabs/logging/IJColor;
-}
-
-public final class com/spartanlabs/logging/Logger {
-	public fun <init> ()V
-	public final fun getInfo ()Lcom/spartanlabs/logging/MessageBuilder;
-	public final fun getPrintToConsole ()Z
-	public final fun info (Ljava/lang/String;)V
-	public final fun setPrintToConsole (Z)V
-}
-
-public final class com/spartanlabs/logging/LoggerKt {
-	public static final fun main ()V
-	public static synthetic fun main ([Ljava/lang/String;)V
-}
-
-public final class com/spartanlabs/logging/MessageBuilder {
-	public fun <init> (ZZZZLcom/spartanlabs/logging/IJColor;)V
-	public synthetic fun <init> (ZZZZLcom/spartanlabs/logging/IJColor;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getColor ()Lcom/spartanlabs/logging/IJColor;
-	public final fun modify (Ljava/lang/String;)Ljava/lang/String;
-}
-

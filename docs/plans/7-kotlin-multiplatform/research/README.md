@@ -695,8 +695,13 @@ call is stated with its options and a recommendation.
   1. The Kotlin Gradle plugin's `abiValidation()` writes `api/GeneralTools.api` and
      `api/GeneralTools.klib.api`, and `check` runs `checkKotlinAbi`.
   2. The baseline JVM dump comes from tag `2.2.0`, whose `src/main` equals `master`. The
-     binary-compatibility-validator produces it in a scratch copy of the tag.
-  3. The build migration must leave that dump byte-identical.
+     binary-compatibility-validator produces it in a scratch copy of the tag, with the tag's own
+     build. Before the migration the baseline is restated as the plugin's own dump of the same
+     classes, because the two tools do not list the same members (below). The restatement holds
+     only if the two builds compile the same class files with the same members and descriptors,
+     and every line it drops or adds names a member with the same descriptor and access flags in
+     both builds, left out or listed by a rule in which the two tools differ.
+  3. The build migration must leave the restated dump byte-identical.
   4. Each break lands in its own commit, and the combined diff is reviewed against a break ledger.
   5. Breaks a dump cannot show get compile or unit checks of their own: unsealing (a consumer's
      exhaustive `when` needs an `else`), the opt-in gate, equality, logging, `Color`'s validation
@@ -704,6 +709,48 @@ call is stated with its options and a recommendation.
 
   The ledger of dump lines for the mutable model is under "Downstream impact and pre-publish
   verification" below.
+- **The two dump tools list different members.** Read at the sources on 2026-10-20:
+  - The plugin's JVM dumper treats a `protected` member of a sealed class or of an enum class as
+    not public: `return (memberVisibility == Visibility.PROTECTED) && (classKind == ClassKind.ENUM_CLASS || classKind == ClassKind.CLASS && modality == Modality.SEALED)`
+    (`isEffectivelyInternal` in
+    [`KotlinMetadataVisibilities.kt` @ `v2.4.21`](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/abi-validation/abi-tools/src/main/kotlin/org/jetbrains/kotlin/abi/tools/impl/jvm/KotlinMetadataVisibilities.kt)).
+    It takes the visibility of a synthetic default-arguments constructor from the constructor
+    that constructor serves:
+    `name == "<init>" && "ILkotlin/jvm/internal/DefaultConstructorMarker;" in desc -> JvmMethodSignature(name, desc.replace("ILkotlin/jvm/internal/DefaultConstructorMarker;", ""))`
+    (`alternateDefaultSignature` in
+    [`KotlinMetadataSignature.kt` @ `v2.4.21`](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/abi-validation/abi-tools/src/main/kotlin/org/jetbrains/kotlin/abi/tools/impl/jvm/KotlinMetadataSignature.kt)).
+  - binary-compatibility-validator `0.18.2` counts every `protected` member as public:
+    `!isReified && isPublic(visibility, isPublishedApi)`, where `isPublic` accepts
+    `Visibility.PROTECTED`
+    ([`KotlinMetadataVisibilities.kt` @ `0.18.2`](https://github.com/Kotlin/binary-compatibility-validator/blob/0.18.2/src/main/kotlin/api/KotlinMetadataVisibilities.kt)).
+  - For the 2.2.0 classes the two dumps differ by one line, the synthetic default-arguments
+    constructor of the sealed `TwoDoubles`:
+    `public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V`.
+    binary-compatibility-validator lists it; the plugin does not, because the primary constructor
+    of a sealed class is `protected`. The tag's own build and the migrated build compile the same
+    28 class files, `javap -p -s` prints the same text for each, and that constructor has the same
+    descriptor and flags (`0x1001`, `ACC_PUBLIC, ACC_SYNTHETIC`) in both.
+  - The same comparison shows what neither dump records. The 2.4.21 compiler marks the class-side
+    `contains(Point)` of `Square` and `CenteredBox` `ACC_BRIDGE`, and its Kotlin metadata carries
+    the module name `io.github.spartanlaboratories:GeneralTools` (2.2.0: `GeneralTools`) and
+    different flags for data classes' generated `equals`, `hashCode` and `toString`. Callers link
+    by name and descriptor, which are unchanged.
+  - Once `TwoDoubles` is abstract, the plugin lists its `protected` constructors, a parameterless
+    one and the synthetic default-arguments form. Its own test data dumps
+    `public abstract class ProtectedConstructor protected constructor(public val a: Int = 0)` as
+    `protected fun <init> ()V`, `protected fun <init> (I)V` and
+    `public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V`
+    ([`syntheticConstructors.txt` @ `v2.4.21`](https://github.com/JetBrains/kotlin/blob/v2.4.21/libraries/tools/abi-validation/abi-tools-tests/src/compiling/kotlin/cases/syntheticConstructors/syntheticConstructors.txt)).
+  - The JVM backend adds that parameterless constructor, with the primary constructor's
+    visibility, to a class whose primary-constructor parameters all have default values, and
+    returns early for a sealed class (`irClass.modality == Modality.SEALED` in
+    [`JvmDefaultConstructorLowering.kt` @ `v2.4.21`](https://github.com/JetBrains/kotlin/blob/v2.4.21/compiler/ir/backend.jvm/lower/src/org/jetbrains/kotlin/backend/jvm/lower/JvmDefaultConstructorLowering.kt)).
+  - The plugin's klib dump lists no constructor of a sealed class: "Exclude constructors of sealed
+    classes from ABI dump."
+    ([`LibraryAbiReaderImpl.kt` @ `v2.4.21`](https://github.com/JetBrains/kotlin/blob/v2.4.21/compiler/util-klib-abi/src/org/jetbrains/kotlin/library/abi/impl/LibraryAbiReaderImpl.kt)).
+  - The statement in [`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md)
+    recommendation 7 that "the same files are produced by both" holds for the text format, not for
+    the members each tool lists.
 - **`Color` keeps a public constructor that validates.** An `init` block requires every channel to
   be in `0..255` and throws `IllegalArgumentException` otherwise. `copy` goes through the same
   constructor, so it validates too and needs no copy-visibility annotation. `Color.of` still clamps.
@@ -801,9 +848,11 @@ call is stated with its options and a recommendation.
   - `AxisAlignedBox` gains six accessors (with `$DefaultImpls`), and `CenteredBox` six overrides.
   - `CenteredBoxKt`'s two conversions name `Rectangle`, and `toSquare` becomes `toRectangle`.
   - `MiscKt.evaluateList` takes a `Function1`.
-  - `TwoDoubles` loses its two synthetic constructors and `divideBy (D)V`. It gains three
-    `protected` constructors, `divideBy-IoAF18A (D)Ljava/lang/Object;`, `component1 ()D` and
-    `component2 ()D`, and its `equals` and `hashCode` become `final`.
+  - `TwoDoubles` loses its two synthetic accessor constructors and `divideBy (D)V`. It gains three
+    `protected` constructors (`()V`, `(DD)V` and `(Lcom/spartanlabs/geometry/TwoDoubles;)V`), the
+    line of its synthetic default-arguments constructor (present in 2.2.0, and left out of the
+    plugin's dump while the class is sealed), `divideBy-IoAF18A (D)Ljava/lang/Object;`,
+    `component1 ()D` and `component2 ()D`, and its `equals` and `hashCode` become `final`.
   - `Point` gains `unaryMinus ()Lcom/spartanlabs/geometry/Point;`.
   - `Dimensions`, `Segment`, `Ray`, `Color`, `IntersectionsKt`, `VectorsKt` and `UserActionsKt`
     show no diff.

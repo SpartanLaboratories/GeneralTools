@@ -317,8 +317,49 @@ class ColorTest {
     // --- primary constructor contract ---
 
     @Test
-    fun `primary constructor does not clamp out-of-range channels`() {
-        assertEquals(300, Color(300, 0, 0).red)
+    fun `primary constructor rejects out-of-range channels`() {
+        assertFailsWith<IllegalArgumentException> { Color(300, 0, 0) }
+    }
+
+    @Test
+    fun `primary constructor accepts the boundary values 0 and 255`() {
+        val low = Color(0, 0, 0, 0)
+        assertEquals(listOf(0, 0, 0, 0), listOf(low.red, low.green, low.blue, low.alpha))
+        val high = Color(255, 255, 255, 255)
+        assertEquals(listOf(255, 255, 255, 255), listOf(high.red, high.green, high.blue, high.alpha))
+    }
+
+    @Test
+    fun `primary constructor rejects each channel below 0`() {
+        assertFailsWith<IllegalArgumentException> { Color(-1, 0, 0, 0) }
+        assertFailsWith<IllegalArgumentException> { Color(0, -1, 0, 0) }
+        assertFailsWith<IllegalArgumentException> { Color(0, 0, -1, 0) }
+        assertFailsWith<IllegalArgumentException> { Color(0, 0, 0, -1) }
+    }
+
+    @Test
+    fun `primary constructor rejects each channel above 255`() {
+        assertFailsWith<IllegalArgumentException> { Color(256, 0, 0, 0) }
+        assertFailsWith<IllegalArgumentException> { Color(0, 256, 0, 0) }
+        assertFailsWith<IllegalArgumentException> { Color(0, 0, 256, 0) }
+        assertFailsWith<IllegalArgumentException> { Color(0, 0, 0, 256) }
+    }
+
+    @Test
+    fun `primary constructor names the offending channel and value`() {
+        val message = assertFailsWith<IllegalArgumentException> { Color(0, 300, 0) }.message.orEmpty()
+        assertTrue("green" in message, message)
+        assertTrue("300" in message, message)
+    }
+
+    @Test
+    fun `copy rejects an out-of-range channel`() {
+        assertFailsWith<IllegalArgumentException> { Color(0, 0, 0).copy(alpha = 256) }
+    }
+
+    @Test
+    fun `copy keeps a valid replacement`() {
+        assertEquals(Color(9, 2, 3, 4), Color(1, 2, 3, 4).copy(red = 9))
     }
 
     // --- Color.of(red, green, blue, alpha = 255) ---
@@ -336,6 +377,11 @@ class ColorTest {
     @Test
     fun `of clamps channels high and low`() {
         assertEquals(Color(255, 0, 128, 255), Color.of(300, -5, 128, 999))
+    }
+
+    @Test
+    fun `of clamps extreme Int values without throwing`() {
+        assertEquals(Color(0, 255, 0, 255), Color.of(Int.MIN_VALUE, Int.MAX_VALUE, 0))
     }
 
     // --- Color.fromNormalized(r, g, b, a = 1f) ---
@@ -397,5 +443,15 @@ class ColorTest {
     @Test
     fun `fromHex rejects non-hex digits`() {
         assertFailsWith<IllegalArgumentException> { Color.fromHex("#GGGGGG") }
+    }
+
+    @Test
+    fun `fromHex rejects a sign character that parses to a negative channel`() {
+        assertFailsWith<IllegalArgumentException> { Color.fromHex("#-1-1-1") }
+    }
+
+    @Test
+    fun `fromHex rejects a sign character in the alpha pair`() {
+        assertFailsWith<IllegalArgumentException> { Color.fromHex("#-1FFFFFF") }
     }
 }

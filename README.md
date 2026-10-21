@@ -129,15 +129,20 @@ Instance methods: `normalized()`, `lightened(fraction = 0.35)`,
 `toHex(includeAlpha = false)`.
 
 Factories: `Color.of(red, green, blue, alpha = 255)` (clamps each channel into
-`0..255` — use it for untrusted input; the primary constructor does not
-validate), `Color.fromNormalized(r, g, b, a = 1f)`, `Color.fromPackedInt(argb)`,
+`0..255` — use it for untrusted input; the primary constructor and `copy` throw
+`IllegalArgumentException` for a channel outside `0..255`),
+`Color.fromNormalized(r, g, b, a = 1f)`, `Color.fromPackedInt(argb)`,
 `Color.fromHex(hex)`.
+
+A `Float` is double precision on Kotlin/JS, so `lerp` and `luminance()` can
+differ in the last digits there.
 
 Hex and packed-int forms use ARGB byte order: `toHex(includeAlpha = true)` emits
 `#AARRGGBB` and round-trips through `fromHex`.
 
 ```kotlin
 val clamped = Color.of(300, 87, -5)               // Color(255, 87, 0) - out-of-range channels clamped
+// Color(300, 0, 0)  // throws IllegalArgumentException - use Color.of for untrusted values
 val brand = Color.of(255, 87, 51)
 val faded = brand.withAlpha(128)
 val hex = faded.toHex(includeAlpha = true)         // "#80FF5733"
@@ -308,3 +313,5 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | Type mismatch naming `Predicate` on a call to `evaluateList`, or `NoSuchMethodError: evaluateList(Iterable, Predicate)` from code compiled against 2.x | `evaluateList` now takes `(T) -> Boolean` and lives in common code (source and binary break; the JVM descriptor changes from `Predicate` to `Function1`) | A trailing lambda compiles unchanged: `evaluateList(items) { it > 0 }`. For a `Predicate` variable pass `predicate::test`; replace `Predicate { ... }` with a plain lambda. Recompile every caller; a Java caller passes a lambda for the Kotlin function type. |
 | `IndexOutOfBoundsException` from `trimIfLongerThan` with a negative length (no compile error) | A negative length is rejected on every platform. On the JVM the exception is now a plain `IndexOutOfBoundsException`, no longer its subtype `StringIndexOutOfBoundsException` (behavioural break) | Pass a length of `0` or more (`maxOf(0, n)`); catch `IndexOutOfBoundsException`, not the subtype. |
 | `capitalizeEveryWord` output contains commas it used to lose: `"a, b"` gives `"A, B"` (2.x: `"A B"`) | 2.x built the result from `List.toString()` and deleted every comma, including the input's own (behavioural break). It also no longer uses the JVM default locale (a Turkish default no longer produces a dotted capital `İ`) | If you relied on the removal, call `.replace(",", "")` on the result. |
+| `IllegalArgumentException: red must be in 0..255 but was 300` (or green/blue/alpha) from `Color(...)` or `color.copy(...)` | The public constructor validates its channels, and `copy` goes through it (behavioural break; no signature changes) | Pass in-range channels. For values you do not control (parsed text, network or user input) use `Color.of(...)`, which clamps; MyGameClient's `Portrait`, which builds a `Color` from network snapshot values, is the typical case. |
+| `Color.fromHex("#-1-1-1")` throws `IllegalArgumentException`; 2.x returned `Color(-1, -1, -1)` | A sign character makes a channel parse as negative, which the constructor now rejects | Validate or strip the sign before parsing; `fromHex` has always documented `IllegalArgumentException` for malformed input. |

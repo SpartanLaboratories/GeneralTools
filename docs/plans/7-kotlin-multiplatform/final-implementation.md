@@ -534,3 +534,41 @@ as-built record once implementation ends.
   aside, the sorted listings are identical. The JVM dump (`api/GeneralTools.api`) sorts members and shows only the
   predicted line pair.
 - **Status:** order only, so recorded and continued under the coordinator's rule (2026-10-20).
+
+### `generaltools-breaks` — commit 3, facade check: `capitalizeEveryWord` moves within the `javap` listing of `MiscKt`
+
+- **Recorded:** in commit 4. The entry describes commit 3 (`57e03e0`) and is added for consistency with the commit-1
+  `evaluateList` entry above.
+- **Plan:** [plan-generaltools-breaks.md](plan-generaltools-breaks.md) §5.1 (both files keep the `MiscKt` facade) and
+  §11 row 3 (ledger row 10: JVM dump unchanged).
+- **Result:** the same ten public members before and after commit 3, with identical signatures:
+  `capitalizeEveryWord` keeps `(Ljava/lang/String;)Ljava/lang/String;`. In the `javap -public -s` listing it moves from
+  first (the `MiscJvm.kt` part) to just after `time` (the start of the `Misc.kt` part), because the facade lists each
+  part's members in turn. The sorted listings are identical, and `git diff --exit-code -- api/GeneralTools.api` exited 0.
+- **Status:** order only, so recorded and continued under the coordinator's rule (2026-10-20).
+
+### `generaltools-breaks` — commit 4: the `Color` header keeps bare constructor properties
+
+- **Plan:** [plan-generaltools-breaks.md](plan-generaltools-breaks.md) §1 item 4 and the §5.2 "Commit 4" listing write
+  the header as `public data class Color(public val red: Int, public val green: Int, public val blue: Int, public val
+  alpha: Int = 255)`; §6 "Commit 4" item 1 says "add the `init` block; apply the KDoc changes of 5.2. No other code
+  change."
+- **Result:** the header stays `public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int =
+  255)`. Commit 4 adds only the `init` block and KDoc to `Color.kt`.
+- **Why:** §6 rules out any other code change, and the `explicit-api` unit settled the convention:
+  [plan-explicit-api.md](plan-explicit-api.md) §7.1, row for `Color`, "constructor properties stay bare: data class".
+  The header compiles under `explicitApi()`, and an explicit `public` would change neither dump. The coordinator decided
+  this on 2026-10-20.
+- **Status:** no code change; the §1/§5.2 header text is for the planner's correction.
+
+### `generaltools-breaks` — commit 4: the §11 `does not clamp` grep has one hit, outside `Color`
+
+- **Plan:** [plan-generaltools-breaks.md](plan-generaltools-breaks.md) §11 row 4, "Check": "`grep -rn "does not clamp"
+  src/` finds nothing".
+- **Result:** the grep finds one line, `src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/arithmetic/DimensionsArithmeticTest.kt:31`,
+  the test ``minus may produce a negative size and does not clamp``. The `two-doubles` unit added that geometry test
+  after this plan was written, and it must keep its name. The text the check targets, the `ColorTest` name `primary
+  constructor does not clamp out-of-range channels`, is gone: commit 4 renamed it to `primary constructor rejects
+  out-of-range channels`.
+- **Status:** the check is too broad; no code change. The coordinator decided this on 2026-10-20, for the planner's
+  correction.

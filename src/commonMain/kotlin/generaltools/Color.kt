@@ -5,22 +5,39 @@ import kotlin.math.roundToInt
 /**
  * A Red-Green-Blue-Alpha colour, each channel `0..255`.
  *
- * Immutable value type. Channels are a documented `0..255` contract — the
- * primary constructor does not validate them; use [Color.of] to clamp
- * untrusted input. Transform methods ([lightened], [darkened], [lerp],
- * [inverted], [grayscale], [withAlpha]) return a new instance.
+ * Immutable value type. The primary constructor validates every channel and
+ * throws [IllegalArgumentException] for a channel outside `0..255`; the
+ * message names the channel and the value. `copy` is generated through the
+ * constructor and validates the same way. Use [Color.of] to clamp untrusted
+ * input instead of rejecting it. Transform methods ([lightened], [darkened],
+ * [lerp], [inverted], [grayscale], [withAlpha]) return a new instance.
+ *
+ * On Kotlin/JS a `Float` is double precision, so [lerp] and [luminance] can
+ * differ from the JVM and Wasm results in the last digits (and a [lerp]
+ * channel can differ by one for some fractions).
  *
  * Hex and packed-int forms use ARGB byte order: [toHex] with alpha emits
  * `#AARRGGBB` and round-trips through [fromHex]; [toPackedInt] /
  * [fromPackedInt] likewise.
  *
- * @property red the red channel, `0..255`, not validated by the constructor.
- * @property green the green channel, `0..255`, not validated by the constructor.
- * @property blue the blue channel, `0..255`, not validated by the constructor.
- * @property alpha the alpha channel, `0..255`, not validated by the constructor;
- *   defaults to `255` (opaque).
+ * @property red the red channel, `0..255`.
+ * @property green the green channel, `0..255`.
+ * @property blue the blue channel, `0..255`.
+ * @property alpha the alpha channel, `0..255`; defaults to `255` (opaque).
+ * @throws IllegalArgumentException if a channel is outside `0..255`, from the
+ *   constructor or `copy`; the first offending channel in the order red,
+ *   green, blue, alpha is named with its value.
  */
 public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: Int = 255) {
+    init {
+        // Literals rather than a companion constant: the companion's initialisers
+        // (WHITE = Color(...)) run this block while the companion is still being
+        // initialised, so a constant declared later in it would not be set yet.
+        require(red in 0..255) { "red must be in 0..255 but was $red" }
+        require(green in 0..255) { "green must be in 0..255 but was $green" }
+        require(blue in 0..255) { "blue must be in 0..255 but was $blue" }
+        require(alpha in 0..255) { "alpha must be in 0..255 but was $alpha" }
+    }
 
     /**
      * `[r, g, b, a]` with every channel mapped from `0..255` to `0f..1f`.
@@ -97,6 +114,10 @@ public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: 
      * Linearly interpolates (blends) between this colour and [target] by
      * [fraction], alpha included.
      *
+     * On Kotlin/JS a `Float` is double precision, so the arithmetic here runs in
+     * double precision there and a channel can differ by one from the JVM and
+     * Wasm result for some fractions.
+     *
      * @param target the colour to blend toward; not modified.
      * @param fraction blend factor, clamped to `0f..1f` (`0f` → this colour,
      *   `1f` → [target]); a non-finite value (`NaN`, `±Infinity`) is treated as
@@ -122,6 +143,9 @@ public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: 
      * Perceived luma (BT.601 weights, not gamma-corrected — not WCAG relative
      * luminance).
      *
+     * On Kotlin/JS a `Float` is double precision, so the result can differ from
+     * the JVM and Wasm results in the last digits.
+     *
      * @return a value in `0.0f..1.0f`; alpha is ignored.
      */
     public fun luminance(): Float = (0.299f * red + 0.587f * green + 0.114f * blue) / 255f
@@ -131,7 +155,7 @@ public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: 
      *
      * @return the packed value: alpha in bits 31..24, red 23..16, green 15..8,
      *   blue 7..0. The result is a signed `Int`, so opaque white packs to `-1`.
-     *   Channels are assumed to be in `0..255` — the caller's responsibility.
+     *   Channels are always in `0..255` by construction.
      */
     public fun toPackedInt(): Int = (alpha shl 24) or (red shl 16) or (green shl 8) or blue
 
@@ -151,19 +175,33 @@ public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: 
         }
     }
 
+    /** Named colours and the factories that build a [Color]. */
     public companion object {
+        /** Opaque white, `(255, 255, 255)`. */
         public val WHITE: Color = Color(255, 255, 255)
+        /** Opaque black, `(0, 0, 0)`. */
         public val BLACK: Color = Color(0, 0, 0)
+        /** Opaque red, `(255, 0, 0)`. */
         public val RED: Color = Color(255, 0, 0)
+        /** Opaque green, `(0, 255, 0)`. */
         public val GREEN: Color = Color(0, 255, 0)
+        /** Opaque blue, `(0, 0, 255)`. */
         public val BLUE: Color = Color(0, 0, 255)
+        /** Opaque yellow, `(255, 255, 0)`. */
         public val YELLOW: Color = Color(255, 255, 0)
+        /** Opaque cyan, `(0, 255, 255)`. */
         public val CYAN: Color = Color(0, 255, 255)
+        /** Opaque magenta, `(255, 0, 255)`. */
         public val MAGENTA: Color = Color(255, 0, 255)
+        /** Opaque orange, `(255, 165, 0)`. */
         public val ORANGE: Color = Color(255, 165, 0)
+        /** Opaque purple, `(128, 0, 128)`. */
         public val PURPLE: Color = Color(128, 0, 128)
+        /** Opaque gray, `(128, 128, 128)`. */
         public val GRAY: Color = Color(128, 128, 128)
+        /** Opaque light gray, `(192, 192, 192)`. */
         public val LIGHT_GRAY: Color = Color(192, 192, 192)
+        /** Opaque dark gray, `(64, 64, 64)`. */
         public val DARK_GRAY: Color = Color(64, 64, 64)
         /** Fully transparent - a panel/label with no visible background of its own. */
         public val TRANSPARENT: Color = Color(0, 0, 0, 0)
@@ -171,8 +209,8 @@ public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: 
         /**
          * Builds a [Color] with every channel clamped into `0..255`. Prefer this
          * over the primary constructor for values that may be out of range
-         * (parsed input, arithmetic results) — the constructor performs no
-         * validation.
+         * (parsed input, arithmetic results) — the constructor rejects what this
+         * function clamps.
          *
          * @param red the red channel, coerced into `0..255`.
          * @param green the green channel, coerced into `0..255`.
@@ -237,7 +275,8 @@ public data class Color(val red: Int, val green: Int, val blue: Int, val alpha: 
          * @return the decoded [Color].
          * @throws IllegalArgumentException if [hex] is not one of the accepted
          *   lengths or contains non-hex digits (`NumberFormatException`, an
-         *   `IllegalArgumentException`).
+         *   `IllegalArgumentException`), or a sign character makes a channel
+         *   negative (for example `"#-1-1-1"`).
          */
         public fun fromHex(hex: String): Color {
             val cleanHex = hex.removePrefix("#").removePrefix("0x")

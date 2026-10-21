@@ -50,8 +50,8 @@ Everything below is common code, available on the `jvm`, `js` and `wasmJs` targe
 
 - **`com.spartanlabs.generaltools`**
   - `Misc` — string, list and timing helpers: `profile`, `onException`, `forEvery`, `forEveryIndexed`,
-    `trimIfLongerThan` and `evaluateList` are common; **JVM only:** `asURL`, `read`, the slf4j `Logger.time`
-    extension and `capitalizeEveryWord`.
+    `trimIfLongerThan`, `evaluateList` and `capitalizeEveryWord` are common; **JVM only:** `asURL`, `read` and the
+    slf4j `Logger.time` extension.
   - `UserActions` — AWT screenshot capture and input automation. **JVM only.**
   - `Color` — immutable RGBA value type: transforms plus hex / packed-int codecs.
   - `ExperimentalForInheritanceGeneralToolsApi` — opt-in marker for subclassing `TwoDoubles`.
@@ -306,4 +306,5 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | A string or log assertion on `toString()` fails: `Rectangle(location=..., dimensions=...)` where 2.x printed `Square(...)` | The class is renamed. | Update the expected text. |
 | A class implementing `AxisAlignedBox` stops compiling after declaring `width`, `height`, `minX`, `minY`, `maxX` or `maxY` | `AxisAlignedBox` now has these six members with default bodies. | Add `override` and return the box's own value, or rename your member. |
 | Type mismatch naming `Predicate` on a call to `evaluateList`, or `NoSuchMethodError: evaluateList(Iterable, Predicate)` from code compiled against 2.x | `evaluateList` now takes `(T) -> Boolean` and lives in common code (source and binary break; the JVM descriptor changes from `Predicate` to `Function1`) | A trailing lambda compiles unchanged: `evaluateList(items) { it > 0 }`. For a `Predicate` variable pass `predicate::test`; replace `Predicate { ... }` with a plain lambda. Recompile every caller; a Java caller passes a lambda for the Kotlin function type. |
-| `IndexOutOfBoundsException` from `trimIfLongerThan` with a negative length (no compile error); on Kotlin/JS the old result `""` is gone | A negative length is rejected on every platform. On the JVM the exception is now a plain `IndexOutOfBoundsException`, no longer its subtype `StringIndexOutOfBoundsException` (behavioural break) | Pass a length of `0` or more (`maxOf(0, n)`); catch `IndexOutOfBoundsException`, not the subtype. |
+| `IndexOutOfBoundsException` from `trimIfLongerThan` with a negative length (no compile error) | A negative length is rejected on every platform. On the JVM the exception is now a plain `IndexOutOfBoundsException`, no longer its subtype `StringIndexOutOfBoundsException` (behavioural break) | Pass a length of `0` or more (`maxOf(0, n)`); catch `IndexOutOfBoundsException`, not the subtype. |
+| `capitalizeEveryWord` output contains commas it used to lose: `"a, b"` gives `"A, B"` (2.x: `"A B"`) | 2.x built the result from `List.toString()` and deleted every comma, including the input's own (behavioural break). It also no longer uses the JVM default locale (a Turkish default no longer produces a dotted capital `İ`) | If you relied on the removal, call `.replace(",", "")` on the result. |

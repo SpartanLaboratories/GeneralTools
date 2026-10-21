@@ -1,5 +1,6 @@
 package com.spartanlabs.testing.component.generaltools
 
+import com.spartanlabs.generaltools.capitalizeEveryWord
 import com.spartanlabs.generaltools.evaluateList
 import com.spartanlabs.generaltools.forEvery
 import com.spartanlabs.generaltools.forEveryIndexed
@@ -100,5 +101,16 @@ class MiscTest {
         var calls = 0
         assertTrue(evaluateList(listOf(1, 2, 3)) { calls++; it == 2 })
         assertEquals(2, calls)
+    }
+
+    @Test
+    fun `capitalizeEveryWord capitalizes each word`() {
+        assertEquals("Hello World Foo", "hello world foo".capitalizeEveryWord())
+    }
+
+    @Test
+    fun `capitalizeEveryWord keeps commas that are part of the input`() {
+        assertEquals("Hello, World, Foo", "hello, world, foo".capitalizeEveryWord())
+        assertEquals("One,two Three", "one,two three".capitalizeEveryWord())
     }
 }

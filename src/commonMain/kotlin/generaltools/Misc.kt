@@ -15,6 +15,22 @@ import kotlin.time.measureTime
 private val log = KotlinLogging.logger("com.spartanlabs.generaltools.Misc")
 
 /**
+ * Capitalizes the first letter of each word, where only the space character separates words (tabs and newlines do
+ * not). Commas, repeated spaces and leading or trailing spaces are kept as they are; 2.x removed every comma.
+ *
+ * A lowercase first letter is replaced by its title case with the invariant-locale Unicode mapping, so the result
+ * does not depend on the default locale (`"istanbul"` gives `"Istanbul"` everywhere); any other first character is
+ * left unchanged.
+ *
+ * @receiver the text to capitalize; it is not modified.
+ * @return a new string with the first letter of each space-separated word capitalized.
+ */
+public fun String.capitalizeEveryWord(): String =
+    // The isLowerCase() guard keeps a first character that is already uppercase (or not a letter) as it is, as 2.x
+    // did; titlecase() is only applied to lowercase letters.
+    split(' ').joinToString(" ") { it.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() } }
+
+/**
  * Returns `true` if [validator] returns `true` for any item of [list]; it stops at the first match.
  *
  * Logging (Boundary Ring): one TRACE event per call on the logger `com.spartanlabs.generaltools.Misc`, the

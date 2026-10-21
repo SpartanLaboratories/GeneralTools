@@ -18,13 +18,6 @@ import org.slf4j.LoggerFactory
 private val log: Logger = LoggerFactory.getLogger("com.spartanlabs.generaltools.Misc")
 
 /**
- * Will capitalize the first letter of each word in this String
- */
-public fun String.capitalizeEveryWord(): String =
-    split(' ').map{it.capitalize()} .toString().let {
-        it.substring(1,it.length-1).replace(",","")
-    }
-/**
  * Takes a String that is supposed to be a valid URL and returns a URL
  * Throws a MalformedURLException if a String that is not a valid URL is given
  */

@@ -382,6 +382,18 @@ as-built record once implementation ends.
   The coordinator decided on 2026-10-20 that each commit must leave its statements true, as in the `box-model` commit
   (c) entry above.
 
+### `generaltools-breaks` — commit 3 removes the Kotlin/JS clause from migration row 2
+
+- **Plan:** [plan-generaltools-breaks.md](plan-generaltools-breaks.md) §5.3, row 2 (commit 2), whose Symptom cell
+  reads "`IndexOutOfBoundsException` from `trimIfLongerThan` with a negative length (no compile error); on Kotlin/JS
+  the old result `""` is gone". Commit 2 (`169ac66`) appended the row word for word.
+- **What differs:** in commit 3 the Symptom cell loses the clause "; on Kotlin/JS the old result `""` is gone" and
+  reads "`IndexOutOfBoundsException` from `trimIfLongerThan` with a negative length (no compile error)". The Cause and
+  Fix cells are unchanged.
+- **Why:** the plan's row claims a 2.x Kotlin/JS behaviour that never shipped. 2.x had no JS target, and `""` existed
+  only on this branch before commit 2, so a reader migrating from 2.x never saw it. Commit 3 edits the README anyway,
+  so the correction rides with it. The coordinator decided this on 2026-10-20.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`

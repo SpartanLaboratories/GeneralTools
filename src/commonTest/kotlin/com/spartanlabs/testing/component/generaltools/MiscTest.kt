@@ -8,6 +8,7 @@ import com.spartanlabs.generaltools.profile
 import com.spartanlabs.generaltools.trimIfLongerThan
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -60,6 +61,21 @@ class MiscTest {
     @Test
     fun `trimIfLongerThan leaves shorter strings unchanged`() {
         assertEquals("hi", "hi" trimIfLongerThan 5)
+    }
+
+    @Test
+    fun `trimIfLongerThan throws for a negative length`() {
+        assertFailsWith<IndexOutOfBoundsException> { "hello".trimIfLongerThan(-1) }
+    }
+
+    @Test
+    fun `trimIfLongerThan throws for a negative length on an empty string`() {
+        assertFailsWith<IndexOutOfBoundsException> { "".trimIfLongerThan(-1) }
+    }
+
+    @Test
+    fun `trimIfLongerThan to zero yields the empty string`() {
+        assertEquals("", "hello".trimIfLongerThan(0))
     }
 
     @Test

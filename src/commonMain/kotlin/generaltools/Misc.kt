@@ -82,8 +82,18 @@ public infix fun <T> Collection<T>.forEveryIndexed(consume:(Int,T)->Unit): Unit 
  */
 public infix fun <T> Collection<T>.forEvery(consume:(T)->Unit): Unit = forEach { consume(it) }
 /**
- * Checks if the receiver's length is greater than the given length,
- * if it is then it trims the receiver to the given length,
- * if it is not then it returns the receiver
+ * Returns the first [length] characters of the receiver when it is longer than [length], otherwise the receiver
+ * itself.
+ *
+ * @param length the maximum length of the result; must be `>= 0`.
+ * @return the receiver trimmed to [length] characters, or the receiver unchanged if it is not longer than [length].
+ * @throws IndexOutOfBoundsException if [length] is negative, on every platform and for every receiver (the empty
+ *   string included). On the JVM this is a plain `IndexOutOfBoundsException`; 2.x threw its subtype
+ *   `StringIndexOutOfBoundsException`.
  */
-public infix fun String.trimIfLongerThan(length:Int): String = if(this.length > length) substring(0,length) else this
+public infix fun String.trimIfLongerThan(length: Int): String {
+    // Explicit check: substring(0, negative) throws on the JVM and wasmJs but returns "" on Kotlin/JS,
+    // so the contract is enforced here instead of being inherited from the platform.
+    if (length < 0) throw IndexOutOfBoundsException("length must be >= 0 but was $length")
+    return if (this.length > length) substring(0, length) else this
+}

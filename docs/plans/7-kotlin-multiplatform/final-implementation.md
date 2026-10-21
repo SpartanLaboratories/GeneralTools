@@ -221,6 +221,14 @@ as-built record once implementation ends.
 - **Why:** the same reading as commit (a)'s "Add an `else` branch.": every existing row of the migration table starts
   its cells with a capital and ends its Fix cell with a full stop.
 
+### `two-doubles` — commit (c) capitalises the Fix cell of its migration row
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §8, row (c), "Migration rows" column, whose fix reads "only
+  NaN-versus-NaN pairs change, from unequal to equal; ...".
+- **What differs:** the README Fix cell starts "Only NaN-versus-NaN pairs change, ..." and ends with a full stop. The
+  symptom and cause cells already start with code and are verbatim.
+- **Why:** the same table convention as the (a) and (b) rows above.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`
@@ -266,3 +274,17 @@ as-built record once implementation ends.
   brace) are byte-identical before and after.
 - **Status:** accepted under A4; difference recorded for the planner's ledger correction (decided 2026-10-20). The dumps
   are kept exactly as `updateKotlinAbi` wrote them.
+
+### `two-doubles` — commit (c), A4: the klib `equals`/`hashCode` lines move within the `TwoDoubles` block
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §11 row (c), "Expected dump delta (A4)": "**klib:** `equals` and
+  `hashCode` modality `open` -> `final`", and "Two changed lines per dump".
+- **JVM dump:** matches the prediction exactly: `public fun equals (Ljava/lang/Object;)Z` becomes `public final fun
+  equals ...` and `public fun hashCode ()I` becomes `public final fun hashCode ()I`, in place; no other line.
+- **klib dump:** the same two declarations change modality and nothing else, but the dump lists a class's `final`
+  members before its `open` ones, so the two lines move up. `git diff -U0` shows them removed from the `open` group at
+  the end of the block (after `timesAssign`) and added as `final fun equals(kotlin/Any?): kotlin/Boolean` and
+  `final fun hashCode(): kotlin/Int` after `divideBy` (two lines added, two removed), rather than two lines changed in
+  place. The signatures and the mangled-name comments are unchanged.
+- **Status:** layout only, so recorded and continued under the coordinator's rule (2026-10-20); for the planner's ledger
+  correction.

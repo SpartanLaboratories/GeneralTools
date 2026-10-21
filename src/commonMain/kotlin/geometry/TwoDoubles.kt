@@ -28,7 +28,16 @@ internal const val DIVISION_BY_ZERO_MESSAGE: String = "Cannot divide by zero"
  * seam has not yet been proven by a consumer and may change in a minor release. A subclass opts in with
  * `@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)` and calls a `protected` constructor.
  * These members are final, so every subclass keeps the invariants: [first], [second], [setTo], [modBy],
- * [amplifyBy], [divideBy], the four assignment operators and [containsNaN]. [toString] stays open.
+ * [amplifyBy], [divideBy], the four assignment operators, [containsNaN], [equals] and [hashCode]. [toString]
+ * stays open.
+ *
+ * ### Equality and hash keys
+ * Two instances are equal when they are of the same concrete class and their components are equal, where
+ * NaN equals NaN and `0.0` equals `-0.0` (so a [Point] never equals a [Dimensions] with the same values).
+ * Equality and [hashCode] follow the *current* values. These types are mutable: do not change an instance
+ * while it is a key in a hash-based map or an element of a hash-based set, because the collection's
+ * behaviour is then undefined. Use `Rectangle.toImmutable()` where a box is the key, or a copy of the
+ * point that nothing else holds.
  *
  * ### Thread safety
  * Instances are not synchronised.
@@ -118,24 +127,38 @@ public abstract class TwoDoubles protected constructor(
         second /= magnitude
     }
     /**
-     * Two [TwoDoubles] are equal if they are the same concrete type and their
-     * [first] and [second] values match. Paired with [hashCode], which folds in
-     * the same concrete type.
+     * Equal when [other] is the same concrete class and both components are equal: ordinary IEEE equality
+     * per component, except that NaN equals NaN (so an instance with a NaN component equals itself and
+     * every identical instance). `0.0` equals `-0.0`. No pair that was equal in 2.x is unequal now; only
+     * NaN-versus-NaN pairs changed from unequal to equal. Final: the same-class rule and the hash fold
+     * are the invariant. Consistent with [hashCode]. See the class documentation on mutable hash keys.
+     *
+     * @param other the value to compare with.
+     * @return `true` if [other] is a `TwoDoubles` of exactly this class with equal components.
      */
-    override operator fun equals(other: Any?):Boolean {
-        if(other==null || other::class != this::class) return false
+    public final override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        // Same concrete class, not merely a TwoDoubles: a Point never equals a Dimensions.
+        if (other == null || this::class != other::class) return false
         other as TwoDoubles
-        return first == other.first && second == other.second
+        return componentEquals(first, other.first) && componentEquals(second, other.second)
     }
     /**
-     * Hash code consistent with [equals]: folds in the concrete class (so a
-     * [Point] and a [Dimensions] holding the same values hash differently)
-     * along with [first] and [second]. Makes subclasses usable as keys in
-     * hash-based collections.
+     * Hash code consistent with [equals]: folds in the concrete class (so a [Point] and a [Dimensions]
+     * holding the same values hash differently) and both components, with `-0.0` hashed as `0.0` and every
+     * NaN hashed alike. Final. The value changes when the instance is mutated; see the class documentation.
+     *
+     * @return the hash code.
      */
-    override fun hashCode(): Int =
-        31 * (31 * this::class.hashCode() + first.hashCode()) + second.hashCode()
-    /** Returns "first, second" */
+    public final override fun hashCode(): Int =
+        // class term + per-component hashes; -0.0 and NaN canonicalised by componentHash
+        31 * (31 * this::class.hashCode() + componentHash(first)) + componentHash(second)
+    /**
+     * Returns "first, second". The numbers use the platform's own formatting (for example `1.0` prints as
+     * `1` on JS), so do not parse the text or compare it across platforms.
+     *
+     * @return the text.
+     */
     override fun toString(): String {
         return "$first, $second"
     }

@@ -162,6 +162,10 @@ change in a minor release; using `Point`, `Dimensions` or a `TwoDoubles` paramet
 (logger `com.spartanlabs.geometry.TwoDoubles`). `p /= k` still throws `IllegalArgumentException("Cannot divide by
 zero")` and logs nothing.
 
+Equality: same concrete class, components equal per IEEE except that NaN equals NaN; `0.0` equals `-0.0` and they
+hash alike. `Point` and `Dimensions` are mutable: do not change one while it is a hash key; use
+`Rectangle.toImmutable()` to key by a box.
+
 `AxisAlignedBox` is the shared read-only contract (`min`, `max`, `center`,
 `size`, `contains(p)`); both `Square` and `CenteredBox` implement it, and the
 box-intersection functions accept either. Convert with `Square.toCenteredBox()`
@@ -246,3 +250,4 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | `NoSuchMethodError: TwoDoubles.divideBy(D)V` in code compiled against 2.x (Java callers see `divideBy-<hash>`) | The return type is `Result` (a Kotlin member returning `Result` is name-mangled on the JVM) | Recompile Kotlin callers; Java callers use `divAssign(double)` or call through Kotlin. |
 | The log line `ERROR Attempted to divide a Point by zero` is gone, a zero `divideBy` logs `WARN Cannot divide by zero: Point.divideBy: (4.0, 6.0) by 0.0`, and `/=` by zero logs nothing | The failure is a returned `Result` reported at WARN, and the exception `/=` throws is its report | Adjust log filters and alerts. |
 | Results of `divideBy` and `/=` can differ from 2.x in the last digit (`49.0` divided by `49.0` is exactly `1.0`) | Each component is divided directly instead of multiplied by the reciprocal | Compare with a tolerance. |
+| `Point(Double.NaN, 0.0) == Point(Double.NaN, 0.0)` is now `true` (2.x `false`), and `Point(0.0, 0.0)` / `Point(-0.0, 0.0)` now hash alike (2.x equal, different hashes) | `TwoDoubles` equality is now lawful | Only NaN-versus-NaN pairs change, from unequal to equal; no pair equal in 2.x becomes unequal; code that used `p != p` to find NaN should use `containsNaN`. |

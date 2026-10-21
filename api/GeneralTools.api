@@ -242,11 +242,11 @@ public abstract class com/spartanlabs/geometry/TwoDoubles {
 	public final fun amplifyBy (D)V
 	public final fun divAssign (D)V
 	public final fun divideBy-IoAF18A (D)Ljava/lang/Object;
-	public fun equals (Ljava/lang/Object;)Z
+	public final fun equals (Ljava/lang/Object;)Z
 	public final fun getContainsNaN ()Z
 	public final fun getFirst ()D
 	public final fun getSecond ()D
-	public fun hashCode ()I
+	public final fun hashCode ()I
 	public final fun minusAssign (Lcom/spartanlabs/geometry/TwoDoubles;)V
 	public final fun modBy (DD)V
 	public final fun modBy (Lcom/spartanlabs/geometry/TwoDoubles;)V

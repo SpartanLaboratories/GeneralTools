@@ -74,6 +74,8 @@ abstract class com.spartanlabs.geometry/TwoDoubles { // com.spartanlabs.geometry
     final fun amplifyBy(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.amplifyBy|amplifyBy(kotlin.Double){}[0]
     final fun divAssign(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.divAssign|divAssign(kotlin.Double){}[0]
     final fun divideBy(kotlin/Double): kotlin/Result<kotlin/Unit> // com.spartanlabs.geometry/TwoDoubles.divideBy|divideBy(kotlin.Double){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/TwoDoubles.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/TwoDoubles.hashCode|hashCode(){}[0]
     final fun minusAssign(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.minusAssign|minusAssign(com.spartanlabs.geometry.TwoDoubles){}[0]
     final fun modBy(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.modBy|modBy(com.spartanlabs.geometry.TwoDoubles){}[0]
     final fun modBy(kotlin/Double, kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.modBy|modBy(kotlin.Double;kotlin.Double){}[0]
@@ -81,8 +83,6 @@ abstract class com.spartanlabs.geometry/TwoDoubles { // com.spartanlabs.geometry
     final fun setTo(com.spartanlabs.geometry/TwoDoubles) // com.spartanlabs.geometry/TwoDoubles.setTo|setTo(com.spartanlabs.geometry.TwoDoubles){}[0]
     final fun setTo(kotlin/Double, kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.setTo|setTo(kotlin.Double;kotlin.Double){}[0]
     final fun timesAssign(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.timesAssign|timesAssign(kotlin.Double){}[0]
-    open fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/TwoDoubles.equals|equals(kotlin.Any?){}[0]
-    open fun hashCode(): kotlin/Int // com.spartanlabs.geometry/TwoDoubles.hashCode|hashCode(){}[0]
     open fun toString(): kotlin/String // com.spartanlabs.geometry/TwoDoubles.toString|toString(){}[0]
 }
 

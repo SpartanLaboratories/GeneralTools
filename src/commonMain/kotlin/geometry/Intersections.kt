@@ -122,8 +122,10 @@ public fun segmentIntersectsSegment(s1: Segment, s2: Segment): Result<SegmentInt
  *
  * Slab test along the segment's own parameterisation clamped to `[0, 1]`, with
  * an endpoint-inside short-circuit for the fully-contained case. [box] is any
- * [AxisAlignedBox] — a [Rectangle] or a [CenteredBox]; only [AxisAlignedBox.min] /
- * [AxisAlignedBox.max] are read, so the origin convention does not matter.
+ * [AxisAlignedBox] — a [Rectangle] or a [CenteredBox]; only the primitive accessors
+ * ([AxisAlignedBox.minX], [AxisAlignedBox.minY], [AxisAlignedBox.maxX], [AxisAlignedBox.maxY], and
+ * [AxisAlignedBox.width]/[AxisAlignedBox.height] for validation) are read, so a box that overrides them is
+ * queried without allocating, so the origin convention does not matter.
  * On failure also logs one WARN line on this file's logger (see the README's Logging section).
  *
  * @param s the segment to test.
@@ -159,13 +161,16 @@ public fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean
     var tmin = 0.0
     var tmax = 1.0
 
-    val tx1 = (box.min.x - s.a.x) * invDx
-    val tx2 = (box.max.x - s.a.x) * invDx
+    // Each primitive is read once; a box that overrides the accessors is not allocated per call.
+    val boxMinX = box.minX; val boxMaxX = box.maxX
+    val boxMinY = box.minY; val boxMaxY = box.maxY
+    val tx1 = (boxMinX - s.a.x) * invDx
+    val tx2 = (boxMaxX - s.a.x) * invDx
     tmin = maxOf(tmin, minOf(tx1, tx2))
     tmax = minOf(tmax, maxOf(tx1, tx2))
 
-    val ty1 = (box.min.y - s.a.y) * invDy
-    val ty2 = (box.max.y - s.a.y) * invDy
+    val ty1 = (boxMinY - s.a.y) * invDy
+    val ty2 = (boxMaxY - s.a.y) * invDy
     tmin = maxOf(tmin, minOf(ty1, ty2))
     tmax = minOf(tmax, maxOf(ty1, ty2))
 
@@ -176,8 +181,10 @@ public fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean
 /**
  * Parametric entry distance of ray [r] into [box] via the NaN-safe slab method.
  *
- * [box] is any [AxisAlignedBox] — a [Rectangle] or a [CenteredBox]; only
- * [AxisAlignedBox.min] / [AxisAlignedBox.max] are read.
+ * [box] is any [AxisAlignedBox] — a [Rectangle] or a [CenteredBox]; only the primitive accessors
+ * ([AxisAlignedBox.minX], [AxisAlignedBox.minY], [AxisAlignedBox.maxX], [AxisAlignedBox.maxY], and
+ * [AxisAlignedBox.width]/[AxisAlignedBox.height] for validation) are read, so a box that overrides them is
+ * queried without allocating.
  * On failure also logs one WARN line on this file's logger (see the README's Logging section).
  *
  * @param r the ray; [Ray.direction] need not be unit length.
@@ -194,7 +201,10 @@ public fun rayIntersectsBox(r: Ray, box: AxisAlignedBox): Result<Double?> {
     boxProblem(box)?.let { problem ->
         return log.failure(problem) { "rayIntersectsBox: invalid box $box" }
     }
-    if (!box.min.x.isFinite() || !box.min.y.isFinite() || !box.max.x.isFinite() || !box.max.y.isFinite()) {
+    // Each primitive is read once; a box that overrides the accessors is not allocated per call.
+    val boxMinX = box.minX; val boxMaxX = box.maxX
+    val boxMinY = box.minY; val boxMaxY = box.maxY
+    if (!boxMinX.isFinite() || !boxMinY.isFinite() || !boxMaxX.isFinite() || !boxMaxY.isFinite()) {
         return log.failure("Box corners must be finite") {
             "rayIntersectsBox: non-finite box corner (${box.min}) and (${box.max})"
         }
@@ -224,13 +234,13 @@ public fun rayIntersectsBox(r: Ray, box: AxisAlignedBox): Result<Double?> {
     var tmin = Double.NEGATIVE_INFINITY
     var tmax = Double.POSITIVE_INFINITY
 
-    val tx1 = (box.min.x - r.origin.x) * invDx
-    val tx2 = (box.max.x - r.origin.x) * invDx
+    val tx1 = (boxMinX - r.origin.x) * invDx
+    val tx2 = (boxMaxX - r.origin.x) * invDx
     tmin = maxOf(tmin, minOf(tx1, tx2))
     tmax = minOf(tmax, maxOf(tx1, tx2))
 
-    val ty1 = (box.min.y - r.origin.y) * invDy
-    val ty2 = (box.max.y - r.origin.y) * invDy
+    val ty1 = (boxMinY - r.origin.y) * invDy
+    val ty2 = (boxMaxY - r.origin.y) * invDy
     tmin = maxOf(tmin, minOf(ty1, ty2))
     tmax = minOf(tmax, maxOf(ty1, ty2))
 
@@ -252,13 +262,11 @@ public fun rayIntersectsBox(r: Ray, box: AxisAlignedBox): Result<Double?> {
  * size fails.
  */
 private fun boxProblem(box: AxisAlignedBox): String? {
-    val size = box.size
-    if (size.containsNaN || !size.width.isFinite() || !size.height.isFinite()) {
-        return "Box size must be finite"
-    }
-    if (size.width < 0.0 || size.height < 0.0) {
-        return "Box size must be non-negative"
-    }
+    val width = box.width
+    val height = box.height
+    // NaN is not finite, so this one test covers the 2.x "contains NaN or is infinite" condition.
+    if (!width.isFinite() || !height.isFinite()) return "Box size must be finite"
+    if (width < 0.0 || height < 0.0) return "Box size must be non-negative"
     return null
 }
 

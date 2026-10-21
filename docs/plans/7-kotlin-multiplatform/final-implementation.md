@@ -435,3 +435,21 @@ as-built record once implementation ends.
   - the two extension-function lines change in place (`toSquare` -> `toRectangle`, receiver `Square` -> `Rectangle`).
 - **Status:** layout only, so recorded and continued under the coordinator's rule (2026-10-20); for the planner's
   ledger correction.
+
+### `box-model` — commit (b), A4: the six `AxisAlignedBox` getters are JVM default methods, not `abstract`
+
+- **Plan:** [plan-box-model.md](plan-box-model.md) §10 (b), "Expected JVM dump delta": "`AxisAlignedBox` +6: `getHeight`,
+  `getMaxX`, `getMaxY`, `getMinX`, `getMinY`, `getWidth` (`()D`, abstract)", plus `AxisAlignedBox$DefaultImpls` +6,
+  `CenteredBox` +6, `Rectangle` +6 (17 -> 23), "Nothing else".
+- **JVM dump (`api/GeneralTools.api`):** the six `AxisAlignedBox` getters are listed as `public fun getHeight ()D` (and
+  likewise for the other five), without `abstract`. §6.2 gives each accessor a default body, so Kotlin 2.2 compiles them
+  to non-abstract JVM default methods, as B1 states and as the existing `public fun contains (...)Z` line already shows.
+  The "abstract" in the §10 (b) prediction contradicts the §6.2 design. Every other (b) line matches the prediction
+  exactly: `AxisAlignedBox$DefaultImpls` +6 (`public static fun get... (Lcom/spartanlabs/geometry/AxisAlignedBox;)D`),
+  `CenteredBox` +6 and `Rectangle` +6 (`public fun get... ()D`), and nothing else.
+- **klib dump (`api/GeneralTools.klib.api`):** additions only. The six properties (`open val` on `AxisAlignedBox`,
+  `final val` on `CenteredBox` and `Rectangle`, each with its getter) are placed alphabetically among each type's
+  existing `val`s. The `contains` line is unchanged, because the klib dump never prints `operator`; §10 (b) allowed for
+  that ("if so the only `contains` change is that modifier").
+- **Status:** the code is unchanged; this is a ledger correction. The coordinator accepted it under A4 on 2026-10-20, for
+  the planner's ledger correction.

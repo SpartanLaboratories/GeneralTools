@@ -85,13 +85,25 @@ public final class com/spartanlabs/generaltools/UserActionsKt {
 public abstract interface class com/spartanlabs/geometry/AxisAlignedBox {
 	public fun contains (Lcom/spartanlabs/geometry/Point;)Z
 	public abstract fun getCenter ()Lcom/spartanlabs/geometry/Point;
+	public fun getHeight ()D
 	public abstract fun getMax ()Lcom/spartanlabs/geometry/Point;
+	public fun getMaxX ()D
+	public fun getMaxY ()D
 	public abstract fun getMin ()Lcom/spartanlabs/geometry/Point;
+	public fun getMinX ()D
+	public fun getMinY ()D
 	public abstract fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun getWidth ()D
 }
 
 public final class com/spartanlabs/geometry/AxisAlignedBox$DefaultImpls {
 	public static fun contains (Lcom/spartanlabs/geometry/AxisAlignedBox;Lcom/spartanlabs/geometry/Point;)Z
+	public static fun getHeight (Lcom/spartanlabs/geometry/AxisAlignedBox;)D
+	public static fun getMaxX (Lcom/spartanlabs/geometry/AxisAlignedBox;)D
+	public static fun getMaxY (Lcom/spartanlabs/geometry/AxisAlignedBox;)D
+	public static fun getMinX (Lcom/spartanlabs/geometry/AxisAlignedBox;)D
+	public static fun getMinY (Lcom/spartanlabs/geometry/AxisAlignedBox;)D
+	public static fun getWidth (Lcom/spartanlabs/geometry/AxisAlignedBox;)D
 }
 
 public final class com/spartanlabs/geometry/CenteredBox : com/spartanlabs/geometry/AxisAlignedBox {
@@ -105,9 +117,15 @@ public final class com/spartanlabs/geometry/CenteredBox : com/spartanlabs/geomet
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getCenter ()Lcom/spartanlabs/geometry/Point;
 	public final fun getHalfExtents ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun getHeight ()D
 	public fun getMax ()Lcom/spartanlabs/geometry/Point;
+	public fun getMaxX ()D
+	public fun getMaxY ()D
 	public fun getMin ()Lcom/spartanlabs/geometry/Point;
+	public fun getMinX ()D
+	public fun getMinY ()D
 	public fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun getWidth ()D
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -178,10 +196,16 @@ public final class com/spartanlabs/geometry/Rectangle : com/spartanlabs/geometry
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getCenter ()Lcom/spartanlabs/geometry/Point;
 	public final fun getDimensions ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun getHeight ()D
 	public final fun getLocation ()Lcom/spartanlabs/geometry/Point;
 	public fun getMax ()Lcom/spartanlabs/geometry/Point;
+	public fun getMaxX ()D
+	public fun getMaxY ()D
 	public fun getMin ()Lcom/spartanlabs/geometry/Point;
+	public fun getMinX ()D
+	public fun getMinY ()D
 	public fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun getWidth ()D
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

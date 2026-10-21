@@ -175,9 +175,10 @@ hash alike. `Point` and `Dimensions` are mutable: do not change one while it is 
 Destructuring: `val (x, y) = point`, `val (w, h) = dimensions`. Negation: `-point` (a new `Point`; `Dimensions` has
 none).
 
-`AxisAlignedBox` is the shared read-only contract (`min`, `max`, `center`,
-`size`, `contains(p)`); both `Rectangle` and `CenteredBox` implement it, and the
-box-intersection functions accept either. Convert with `Rectangle.toCenteredBox()`
+`AxisAlignedBox` is the shared box contract: a shape contract, not a read-only guarantee. It has `min`, `max`,
+`center` and `size`; the six accessors `minX`, `minY`, `maxX`, `maxY`, `width` and `height` (no allocation on
+`Rectangle`/`CenteredBox`); and `contains(p)`, written `p in box` or `box contains p`. Both `Rectangle` and
+`CenteredBox` implement it, and the box-intersection functions accept either. Convert with `Rectangle.toCenteredBox()`
 / `AxisAlignedBox.toRectangle()` (an independent mutable copy).
 
 Vector algebra (extension functions on `Point`, in `Vectors.kt`):
@@ -290,3 +291,4 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | `Val cannot be reassigned` on `r.location = p` or `r.dimensions = d` | `Rectangle.location` and `.dimensions` are `val`. | `r.location.setTo(p)` / `r.dimensions.setTo(d)`. This copies the values into the existing part instead of adopting the instance you pass: a later change to `p` or `d` does not reach `r`, and every other holder of the old part sees the new values. |
 | `Rectangle` names the wrong class, or is reported as ambiguous, in a file that also uses `java.awt.Rectangle` or another `Rectangle` | The new name is shared with those types. | Import one under an alias: `import com.spartanlabs.geometry.Rectangle as GeoRectangle`. |
 | A string or log assertion on `toString()` fails: `Rectangle(location=..., dimensions=...)` where 2.x printed `Square(...)` | The class is renamed. | Update the expected text. |
+| A class implementing `AxisAlignedBox` stops compiling after declaring `width`, `height`, `minX`, `minY`, `maxX` or `maxY` | `AxisAlignedBox` now has these six members with default bodies. | Add `override` and return the box's own value, or rename your member. |

@@ -31,12 +31,29 @@ public data class Rectangle(
     public val location: Point = Point(x = 0.0, y = 0.0),
     public val dimensions: Dimensions = Dimensions(width = 0.0, height = 0.0),
 ) : AxisAlignedBox {
+    /** The smallest `x`, `location.x`. */
+    override val minX: Double get() = location.x
+
+    /** The smallest `y`, `location.y`. */
+    override val minY: Double get() = location.y
+
+    /** The largest `x`, `location.x + dimensions.width`. */
+    override val maxX: Double get() = location.x + dimensions.width
+
+    /** The largest `y`, `location.y + dimensions.height`. */
+    override val maxY: Double get() = location.y + dimensions.height
+
+    /** The horizontal extent, `dimensions.width`. */
+    override val width: Double get() = dimensions.width
+
+    /** The vertical extent, `dimensions.height`. */
+    override val height: Double get() = dimensions.height
+
     /** The top-left corner, i.e. [location] itself (not a copy). */
     override val min: Point get() = location
 
     /** The bottom-right corner, `location + dimensions`, as a new point on every read. */
-    override val max: Point
-        get() = Point(location.x + dimensions.width, location.y + dimensions.height)
+    override val max: Point get() = Point(maxX, maxY)
 
     /** The geometric centre, `location + dimensions / 2`, as a new point on every read. */
     override val center: Point

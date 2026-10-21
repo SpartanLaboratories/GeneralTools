@@ -22,17 +22,32 @@ public data class CenteredBox(
     override val center: Point,
     val halfExtents: Dimensions,
 ) : AxisAlignedBox {
+    /** The smallest `x`, `center.x - halfExtents.width`. */
+    override val minX: Double get() = center.x - halfExtents.width
+
+    /** The smallest `y`, `center.y - halfExtents.height`. */
+    override val minY: Double get() = center.y - halfExtents.height
+
+    /** The largest `x`, `center.x + halfExtents.width`. */
+    override val maxX: Double get() = center.x + halfExtents.width
+
+    /** The largest `y`, `center.y + halfExtents.height`. */
+    override val maxY: Double get() = center.y + halfExtents.height
+
+    /** The horizontal extent, `halfExtents.width * 2`. */
+    override val width: Double get() = halfExtents.width * 2
+
+    /** The vertical extent, `halfExtents.height * 2`. */
+    override val height: Double get() = halfExtents.height * 2
+
     /** The low corner, `center - halfExtents`. */
-    override val min: Point
-        get() = Point(center.x - halfExtents.width, center.y - halfExtents.height)
+    override val min: Point get() = Point(minX, minY)
 
     /** The high corner, `center + halfExtents`. */
-    override val max: Point
-        get() = Point(center.x + halfExtents.width, center.y + halfExtents.height)
+    override val max: Point get() = Point(maxX, maxY)
 
     /** The full width and height, `halfExtents * 2`. */
-    override val size: Dimensions
-        get() = Dimensions(halfExtents.width * 2, halfExtents.height * 2)
+    override val size: Dimensions get() = Dimensions(width, height)
 
     /** Factories for [CenteredBox]. */
     public companion object {
@@ -79,4 +94,4 @@ public fun Rectangle.toCenteredBox(): CenteredBox =
  *   side do not reach the other.
  */
 public fun AxisAlignedBox.toRectangle(): Rectangle =
-    Rectangle(Point(min.x, min.y), Dimensions(size.width, size.height))
+    Rectangle(Point(minX, minY), Dimensions(width, height))

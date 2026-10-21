@@ -1,5 +1,6 @@
 package com.spartanlabs.testing.component.generaltools
 
+import com.spartanlabs.generaltools.evaluateList
 import com.spartanlabs.generaltools.forEvery
 import com.spartanlabs.generaltools.forEveryIndexed
 import com.spartanlabs.generaltools.onException
@@ -7,6 +8,7 @@ import com.spartanlabs.generaltools.profile
 import com.spartanlabs.generaltools.trimIfLongerThan
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -58,5 +60,29 @@ class MiscTest {
     @Test
     fun `trimIfLongerThan leaves shorter strings unchanged`() {
         assertEquals("hi", "hi" trimIfLongerThan 5)
+    }
+
+    @Test
+    fun `evaluateList returns true when a predicate matches`() {
+        assertTrue(evaluateList(listOf(1, 2, 3)) { it == 2 })
+    }
+
+    @Test
+    fun `evaluateList returns false when no predicate matches`() {
+        assertFalse(evaluateList(listOf(1, 2, 3)) { it == 5 })
+    }
+
+    @Test
+    fun `evaluateList returns false for an empty list`() {
+        var calls = 0
+        assertFalse(evaluateList(emptyList<Int>()) { calls++; true })
+        assertEquals(0, calls)
+    }
+
+    @Test
+    fun `evaluateList stops at the first match`() {
+        var calls = 0
+        assertTrue(evaluateList(listOf(1, 2, 3)) { calls++; it == 2 })
+        assertEquals(2, calls)
     }
 }

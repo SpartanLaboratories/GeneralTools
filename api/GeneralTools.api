@@ -59,7 +59,7 @@ public abstract interface annotation class com/spartanlabs/generaltools/Experime
 public final class com/spartanlabs/generaltools/MiscKt {
 	public static final fun asURL (Ljava/lang/String;)Ljava/net/URL;
 	public static final fun capitalizeEveryWord (Ljava/lang/String;)Ljava/lang/String;
-	public static final fun evaluateList (Ljava/lang/Iterable;Ljava/util/function/Predicate;)Z
+	public static final fun evaluateList (Ljava/lang/Iterable;Lkotlin/jvm/functions/Function1;)Z
 	public static final fun forEvery (Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)V
 	public static final fun forEveryIndexed (Ljava/util/Collection;Lkotlin/jvm/functions/Function2;)V
 	public static final fun onException (Ljava/lang/Object;[Lkotlin/reflect/KClass;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;

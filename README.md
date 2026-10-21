@@ -49,9 +49,9 @@ Everything below is common code, available on the `jvm`, `js` and `wasmJs` targe
 **JVM only**, which exist only in the `jvm` variant (`GeneralTools-jvm`).
 
 - **`com.spartanlabs.generaltools`**
-  - `Misc` — string, list and timing helpers: `profile`, `onException`, `forEvery`, `forEveryIndexed` and
-    `trimIfLongerThan` are common; **JVM only:** `asURL`, `read`, the slf4j `Logger.time` extension, `evaluateList`
-    and `capitalizeEveryWord`.
+  - `Misc` — string, list and timing helpers: `profile`, `onException`, `forEvery`, `forEveryIndexed`,
+    `trimIfLongerThan` and `evaluateList` are common; **JVM only:** `asURL`, `read`, the slf4j `Logger.time`
+    extension and `capitalizeEveryWord`.
   - `UserActions` — AWT screenshot capture and input automation. **JVM only.**
   - `Color` — immutable RGBA value type: transforms plus hex / packed-int codecs.
   - `ExperimentalForInheritanceGeneralToolsApi` — opt-in marker for subclassing `TwoDoubles`.
@@ -305,3 +305,4 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | `Rectangle` names the wrong class, or is reported as ambiguous, in a file that also uses `java.awt.Rectangle` or another `Rectangle` | The new name is shared with those types. | Import one under an alias: `import com.spartanlabs.geometry.Rectangle as GeoRectangle`. |
 | A string or log assertion on `toString()` fails: `Rectangle(location=..., dimensions=...)` where 2.x printed `Square(...)` | The class is renamed. | Update the expected text. |
 | A class implementing `AxisAlignedBox` stops compiling after declaring `width`, `height`, `minX`, `minY`, `maxX` or `maxY` | `AxisAlignedBox` now has these six members with default bodies. | Add `override` and return the box's own value, or rename your member. |
+| Type mismatch naming `Predicate` on a call to `evaluateList`, or `NoSuchMethodError: evaluateList(Iterable, Predicate)` from code compiled against 2.x | `evaluateList` now takes `(T) -> Boolean` and lives in common code (source and binary break; the JVM descriptor changes from `Predicate` to `Function1`) | A trailing lambda compiles unchanged: `evaluateList(items) { it > 0 }`. For a `Predicate` variable pass `predicate::test`; replace `Predicate { ... }` with a plain lambda. Recompile every caller; a Java caller passes a lambda for the Kotlin function type. |

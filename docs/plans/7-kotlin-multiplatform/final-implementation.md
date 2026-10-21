@@ -361,6 +361,27 @@ as-built record once implementation ends.
   sentences would be false. The README-currency rule requires the README to stay accurate. The coordinator decided this
   on 2026-10-20.
 
+### `generaltools-breaks` — commit 1 also asserts the logger name in `EvaluateListLoggingTest`
+
+- **Plan:** [plan-generaltools-breaks.md](plan-generaltools-breaks.md) §8 Level 3, `EvaluateListLoggingTest`: each test
+  asserts that "the appender holds one event at `Level.TRACE`" whose formatted message is the 2.x text.
+- **What differs:** each of the two tests also asserts `event.loggerName == "com.spartanlabs.generaltools.Misc"`, as
+  the existing `TwoDoublesDivisionLoggingTest` does. The setup, teardown, test names and the plan's assertions are as
+  written.
+- **Why:** logback delivers a child logger's events to an appender on its parent, so the level and message alone do
+  not pin the logger name; §8 calls this test "the proof that the 2.x logger name survives the move to kotlin-logging".
+
+### `generaltools-breaks` — commit 1 drops `Predicate` from `MiscJvmTest`'s class KDoc
+
+- **Plan:** [plan-generaltools-breaks.md](plan-generaltools-breaks.md) §6 "Commit 1", item 4: delete the two
+  `evaluateList` tests from `MiscJvmTest`; "The class keeps `capitalizeEveryWord capitalizes each word`". The plan says
+  nothing about the class KDoc.
+- **What differs:** the class KDoc's reason "(Predicate and the deprecated capitalize())" becomes "(the deprecated
+  capitalize())". Nothing else in the file changes beyond the plan's removals.
+- **Why:** commit 1 removes `Predicate`, so the old reason would have been false until commit 3 deletes the file.
+  The coordinator decided on 2026-10-20 that each commit must leave its statements true, as in the `box-model` commit
+  (c) entry above.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`
@@ -487,3 +508,17 @@ as-built record once implementation ends.
   that ("if so the only `contains` change is that modifier").
 - **Status:** the code is unchanged; this is a ledger correction. The coordinator accepted it under A4 on 2026-10-20, for
   the planner's ledger correction.
+
+### `generaltools-breaks` — commit 1, facade check: `evaluateList` moves within the `javap` listing of `MiscKt`
+
+- **Plan:** [plan-generaltools-breaks.md](plan-generaltools-breaks.md) §5.1 (both files keep the `MiscKt` facade) and
+  the coordinator's facade check for commit 1: `javap -public -s` of `MiscKt` before and after, with `evaluateList`'s
+  descriptor the only expected change.
+- **Result:** the same ten public members before and after; the only changed member is `evaluateList`, whose
+  descriptor goes from `(Ljava/lang/Iterable;Ljava/util/function/Predicate;)Z` to
+  `(Ljava/lang/Iterable;Lkotlin/jvm/functions/Function1;)Z` (generic signature `Function1<? super T, Boolean>`). In the
+  listing it moves from between `read` and `time` (the `MiscJvm.kt` part) to between `time` and `profile` (the start of
+  the `Misc.kt` part), because the facade lists each part's members in turn. With the two `evaluateList` entries set
+  aside, the sorted listings are identical. The JVM dump (`api/GeneralTools.api`) sorts members and shows only the
+  predicted line pair.
+- **Status:** order only, so recorded and continued under the coordinator's rule (2026-10-20).

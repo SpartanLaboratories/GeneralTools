@@ -4,11 +4,47 @@
 
 package com.spartanlabs.generaltools
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
+
+/** Logger used for diagnostic output from this file's functions; the name is unchanged from 2.x. */
+private val log = KotlinLogging.logger("com.spartanlabs.generaltools.Misc")
+
+/**
+ * Returns `true` if [validator] returns `true` for any item of [list]; it stops at the first match.
+ *
+ * Logging (Boundary Ring): one TRACE event per call on the logger `com.spartanlabs.generaltools.Misc`, the
+ * same name as in 2.x, so existing backend rules still match. A match logs `Item '<item>' satisfied the
+ * predicate`; no match logs `No items satisfied the predicate`. The item's `toString()` is rendered only when
+ * TRACE is enabled.
+ *
+ * In 2.x the [validator] parameter was a `java.util.function.Predicate<T>`.
+ *
+ * @param T the type of the items in [list].
+ * @param list the items to test. It is iterated at most once; a one-shot `Iterable` is consumed up to and
+ *   including the first match.
+ * @param validator the test applied to each item. It is called at most once per item and never after a match.
+ * @return `true` as soon as [validator] returns `true` for an item; `false` if it returns `true` for none,
+ *   including when [list] is empty.
+ * @throws Throwable any exception thrown by [validator] or by [list]'s iterator propagates unchanged; nothing is
+ *   caught or wrapped.
+ */
+public fun <T> evaluateList(list: Iterable<T>, validator: (T) -> Boolean): Boolean {
+    // A loop with an early return rather than any/firstOrNull: any loses the matching item for the log, and
+    // firstOrNull cannot tell a null item from no match.
+    for (item in list) {
+        if (validator(item)) {
+            log.trace { "Item '$item' satisfied the predicate" }
+            return true
+        }
+    }
+    log.trace { "No items satisfied the predicate" }
+    return false
+}
 
 /**
  * Takes in a string that describes the action that is being taken

@@ -9,7 +9,6 @@ import java.io.File
 import java.io.FileReader
 import java.net.MalformedURLException
 import java.net.URL
-import java.util.function.Predicate
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
 import org.slf4j.Logger
@@ -43,22 +42,5 @@ public fun read(textFile:String): List<String> {
     log.debug("Read {} line(s) from '{}'", lines.size, textFile)
     return lines
 }
-/**
- * Takes in a list of objects of a specified type as well as
- * a predicate that takes one of those objects and return a boolean
- * <br>
- * This function will then test each item in the list against the predicate
- * If any item returns true then the function will return true
- * If no items return true then the function will return false
- */
-public fun <T>evaluateList(list:Iterable<T>, validator: Predicate<T>):Boolean{
-    for(t in list)if(validator.test(t)){
-        log.trace("Item '{}' satisfied the predicate", t)
-        return true
-    }
-    log.trace("No items satisfied the predicate")
-    return false
-}
-
 /** Logs the action name and how long it took to execute it*/
 public fun Logger.time(actionName:String,action:()->Unit): Unit = info(profile(actionName,action))

@@ -38,6 +38,14 @@ public class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
         if (containsNaN || other.containsNaN)
             log.failure("Point values must be numbers") { "Point.distanceFrom: NaN coordinate in ($this) or ($other)" }
         else Result.success(sqrt((x - other.x).pow(2.0) + (y - other.y).pow(2.0)))
+    /**
+     * A new [Point] with both coordinates negated; this point is unchanged. `-Point(0.0, 0.0)` is
+     * `Point(-0.0, -0.0)`, which equals `Point(0.0, 0.0)` under the equality contract. [Dimensions] has no
+     * negation because a negative size is not a valid size.
+     *
+     * @return the negated point, a new instance.
+     */
+    public operator fun unaryMinus(): Point = Point(-x, -y)
 }
 /**
  * Represents a 2D size with a [width] and [height]
@@ -45,7 +53,7 @@ public class Point(x:Double = 0.0,y:Double = 0.0) : TwoDoubles(x,y){
  * Final: equality is keyed on the concrete class, so to define another coordinate pair extend [TwoDoubles]
  * (Experimental) instead of this class.
  */
-// Extending TwoDoubles is Experimental; using Point is not.
+// Extending TwoDoubles is Experimental; using Dimensions is not.
 @OptIn(ExperimentalForInheritanceGeneralToolsApi::class)
 public class Dimensions(width:Double = 0.0,height: Double = 0.0) : TwoDoubles(width,height){
     /** Creates a new Dimensions with the same width and height as [dimensions] */

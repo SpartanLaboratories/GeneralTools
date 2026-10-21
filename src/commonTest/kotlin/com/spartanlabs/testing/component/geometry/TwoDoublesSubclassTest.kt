@@ -107,4 +107,11 @@ class TwoDoublesSubclassTest {
         assertEquals(2.0, velocity.first)
         assertEquals(3.0, velocity.second)
     }
+
+    @Test
+    fun `a subclass destructures into first and second`() {
+        val (a, b) = Velocity(3.0, 4.0)
+        assertEquals(3.0, a)
+        assertEquals(4.0, b)
+    }
 }

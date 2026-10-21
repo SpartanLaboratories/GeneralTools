@@ -145,6 +145,7 @@ public final class com/spartanlabs/geometry/Point : com/spartanlabs/geometry/Two
 	public final fun getY ()D
 	public final fun setX (D)V
 	public final fun setY (D)V
+	public final fun unaryMinus ()Lcom/spartanlabs/geometry/Point;
 }
 
 public final class com/spartanlabs/geometry/Ray {
@@ -240,6 +241,8 @@ public abstract class com/spartanlabs/geometry/TwoDoubles {
 	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	protected fun <init> (Lcom/spartanlabs/geometry/TwoDoubles;)V
 	public final fun amplifyBy (D)V
+	public final fun component1 ()D
+	public final fun component2 ()D
 	public final fun divAssign (D)V
 	public final fun divideBy-IoAF18A (D)Ljava/lang/Object;
 	public final fun equals (Ljava/lang/Object;)Z

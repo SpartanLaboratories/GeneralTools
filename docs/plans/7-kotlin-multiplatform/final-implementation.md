@@ -229,6 +229,34 @@ as-built record once implementation ends.
   symptom and cause cells already start with code and are verbatim.
 - **Why:** the same table convention as the (a) and (b) rows above.
 
+### `two-doubles` — commit (d) lands the `TwoDoubles` class-KDoc intro paragraph
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §6.2, the listing's intro paragraph ("Base class for any type
+  represented by a pair of Doubles, ... Provides the in-place arithmetic, equality and destructuring shared by its
+  subclasses; [Point] and [Dimensions] are the ones this library ships."), which the §6.2 commit table assigns to no
+  commit.
+- **What differs:** the paragraph replaces the 2.x intro in commit (d), verbatim from the listing.
+- **Why:** the user's "when it becomes true" decision (2026-10-20, entry "four `TwoDoubles` class-KDoc pieces" above):
+  destructuring exists from this commit on. With it, three of the four pieces have landed; the "A subclass's state
+  lives in ..." sentence remains for commit (e).
+
+### `two-doubles` — commit (d) names `Dimensions` in the Level-1 comment above `Dimensions`
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §6.4 (a): both classes gain the Level-1 comment
+  `// Extending TwoDoubles is Experimental; using Point is not.`
+- **What differs:** the comment above `Dimensions` in `Point.kt` now reads
+  `// Extending TwoDoubles is Experimental; using Dimensions is not.` The comment above `Point` is unchanged.
+- **Why:** the plan's text named `Point` above `Dimensions`, and commit (a) copied it literally; the user chose
+  (2026-10-20) to correct it in commit (d).
+
+### `two-doubles` — commit (d) capitalises the Fix cell of its migration row
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §8, row (d), whose fix reads "delete the extension; the member
+  returns the same values."
+- **What differs:** the README Fix cell reads "Delete the extension; the member returns the same values." The symptom
+  starts "Your own ..." as in the plan; the cause starts with code.
+- **Why:** the same table convention as the (a), (b) and (c) rows above.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`
@@ -288,3 +316,15 @@ as-built record once implementation ends.
   place. The signatures and the mangled-name comments are unchanged.
 - **Status:** layout only, so recorded and continued under the coordinator's rule (2026-10-20); for the planner's ledger
   correction.
+
+### `two-doubles` — commit (d), A4: the klib dump prints the new operators without `operator`
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §11 row (d), "Expected dump delta (A4)": "**klib:** the matching
+  `final operator fun` entries", and "Three added lines per dump".
+- **JVM dump:** matches the prediction exactly: `TwoDoubles` gains `public final fun component1 ()D` and
+  `public final fun component2 ()D`; `Point` gains `public final fun unaryMinus ()Lcom/spartanlabs/geometry/Point;`.
+- **klib dump:** three added lines, the same three declarations, rendered as `final fun component1(): kotlin/Double`,
+  `final fun component2(): kotlin/Double` and `final fun unaryMinus(): com.spartanlabs.geometry/Point`: the dump does not
+  print the `operator` modifier, as it already does not for `plusAssign`, `minusAssign`, `timesAssign` and `divAssign`.
+- **Status:** rendering only, so recorded and continued under the coordinator's rule (2026-10-20); for the planner's
+  ledger correction.

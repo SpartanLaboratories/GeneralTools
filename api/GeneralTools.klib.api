@@ -72,6 +72,8 @@ abstract class com.spartanlabs.geometry/TwoDoubles { // com.spartanlabs.geometry
         final fun <set-second>(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.second.<set-second>|<set-second>(kotlin.Double){}[0]
 
     final fun amplifyBy(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.amplifyBy|amplifyBy(kotlin.Double){}[0]
+    final fun component1(): kotlin/Double // com.spartanlabs.geometry/TwoDoubles.component1|component1(){}[0]
+    final fun component2(): kotlin/Double // com.spartanlabs.geometry/TwoDoubles.component2|component2(){}[0]
     final fun divAssign(kotlin/Double) // com.spartanlabs.geometry/TwoDoubles.divAssign|divAssign(kotlin.Double){}[0]
     final fun divideBy(kotlin/Double): kotlin/Result<kotlin/Unit> // com.spartanlabs.geometry/TwoDoubles.divideBy|divideBy(kotlin.Double){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/TwoDoubles.equals|equals(kotlin.Any?){}[0]
@@ -204,6 +206,7 @@ final class com.spartanlabs.geometry/Point : com.spartanlabs.geometry/TwoDoubles
         final fun <set-y>(kotlin/Double) // com.spartanlabs.geometry/Point.y.<set-y>|<set-y>(kotlin.Double){}[0]
 
     final fun distanceFrom(com.spartanlabs.geometry/Point): kotlin/Result<kotlin/Double> // com.spartanlabs.geometry/Point.distanceFrom|distanceFrom(com.spartanlabs.geometry.Point){}[0]
+    final fun unaryMinus(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Point.unaryMinus|unaryMinus(){}[0]
 }
 
 final class com.spartanlabs.geometry/Ray { // com.spartanlabs.geometry/Ray|null[0]

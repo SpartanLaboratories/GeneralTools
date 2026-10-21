@@ -14,9 +14,9 @@ private val log = KotlinLogging.logger("com.spartanlabs.geometry.TwoDoubles")
 internal const val DIVISION_BY_ZERO_MESSAGE: String = "Cannot divide by zero"
 
 /**
- * Base class for any type represented by a pair of Doubles, such as a 2D
- * point or a width/height pair. Provides shared arithmetic and comparison
- * operations for its subclasses.
+ * Base class for any type represented by a pair of Doubles, such as a 2D point or a width/height pair.
+ * Provides the in-place arithmetic, equality and destructuring shared by its subclasses; [Point] and
+ * [Dimensions] are the ones this library ships.
  *
  * ### Using it
  * Taking a `TwoDoubles` as a parameter, calling any member, and using [Point] or [Dimensions] need no
@@ -28,8 +28,10 @@ internal const val DIVISION_BY_ZERO_MESSAGE: String = "Cannot divide by zero"
  * seam has not yet been proven by a consumer and may change in a minor release. A subclass opts in with
  * `@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)` and calls a `protected` constructor.
  * These members are final, so every subclass keeps the invariants: [first], [second], [setTo], [modBy],
- * [amplifyBy], [divideBy], the four assignment operators, [containsNaN], [equals] and [hashCode]. [toString]
- * stays open.
+ * [amplifyBy], [divideBy], the four assignment operators, [containsNaN], [component1], [component2],
+ * [equals] and [hashCode]. [toString] stays open.
+ * A subclass cannot be a data class: a data class's generated `componentN()` cannot override the final
+ * [component1] and [component2] it inherits (the compiler reports an error).
  *
  * ### Equality and hash keys
  * Two instances are equal when they are of the same concrete class and their components are equal, where
@@ -126,6 +128,20 @@ public abstract class TwoDoubles protected constructor(
         first /= magnitude
         second /= magnitude
     }
+    /**
+     * The first component, so that `val (x, y) = point` destructures. Final: a subclass cannot be a data
+     * class, whose generated `component1()` would have to override it.
+     *
+     * @return [first].
+     */
+    public operator fun component1(): Double = first
+    /**
+     * The second component, so that `val (w, h) = dimensions` destructures. Final, for the reason given
+     * on [component1].
+     *
+     * @return [second].
+     */
+    public operator fun component2(): Double = second
     /**
      * Equal when [other] is the same concrete class and both components are equal: ordinary IEEE equality
      * per component, except that NaN equals NaN (so an instance with a NaN component equals itself and

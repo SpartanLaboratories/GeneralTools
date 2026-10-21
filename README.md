@@ -166,6 +166,9 @@ Equality: same concrete class, components equal per IEEE except that NaN equals 
 hash alike. `Point` and `Dimensions` are mutable: do not change one while it is a hash key; use
 `Rectangle.toImmutable()` to key by a box.
 
+Destructuring: `val (x, y) = point`, `val (w, h) = dimensions`. Negation: `-point` (a new `Point`; `Dimensions` has
+none).
+
 `AxisAlignedBox` is the shared read-only contract (`min`, `max`, `center`,
 `size`, `contains(p)`); both `Square` and `CenteredBox` implement it, and the
 box-intersection functions accept either. Convert with `Square.toCenteredBox()`
@@ -251,3 +254,4 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | The log line `ERROR Attempted to divide a Point by zero` is gone, a zero `divideBy` logs `WARN Cannot divide by zero: Point.divideBy: (4.0, 6.0) by 0.0`, and `/=` by zero logs nothing | The failure is a returned `Result` reported at WARN, and the exception `/=` throws is its report | Adjust log filters and alerts. |
 | Results of `divideBy` and `/=` can differ from 2.x in the last digit (`49.0` divided by `49.0` is exactly `1.0`) | Each component is divided directly instead of multiplied by the reciprocal | Compare with a tolerance. |
 | `Point(Double.NaN, 0.0) == Point(Double.NaN, 0.0)` is now `true` (2.x `false`), and `Point(0.0, 0.0)` / `Point(-0.0, 0.0)` now hash alike (2.x equal, different hashes) | `TwoDoubles` equality is now lawful | Only NaN-versus-NaN pairs change, from unequal to equal; no pair equal in 2.x becomes unequal; code that used `p != p` to find NaN should use `containsNaN`. |
+| Your own `operator fun Point.component1()`, `component2()` or `unaryMinus()` extension reports "extension is shadowed by a member" | `TwoDoubles` and `Point` now declare these operators | Delete the extension; the member returns the same values. |

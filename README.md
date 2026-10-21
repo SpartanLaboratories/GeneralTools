@@ -59,7 +59,7 @@ Everything below is common code, available on the `jvm`, `js` and `wasmJs` targe
 - **`com.spartanlabs.geometry`**
   - `Point` / `Dimensions` — 2D coordinate / size pairs.
   - `TwoDoubles` — abstract base; subclassing is Experimental.
-  - `AxisAlignedBox` — shared read-only box contract, implemented by `Square`
+  - `AxisAlignedBox` — shared box contract, implemented by `Rectangle`
     (top-left origin) and `CenteredBox` (centre origin).
   - `Segment`, `Ray` — line primitives.
   - Vector algebra on `Point`: `dot`, `cross`, `length`, `lengthSquared`,
@@ -155,7 +155,10 @@ composites as immutable and do not mutate shared components):
   `asRay(): Result<Ray>`.
 - `Ray(origin, direction)` — `direction` need **not** be unit length;
   `pointAt(t)`, `unit(): Result<Ray>`.
-- `Square(location, dimensions)` — top-left origin.
+- `Rectangle(location, dimensions)` — top-left origin; `location` and `dimensions` are `val` references to mutable
+  parts, changed in place (`rect.location.setTo(...)`); `min`/`size` return those live parts, `max`/`center` return
+  new points; `copy()` shares the parts; a `Rectangle` or `Point` used as a hash key must not change while in the
+  collection.
 - `CenteredBox(center, halfExtents)` — centre origin; `CenteredBox.fromCorners(c1, c2)`.
 
 `TwoDoubles` is abstract. Subclassing it needs `@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)` and may
@@ -173,9 +176,9 @@ Destructuring: `val (x, y) = point`, `val (w, h) = dimensions`. Negation: `-poin
 none).
 
 `AxisAlignedBox` is the shared read-only contract (`min`, `max`, `center`,
-`size`, `contains(p)`); both `Square` and `CenteredBox` implement it, and the
-box-intersection functions accept either. Convert with `Square.toCenteredBox()`
-/ `AxisAlignedBox.toSquare()`.
+`size`, `contains(p)`); both `Rectangle` and `CenteredBox` implement it, and the
+box-intersection functions accept either. Convert with `Rectangle.toCenteredBox()`
+/ `AxisAlignedBox.toRectangle()` (an independent mutable copy).
 
 Vector algebra (extension functions on `Point`, in `Vectors.kt`):
 `a dot b`, `a cross b` (2D perp-dot), `p.length`, `p.lengthSquared`,
@@ -283,3 +286,7 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | `Point(Double.NaN, 0.0) == Point(Double.NaN, 0.0)` is now `true` (2.x `false`), and `Point(0.0, 0.0)` / `Point(-0.0, 0.0)` now hash alike (2.x equal, different hashes) | `TwoDoubles` equality is now lawful | Only NaN-versus-NaN pairs change, from unequal to equal; no pair equal in 2.x becomes unequal; code that used `p != p` to find NaN should use `containsNaN`. |
 | Your own `operator fun Point.component1()`, `component2()` or `unaryMinus()` extension reports "extension is shadowed by a member" | `TwoDoubles` and `Point` now declare these operators | Delete the extension; the member returns the same values. |
 | After importing the package (or `arithmetic.*`), `p += q`, `-=`, `*=` or `/=` on a `var` `Point`/`Dimensions` reports an assignment-operator ambiguity; an IDE may add the import when `p + q` does not resolve; a member `plus` added in a later release would shadow the extension | The import adds a value-returning `plus`/`minus`/`times`/`div` next to the member `plusAssign`... which makes a `var` holder ambiguous in that file, a wildcard import brings every operator in, and a later member would win over the extension | These costs apply only to files that import the package: keep the holder a `val`, write `p = p + q`, or drop the import; `import com.spartanlabs.geometry.*` does not reach the package. |
+| `Unresolved reference: Square` (or `toSquare`) | `Square` is renamed `Rectangle`, and `AxisAlignedBox.toSquare()` is `toRectangle()`. No deprecated alias exists. | Rename imports and uses; `Rectangle(location, dimensions)` has the same constructor and members. |
+| `Val cannot be reassigned` on `r.location = p` or `r.dimensions = d` | `Rectangle.location` and `.dimensions` are `val`. | `r.location.setTo(p)` / `r.dimensions.setTo(d)`. This copies the values into the existing part instead of adopting the instance you pass: a later change to `p` or `d` does not reach `r`, and every other holder of the old part sees the new values. |
+| `Rectangle` names the wrong class, or is reported as ambiguous, in a file that also uses `java.awt.Rectangle` or another `Rectangle` | The new name is shared with those types. | Import one under an alias: `import com.spartanlabs.geometry.Rectangle as GeoRectangle`. |
+| A string or log assertion on `toString()` fails: `Rectangle(location=..., dimensions=...)` where 2.x printed `Square(...)` | The class is renamed. | Update the expected text. |

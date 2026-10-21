@@ -2,13 +2,13 @@ package com.spartanlabs.geometry
 
 /**
  * Read-only contract common to every axis-aligned rectangle in this package,
- * regardless of how it stores its origin — top-left for [Square], centre for
+ * regardless of how it stores its origin — top-left for [Rectangle], centre for
  * [CenteredBox].
  *
  * Every member is derived from the implementor's own fields; implementors add
  * no state of their own beyond what they already carry. The box-intersection
  * functions ([segmentIntersectsBox], [rayIntersectsBox]) accept this interface,
- * so a [Square] and a [CenteredBox] can be passed interchangeably without
+ * so a [Rectangle] and a [CenteredBox] can be passed interchangeably without
  * conversion.
  */
 public interface AxisAlignedBox {

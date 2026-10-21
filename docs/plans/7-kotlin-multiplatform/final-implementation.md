@@ -318,6 +318,15 @@ as-built record once implementation ends.
   (2026-10-20) to add the import. Importing the class needs no opt-in (only subclassing does): all three targets compile
   with no new warning, and the dumps are unchanged.
 
+### `box-model` — commit (a) ends the `CenteredBox` companion KDoc with a full stop
+
+- **Plan:** [plan-box-model.md](plan-box-model.md) §6.1, `geometry/CenteredBox.kt`: "Add a one-line KDoc to the companion
+  object, which has none today ("Factories for [CenteredBox]")."
+- **What differs:** the KDoc reads `/** Factories for [CenteredBox]. */`, with a closing full stop. The words are the
+  plan's.
+- **Why:** every other one-line KDoc in `CenteredBox.kt` and `Rectangle.kt` is a sentence ending with a full stop; the
+  plan gives the text in quotation marks inside a parenthesis, where no punctuation is carried.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`
@@ -403,5 +412,26 @@ as-built record once implementation ends.
   `AxisAlignedBox.toSquare`, and two (receiver `kotlin/Double`) after `Square.toCenteredBox`. The annotation entry
   `open annotation class com.spartanlabs.generaltools/SupportedExtension : kotlin/Annotation`, with the body line
   `constructor <init>()`, sits after the `ExperimentalForInheritanceGeneralToolsApi` entry.
+- **Status:** layout only, so recorded and continued under the coordinator's rule (2026-10-20); for the planner's
+  ledger correction.
+
+### `box-model` — commit (a), A4: the klib `Rectangle` block lists `location` and `dimensions` with the other `val`s
+
+- **Plan:** [plan-box-model.md](plan-box-model.md) §10 (a), "Expected JVM dump delta": `Square` (19 members) removed,
+  `Rectangle` (17 members, no setters) added, the two `CenteredBoxKt` rows replaced, "Nothing else. The klib dump shows
+  the same rename and conversion rows as property/function lines."
+- **JVM dump (`api/GeneralTools.api`):** matches the prediction exactly: the 19-member `Square` block is removed, a
+  17-member `Rectangle` block is added after `Ray` (the same members minus `setDimensions`/`setLocation`, with
+  `Rectangle` in place of `Square` in `copy` and `copy$default`), and `CenteredBoxKt`'s `toCenteredBox (Square)` and
+  `toSquare (AxisAlignedBox)Square` rows become `toCenteredBox (Rectangle)` and `toRectangle (AxisAlignedBox)Rectangle`
+  in place.
+- **klib dump (`api/GeneralTools.klib.api`):** the same declarations and the same semantic change, laid out
+  differently from a line-by-line rename:
+  - the dump sorts classes by name, so the `Rectangle` block (24 lines with its trailing blank) is added after `Ray` and
+    the 27-line `Square` block is removed after `Segment`;
+  - `location` and `dimensions` become `final val` with only a getter, and the dump lists them alphabetically with the
+    other `val`s (`center`, `dimensions`, `location`, `max`, `min`, `size`) instead of in a separate `final var` group
+    after them; the two `<set-...>` lines and that group's blank separator line are gone;
+  - the two extension-function lines change in place (`toSquare` -> `toRectangle`, receiver `Square` -> `Rectangle`).
 - **Status:** layout only, so recorded and continued under the coordinator's rule (2026-10-20); for the planner's
   ledger correction.

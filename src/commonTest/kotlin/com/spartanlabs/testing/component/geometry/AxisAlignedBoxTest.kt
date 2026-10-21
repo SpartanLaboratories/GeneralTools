@@ -4,7 +4,7 @@ import com.spartanlabs.geometry.AxisAlignedBox
 import com.spartanlabs.geometry.CenteredBox
 import com.spartanlabs.geometry.Dimensions
 import com.spartanlabs.geometry.Point
-import com.spartanlabs.geometry.Square
+import com.spartanlabs.geometry.Rectangle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,10 +12,10 @@ import kotlin.test.assertTrue
 
 /**
  * Level 2 (Isolated Component Behaviour) coverage for the [AxisAlignedBox]
- * contract, checked against both implementors ([Square], [CenteredBox]).
+ * contract, checked against both implementors ([Rectangle], [CenteredBox]).
  */
 class AxisAlignedBoxTest {
-    private val square: AxisAlignedBox = Square(Point(1.0, 2.0), Dimensions(4.0, 2.0))
+    private val rectangle: AxisAlignedBox = Rectangle(Point(1.0, 2.0), Dimensions(4.0, 2.0))
     private val centered: AxisAlignedBox = CenteredBox(Point(3.0, 3.0), Dimensions(2.0, 1.0))
 
     private fun assertBoxShape(box: AxisAlignedBox) {
@@ -29,8 +29,8 @@ class AxisAlignedBoxTest {
     }
 
     @Test
-    fun `Square satisfies the AxisAlignedBox contract`() {
-        assertBoxShape(square)
+    fun `Rectangle satisfies the AxisAlignedBox contract`() {
+        assertBoxShape(rectangle)
     }
 
     @Test
@@ -40,15 +40,15 @@ class AxisAlignedBoxTest {
 
     @Test
     fun `both implementors describe the same box`() {
-        assertEquals(square.min, centered.min)
-        assertEquals(square.max, centered.max)
-        assertEquals(square.center, centered.center)
-        assertEquals(square.size, centered.size)
+        assertEquals(rectangle.min, centered.min)
+        assertEquals(rectangle.max, centered.max)
+        assertEquals(rectangle.center, centered.center)
+        assertEquals(rectangle.size, centered.size)
     }
 
     @Test
     fun `a helper taking AxisAlignedBox behaves the same for either implementor`() {
         fun area(box: AxisAlignedBox) = box.size.width * box.size.height
-        assertEquals(area(square), area(centered))
+        assertEquals(area(rectangle), area(centered))
     }
 }

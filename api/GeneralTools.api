@@ -117,8 +117,8 @@ public final class com/spartanlabs/geometry/CenteredBox$Companion {
 }
 
 public final class com/spartanlabs/geometry/CenteredBoxKt {
-	public static final fun toCenteredBox (Lcom/spartanlabs/geometry/Square;)Lcom/spartanlabs/geometry/CenteredBox;
-	public static final fun toSquare (Lcom/spartanlabs/geometry/AxisAlignedBox;)Lcom/spartanlabs/geometry/Square;
+	public static final fun toCenteredBox (Lcom/spartanlabs/geometry/Rectangle;)Lcom/spartanlabs/geometry/CenteredBox;
+	public static final fun toRectangle (Lcom/spartanlabs/geometry/AxisAlignedBox;)Lcom/spartanlabs/geometry/Rectangle;
 }
 
 public final class com/spartanlabs/geometry/Dimensions : com/spartanlabs/geometry/TwoDoubles {
@@ -164,6 +164,26 @@ public final class com/spartanlabs/geometry/Ray {
 	public final fun pointAt (D)Lcom/spartanlabs/geometry/Point;
 	public fun toString ()Ljava/lang/String;
 	public final fun unit-d1pmJ48 ()Ljava/lang/Object;
+}
+
+public final class com/spartanlabs/geometry/Rectangle : com/spartanlabs/geometry/AxisAlignedBox {
+	public fun <init> ()V
+	public fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)V
+	public synthetic fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/spartanlabs/geometry/Point;
+	public final fun component2 ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun contains (Lcom/spartanlabs/geometry/Point;)Z
+	public final fun copy (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/Rectangle;
+	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/Rectangle;Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;ILjava/lang/Object;)Lcom/spartanlabs/geometry/Rectangle;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCenter ()Lcom/spartanlabs/geometry/Point;
+	public final fun getDimensions ()Lcom/spartanlabs/geometry/Dimensions;
+	public final fun getLocation ()Lcom/spartanlabs/geometry/Point;
+	public fun getMax ()Lcom/spartanlabs/geometry/Point;
+	public fun getMin ()Lcom/spartanlabs/geometry/Point;
+	public fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/spartanlabs/geometry/Segment {
@@ -213,28 +233,6 @@ public final class com/spartanlabs/geometry/SegmentIntersection$Touching : com/s
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getPoint ()Lcom/spartanlabs/geometry/Point;
 	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/spartanlabs/geometry/Square : com/spartanlabs/geometry/AxisAlignedBox {
-	public fun <init> ()V
-	public fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)V
-	public synthetic fun <init> (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/spartanlabs/geometry/Point;
-	public final fun component2 ()Lcom/spartanlabs/geometry/Dimensions;
-	public fun contains (Lcom/spartanlabs/geometry/Point;)Z
-	public final fun copy (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/Square;
-	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/Square;Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;ILjava/lang/Object;)Lcom/spartanlabs/geometry/Square;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getCenter ()Lcom/spartanlabs/geometry/Point;
-	public final fun getDimensions ()Lcom/spartanlabs/geometry/Dimensions;
-	public final fun getLocation ()Lcom/spartanlabs/geometry/Point;
-	public fun getMax ()Lcom/spartanlabs/geometry/Point;
-	public fun getMin ()Lcom/spartanlabs/geometry/Point;
-	public fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
-	public fun hashCode ()I
-	public final fun setDimensions (Lcom/spartanlabs/geometry/Dimensions;)V
-	public final fun setLocation (Lcom/spartanlabs/geometry/Point;)V
 	public fun toString ()Ljava/lang/String;
 }
 

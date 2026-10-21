@@ -231,6 +231,30 @@ final class com.spartanlabs.geometry/Ray { // com.spartanlabs.geometry/Ray|null[
     final fun unit(): kotlin/Result<com.spartanlabs.geometry/Ray> // com.spartanlabs.geometry/Ray.unit|unit(){}[0]
 }
 
+final class com.spartanlabs.geometry/Rectangle : com.spartanlabs.geometry/AxisAlignedBox { // com.spartanlabs.geometry/Rectangle|null[0]
+    constructor <init>(com.spartanlabs.geometry/Point = ..., com.spartanlabs.geometry/Dimensions = ...) // com.spartanlabs.geometry/Rectangle.<init>|<init>(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Dimensions){}[0]
+
+    final val center // com.spartanlabs.geometry/Rectangle.center|{}center[0]
+        final fun <get-center>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Rectangle.center.<get-center>|<get-center>(){}[0]
+    final val dimensions // com.spartanlabs.geometry/Rectangle.dimensions|{}dimensions[0]
+        final fun <get-dimensions>(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/Rectangle.dimensions.<get-dimensions>|<get-dimensions>(){}[0]
+    final val location // com.spartanlabs.geometry/Rectangle.location|{}location[0]
+        final fun <get-location>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Rectangle.location.<get-location>|<get-location>(){}[0]
+    final val max // com.spartanlabs.geometry/Rectangle.max|{}max[0]
+        final fun <get-max>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Rectangle.max.<get-max>|<get-max>(){}[0]
+    final val min // com.spartanlabs.geometry/Rectangle.min|{}min[0]
+        final fun <get-min>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Rectangle.min.<get-min>|<get-min>(){}[0]
+    final val size // com.spartanlabs.geometry/Rectangle.size|{}size[0]
+        final fun <get-size>(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/Rectangle.size.<get-size>|<get-size>(){}[0]
+
+    final fun component1(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Rectangle.component1|component1(){}[0]
+    final fun component2(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/Rectangle.component2|component2(){}[0]
+    final fun copy(com.spartanlabs.geometry/Point = ..., com.spartanlabs.geometry/Dimensions = ...): com.spartanlabs.geometry/Rectangle // com.spartanlabs.geometry/Rectangle.copy|copy(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Dimensions){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/Rectangle.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/Rectangle.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.spartanlabs.geometry/Rectangle.toString|toString(){}[0]
+}
+
 final class com.spartanlabs.geometry/Segment { // com.spartanlabs.geometry/Segment|null[0]
     constructor <init>(com.spartanlabs.geometry/Point, com.spartanlabs.geometry/Point) // com.spartanlabs.geometry/Segment.<init>|<init>(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Point){}[0]
 
@@ -255,33 +279,6 @@ final class com.spartanlabs.geometry/Segment { // com.spartanlabs.geometry/Segme
     final fun toString(): kotlin/String // com.spartanlabs.geometry/Segment.toString|toString(){}[0]
 }
 
-final class com.spartanlabs.geometry/Square : com.spartanlabs.geometry/AxisAlignedBox { // com.spartanlabs.geometry/Square|null[0]
-    constructor <init>(com.spartanlabs.geometry/Point = ..., com.spartanlabs.geometry/Dimensions = ...) // com.spartanlabs.geometry/Square.<init>|<init>(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Dimensions){}[0]
-
-    final val center // com.spartanlabs.geometry/Square.center|{}center[0]
-        final fun <get-center>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Square.center.<get-center>|<get-center>(){}[0]
-    final val max // com.spartanlabs.geometry/Square.max|{}max[0]
-        final fun <get-max>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Square.max.<get-max>|<get-max>(){}[0]
-    final val min // com.spartanlabs.geometry/Square.min|{}min[0]
-        final fun <get-min>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Square.min.<get-min>|<get-min>(){}[0]
-    final val size // com.spartanlabs.geometry/Square.size|{}size[0]
-        final fun <get-size>(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/Square.size.<get-size>|<get-size>(){}[0]
-
-    final var dimensions // com.spartanlabs.geometry/Square.dimensions|{}dimensions[0]
-        final fun <get-dimensions>(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/Square.dimensions.<get-dimensions>|<get-dimensions>(){}[0]
-        final fun <set-dimensions>(com.spartanlabs.geometry/Dimensions) // com.spartanlabs.geometry/Square.dimensions.<set-dimensions>|<set-dimensions>(com.spartanlabs.geometry.Dimensions){}[0]
-    final var location // com.spartanlabs.geometry/Square.location|{}location[0]
-        final fun <get-location>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Square.location.<get-location>|<get-location>(){}[0]
-        final fun <set-location>(com.spartanlabs.geometry/Point) // com.spartanlabs.geometry/Square.location.<set-location>|<set-location>(com.spartanlabs.geometry.Point){}[0]
-
-    final fun component1(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/Square.component1|component1(){}[0]
-    final fun component2(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/Square.component2|component2(){}[0]
-    final fun copy(com.spartanlabs.geometry/Point = ..., com.spartanlabs.geometry/Dimensions = ...): com.spartanlabs.geometry/Square // com.spartanlabs.geometry/Square.copy|copy(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Dimensions){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/Square.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/Square.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.spartanlabs.geometry/Square.toString|toString(){}[0]
-}
-
 final const val com.spartanlabs.geometry/EPSILON // com.spartanlabs.geometry/EPSILON|{}EPSILON[0]
     final fun <get-EPSILON>(): kotlin/Double // com.spartanlabs.geometry/EPSILON.<get-EPSILON>|<get-EPSILON>(){}[0]
 
@@ -290,7 +287,7 @@ final val com.spartanlabs.geometry/length // com.spartanlabs.geometry/length|@co
 final val com.spartanlabs.geometry/lengthSquared // com.spartanlabs.geometry/lengthSquared|@com.spartanlabs.geometry.Point{}lengthSquared[0]
     final fun (com.spartanlabs.geometry/Point).<get-lengthSquared>(): kotlin/Double // com.spartanlabs.geometry/lengthSquared.<get-lengthSquared>|<get-lengthSquared>@com.spartanlabs.geometry.Point(){}[0]
 
-final fun (com.spartanlabs.geometry/AxisAlignedBox).com.spartanlabs.geometry/toSquare(): com.spartanlabs.geometry/Square // com.spartanlabs.geometry/toSquare|toSquare@com.spartanlabs.geometry.AxisAlignedBox(){}[0]
+final fun (com.spartanlabs.geometry/AxisAlignedBox).com.spartanlabs.geometry/toRectangle(): com.spartanlabs.geometry/Rectangle // com.spartanlabs.geometry/toRectangle|toRectangle@com.spartanlabs.geometry.AxisAlignedBox(){}[0]
 final fun (com.spartanlabs.geometry/Dimensions).com.spartanlabs.geometry.arithmetic/div(kotlin/Double): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/div|div@com.spartanlabs.geometry.Dimensions(kotlin.Double){}[0]
 final fun (com.spartanlabs.geometry/Dimensions).com.spartanlabs.geometry.arithmetic/minus(com.spartanlabs.geometry/Dimensions): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/minus|minus@com.spartanlabs.geometry.Dimensions(com.spartanlabs.geometry.Dimensions){}[0]
 final fun (com.spartanlabs.geometry/Dimensions).com.spartanlabs.geometry.arithmetic/plus(com.spartanlabs.geometry/Dimensions): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/plus|plus@com.spartanlabs.geometry.Dimensions(com.spartanlabs.geometry.Dimensions){}[0]
@@ -305,7 +302,7 @@ final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/cross(com.sp
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/dot(com.spartanlabs.geometry/Point): kotlin/Double // com.spartanlabs.geometry/dot|dot@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/normalized(): kotlin/Result<com.spartanlabs.geometry/Point> // com.spartanlabs.geometry/normalized|normalized@com.spartanlabs.geometry.Point(){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/projectedOnto(com.spartanlabs.geometry/Point): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/projectedOnto|projectedOnto@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
-final fun (com.spartanlabs.geometry/Square).com.spartanlabs.geometry/toCenteredBox(): com.spartanlabs.geometry/CenteredBox // com.spartanlabs.geometry/toCenteredBox|toCenteredBox@com.spartanlabs.geometry.Square(){}[0]
+final fun (com.spartanlabs.geometry/Rectangle).com.spartanlabs.geometry/toCenteredBox(): com.spartanlabs.geometry/CenteredBox // com.spartanlabs.geometry/toCenteredBox|toCenteredBox@com.spartanlabs.geometry.Rectangle(){}[0]
 final fun (kotlin/Double).com.spartanlabs.geometry.arithmetic/times(com.spartanlabs.geometry/Dimensions): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/times|times@kotlin.Double(com.spartanlabs.geometry.Dimensions){}[0]
 final fun (kotlin/Double).com.spartanlabs.geometry.arithmetic/times(com.spartanlabs.geometry/Point): com.spartanlabs.geometry/Point // com.spartanlabs.geometry.arithmetic/times|times@kotlin.Double(com.spartanlabs.geometry.Point){}[0]
 final fun (kotlin/String).com.spartanlabs.generaltools/trimIfLongerThan(kotlin/Int): kotlin/String // com.spartanlabs.generaltools/trimIfLongerThan|trimIfLongerThan@kotlin.String(kotlin.Int){}[0]

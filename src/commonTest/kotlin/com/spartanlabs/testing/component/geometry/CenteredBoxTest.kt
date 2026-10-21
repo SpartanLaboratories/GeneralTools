@@ -3,17 +3,18 @@ package com.spartanlabs.testing.component.geometry
 import com.spartanlabs.geometry.CenteredBox
 import com.spartanlabs.geometry.Dimensions
 import com.spartanlabs.geometry.Point
-import com.spartanlabs.geometry.Square
+import com.spartanlabs.geometry.Rectangle
 import com.spartanlabs.geometry.toCenteredBox
-import com.spartanlabs.geometry.toSquare
+import com.spartanlabs.geometry.toRectangle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
 /**
  * Level 2 (Isolated Component Behaviour) coverage for [CenteredBox] and the
- * [Square] / [CenteredBox] converters. Pure value types — nothing to mock.
+ * [Rectangle] / [CenteredBox] converters. Pure value types — nothing to mock.
  */
 class CenteredBoxTest {
     @Test
@@ -44,17 +45,30 @@ class CenteredBoxTest {
 
     @Test
     fun `toCenteredBox keeps the same footprint`() {
-        val box = Square(Point(0.0, 0.0), Dimensions(4.0, 2.0)).toCenteredBox()
+        val box = Rectangle(Point(0.0, 0.0), Dimensions(4.0, 2.0)).toCenteredBox()
         assertEquals(Point(2.0, 1.0), box.center)
         assertEquals(Dimensions(2.0, 1.0), box.halfExtents)
     }
 
     @Test
-    fun `toCenteredBox then toSquare round-trips the footprint`() {
-        val original = Square(Point(1.0, 2.0), Dimensions(4.0, 2.0))
-        val roundTripped = original.toCenteredBox().toSquare()
+    fun `toCenteredBox then toRectangle round-trips the footprint`() {
+        val original = Rectangle(Point(1.0, 2.0), Dimensions(4.0, 2.0))
+        val roundTripped = original.toCenteredBox().toRectangle()
         assertEquals(original.min, roundTripped.min)
         assertEquals(original.max, roundTripped.max)
+    }
+
+    @Test
+    fun `toRectangle returns a copy that shares no parts with the source`() {
+        val source = Rectangle(Point(1.0, 2.0), Dimensions(4.0, 2.0))
+        val copy = source.toRectangle()
+        assertNotSame(source.location, copy.location)
+        assertNotSame(source.dimensions, copy.dimensions)
+        assertEquals(source, copy)
+
+        copy.location.setTo(9.0, 9.0)
+        copy.dimensions.setTo(7.0, 7.0)
+        assertEquals(Rectangle(Point(1.0, 2.0), Dimensions(4.0, 2.0)), source)
     }
 
     @Test

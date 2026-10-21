@@ -4,13 +4,12 @@ package com.spartanlabs.geometry
  * An axis-aligned box centred at [center] with the given [halfExtents]
  * (half-width, half-height).
  *
- * Centre-origin, so — unlike [Square], whose origin is its top-left corner —
+ * Centre-origin, so — unlike [Rectangle], whose origin is its top-left corner —
  * there is no corner-vs-centre ambiguity.
  *
  * Value type. [Point] and [Dimensions] are mutable, so do not mutate [center]
  * or [halfExtents] after handing them to a `CenteredBox`, and note that [copy]
- * shares the same instances. Treat `CenteredBox` as immutable (see plan §7 /
- * decision D-mut).
+ * shares the same instances. Treat `CenteredBox` as immutable.
  *
  * Negative or `NaN` [halfExtents] are not rejected here (consistent with
  * [Point] / [Dimensions], which validate nothing); the intersection functions
@@ -35,6 +34,7 @@ public data class CenteredBox(
     override val size: Dimensions
         get() = Dimensions(halfExtents.width * 2, halfExtents.height * 2)
 
+    /** Factories for [CenteredBox]. */
     public companion object {
         /**
          * Builds a [CenteredBox] spanning the two opposite corners [c1] and
@@ -59,22 +59,24 @@ public data class CenteredBox(
 }
 
 /**
- * This [Square] as a [CenteredBox] covering the same footprint (same [min] and
- * [max]).
+ * This [Rectangle] as a [CenteredBox] covering the same footprint (same [Rectangle.min] and [Rectangle.max]).
  *
- * @return a centre-origin box over the same area.
+ * @receiver the rectangle to convert; not changed.
+ * @return a new centre-origin box over the same area. It shares no part with the receiver.
  */
-public fun Square.toCenteredBox(): CenteredBox =
+public fun Rectangle.toCenteredBox(): CenteredBox =
     CenteredBox(
         Point(location.x + dimensions.width / 2.0, location.y + dimensions.height / 2.0),
         Dimensions(dimensions.width / 2.0, dimensions.height / 2.0),
     )
 
 /**
- * This box as a top-left-origin [Square] covering the same footprint.
+ * This box as a top-left-origin [Rectangle] covering the same footprint.
  *
- * @return a [Square] whose `location` is a copy of [AxisAlignedBox.min] and
- *   whose `dimensions` are a copy of [AxisAlignedBox.size].
+ * @receiver any [AxisAlignedBox]; not changed.
+ * @return an independent, mutable [Rectangle] whose `location` is a new [Point] holding [AxisAlignedBox.min]
+ *   and whose `dimensions` is a new [Dimensions] holding [AxisAlignedBox.size]; later changes to either
+ *   side do not reach the other.
  */
-public fun AxisAlignedBox.toSquare(): Square =
-    Square(Point(min.x, min.y), Dimensions(size.width, size.height))
+public fun AxisAlignedBox.toRectangle(): Rectangle =
+    Rectangle(Point(min.x, min.y), Dimensions(size.width, size.height))

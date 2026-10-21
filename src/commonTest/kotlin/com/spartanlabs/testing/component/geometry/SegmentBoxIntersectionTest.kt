@@ -4,8 +4,8 @@ import com.spartanlabs.geometry.AxisAlignedBox
 import com.spartanlabs.geometry.CenteredBox
 import com.spartanlabs.geometry.Dimensions
 import com.spartanlabs.geometry.Point
+import com.spartanlabs.geometry.Rectangle
 import com.spartanlabs.geometry.Segment
-import com.spartanlabs.geometry.Square
 import com.spartanlabs.geometry.segmentIntersectsBox
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,14 +15,14 @@ import kotlin.test.assertTrue
 /**
  * Level 2 (Isolated Component Behaviour) coverage for [segmentIntersectsBox].
  * Pure — nothing to mock. Core cases run once against a [CenteredBox] and once
- * against the equivalent [Square] to pin the [AxisAlignedBox]-agnostic
+ * against the equivalent [Rectangle] to pin the [AxisAlignedBox]-agnostic
  * behaviour.
  */
 class SegmentBoxIntersectionTest {
     // Both describe the box with corners (-1,-1) .. (1,1).
     private val centeredBox: AxisAlignedBox = CenteredBox(Point(0.0, 0.0), Dimensions(1.0, 1.0))
-    private val squareBox: AxisAlignedBox = Square(Point(-1.0, -1.0), Dimensions(2.0, 2.0))
-    private val boxes = listOf(centeredBox, squareBox)
+    private val rectangleBox: AxisAlignedBox = Rectangle(Point(-1.0, -1.0), Dimensions(2.0, 2.0))
+    private val boxes = listOf(centeredBox, rectangleBox)
 
     private fun hits(s: Segment, box: AxisAlignedBox) = segmentIntersectsBox(s, box).getOrThrow()
 
@@ -71,8 +71,8 @@ class SegmentBoxIntersectionTest {
     }
 
     @Test
-    fun `the CenteredBox and the equivalent Square agree`() {
+    fun `the CenteredBox and the equivalent Rectangle agree`() {
         val s = Segment(Point(-3.0, 0.5), Point(3.0, 0.5))
-        assertEquals(hits(s, centeredBox), hits(s, squareBox))
+        assertEquals(hits(s, centeredBox), hits(s, rectangleBox))
     }
 }

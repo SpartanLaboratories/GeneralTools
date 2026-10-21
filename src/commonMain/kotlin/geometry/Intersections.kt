@@ -122,7 +122,7 @@ public fun segmentIntersectsSegment(s1: Segment, s2: Segment): Result<SegmentInt
  *
  * Slab test along the segment's own parameterisation clamped to `[0, 1]`, with
  * an endpoint-inside short-circuit for the fully-contained case. [box] is any
- * [AxisAlignedBox] — a [Square] or a [CenteredBox]; only [AxisAlignedBox.min] /
+ * [AxisAlignedBox] — a [Rectangle] or a [CenteredBox]; only [AxisAlignedBox.min] /
  * [AxisAlignedBox.max] are read, so the origin convention does not matter.
  * On failure also logs one WARN line on this file's logger (see the README's Logging section).
  *
@@ -176,7 +176,7 @@ public fun segmentIntersectsBox(s: Segment, box: AxisAlignedBox): Result<Boolean
 /**
  * Parametric entry distance of ray [r] into [box] via the NaN-safe slab method.
  *
- * [box] is any [AxisAlignedBox] — a [Square] or a [CenteredBox]; only
+ * [box] is any [AxisAlignedBox] — a [Rectangle] or a [CenteredBox]; only
  * [AxisAlignedBox.min] / [AxisAlignedBox.max] are read.
  * On failure also logs one WARN line on this file's logger (see the README's Logging section).
  *

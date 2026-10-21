@@ -31,7 +31,9 @@ internal const val DIVISION_BY_ZERO_MESSAGE: String = "Cannot divide by zero"
  * [amplifyBy], [divideBy], the four assignment operators, [containsNaN], [component1], [component2],
  * [equals] and [hashCode]. [toString] stays open.
  * A subclass cannot be a data class: a data class's generated `componentN()` cannot override the final
- * [component1] and [component2] it inherits (the compiler reports an error).
+ * [component1] and [component2] it inherits (the compiler reports an error). A subclass's state lives in
+ * [first] and [second]; give it a plain class and, if it needs value-returning operators, extension
+ * functions such as those in the `com.spartanlabs.geometry.arithmetic` package.
  *
  * ### Equality and hash keys
  * Two instances are equal when they are of the same concrete class and their components are equal, where

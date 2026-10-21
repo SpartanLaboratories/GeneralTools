@@ -69,6 +69,9 @@ public final class com/spartanlabs/generaltools/MiscKt {
 	public static final fun trimIfLongerThan (Ljava/lang/String;I)Ljava/lang/String;
 }
 
+public abstract interface annotation class com/spartanlabs/generaltools/SupportedExtension : java/lang/annotation/Annotation {
+}
+
 public final class com/spartanlabs/generaltools/UserActionsKt {
 	public static final fun cropImage (Ljava/awt/image/BufferedImage;IIII)Ljava/awt/image/BufferedImage;
 	public static final fun openInBrowser (Ljava/lang/String;)V
@@ -270,5 +273,20 @@ public final class com/spartanlabs/geometry/VectorsKt {
 	public static final fun getLengthSquared (Lcom/spartanlabs/geometry/Point;)D
 	public static final fun normalized (Lcom/spartanlabs/geometry/Point;)Ljava/lang/Object;
 	public static final fun projectedOnto (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/Point;
+}
+
+public final class com/spartanlabs/geometry/arithmetic/ArithmeticKt {
+	public static final fun div (Lcom/spartanlabs/geometry/Dimensions;D)Lcom/spartanlabs/geometry/Dimensions;
+	public static final fun div (Lcom/spartanlabs/geometry/Point;D)Lcom/spartanlabs/geometry/Point;
+	public static final fun minus (Lcom/spartanlabs/geometry/Dimensions;Lcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/Dimensions;
+	public static final fun minus (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/Point;
+	public static final fun minus (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/Point;
+	public static final fun plus (Lcom/spartanlabs/geometry/Dimensions;Lcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/Dimensions;
+	public static final fun plus (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/Point;
+	public static final fun plus (Lcom/spartanlabs/geometry/Point;Lcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/Point;
+	public static final fun times (DLcom/spartanlabs/geometry/Dimensions;)Lcom/spartanlabs/geometry/Dimensions;
+	public static final fun times (DLcom/spartanlabs/geometry/Point;)Lcom/spartanlabs/geometry/Point;
+	public static final fun times (Lcom/spartanlabs/geometry/Dimensions;D)Lcom/spartanlabs/geometry/Dimensions;
+	public static final fun times (Lcom/spartanlabs/geometry/Point;D)Lcom/spartanlabs/geometry/Point;
 }
 

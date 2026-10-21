@@ -209,6 +209,10 @@ as-built record once implementation ends.
 - **Related, kept as written:** the marker's KDoc (§6.1, commit (a)) links `[SupportedExtension]`, which does not exist
   until commit (e). The user decided (2026-10-20) to keep the link; it is unresolved in (a)-(d) and resolves when (e)
   lands. It does not affect compilation or the dumps.
+- **Status (commit (e)):** all four pieces have landed: the tags and Thread safety in (a), the intro in (d), and the
+  "A subclass's state lives in ..." sentence in (e), after the data-class sentence as in the §6.2 listing. The class
+  KDoc now matches the listing. The marker's `[SupportedExtension]` link resolves from (e) on: `SupportedExtension` is
+  declared in the marker's own package, `com.spartanlabs.generaltools`.
 
 ### `two-doubles` — commit (b) writes the four migration rows in the table's sentence case
 
@@ -256,6 +260,63 @@ as-built record once implementation ends.
 - **What differs:** the README Fix cell reads "Delete the extension; the member returns the same values." The symptom
   starts "Your own ..." as in the plan; the cause starts with code.
 - **Why:** the same table convention as the (a), (b) and (c) rows above.
+
+### `two-doubles` — commit (e) puts each arithmetic function's common tail before its block tags
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §6.6, "Per-function KDoc": "a one-line summary, `@param`,
+  `@return` ... and, for `div`, `@throws IllegalArgumentException`, then the **common tail**, repeated verbatim in all
+  twelve"; the `div` sentence is "added" with no position given.
+- **What differs:** in each of the twelve KDoc blocks the order is: summary; for `div`, the zero-divisor sentence; the
+  common tail (verbatim); then `@param`, `@return` and, for `div`, `@throws`.
+- **Why:** KDoc treats every line after a block tag as part of that tag's description, so a tail written after
+  `@return`/`@throws` would render as part of the return or throws text rather than as the function's description.
+  Placing it before the tags keeps the plan's wording and makes it render as the description.
+
+### `two-doubles` — commit (e) names `Dimensions` in the `Double.times(Dimensions)` Level-1 comment
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §6.6, "Level-1 comments": "above `Double.times`, 'commutative in
+  IEEE, so equal to the Point-times-Double form'".
+- **What differs:** the comment above `Double.times(point: Point)` is the plan's text; the one above
+  `Double.times(dimensions: Dimensions)` reads "commutative in IEEE, so equal to the Dimensions-times-Double form".
+- **Why:** the same correction the user chose in commit (d) for the `Dimensions` opt-in comment (2026-10-20): the
+  plan's single text names `Point`, which is wrong above the `Dimensions` overload.
+
+### `two-doubles` — commit (e) capitalises the cause and Fix cells of its migration row
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §8, row (e), "Migration rows" column, whose cause starts "the
+  import adds ..." and whose fix starts "these costs apply only ...".
+- **What differs:** the README cells start "The import adds ..." and "These costs apply only ...", and the Fix cell ends
+  with a full stop. The words are the plan's, including its "`plusAssign`..." ellipsis.
+- **Why:** the same table convention as the (a)-(d) rows above.
+
+### `two-doubles` — commit (e) anchors §9 guards 1 and 2 to import statements
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §9 Level 1, guards "library never imports the package"
+  (`grep -rn "import com.spartanlabs.geometry.arithmetic" src/commonMain src/jvmMain`) and "the A12 file must not mention
+  it" (`grep -rln "geometry.arithmetic" .../CompoundAssignmentWithoutArithmeticImportTest.kt`), each of which must print
+  nothing.
+- **What differs:** as written, both guards match documentation text the plan itself requires: guard 1 matches the two
+  import examples in `Arithmetic.kt`'s file-level KDoc (§6.6 item 2), and guard 2 matches the §9 header comment of
+  `CompoundAssignmentWithoutArithmeticImportTest.kt` ("This file must not import com.spartanlabs.geometry.arithmetic.
+  ..."). No text was changed; the coordinator decided (2026-10-20) to run both guards anchored to import statements:
+  - `grep -rnE "^\s*import com\.spartanlabs\.geometry\.arithmetic" src/commonMain src/jvmMain` printed nothing
+    (exit 1);
+  - `grep -nE "^\s*import com\.spartanlabs\.geometry\.arithmetic"
+    src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/CompoundAssignmentWithoutArithmeticImportTest.kt`
+    printed nothing (exit 1).
+- **Why:** the guards exist to catch an actual import of the package; anchoring them to `import` lines keeps that
+  purpose and stops them matching the plan-required prose. Guard 3 runs unchanged and prints nothing.
+
+### `two-doubles` — commit (e) imports `TwoDoubles` in `Arithmetic.kt`
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §6.6, which lists the file's imports as
+  `com.spartanlabs.generaltools.SupportedExtension`, `com.spartanlabs.geometry.DIVISION_BY_ZERO_MESSAGE`,
+  `com.spartanlabs.geometry.Dimensions` and `com.spartanlabs.geometry.Point`.
+- **What differs:** `Arithmetic.kt` also imports `com.spartanlabs.geometry.TwoDoubles`.
+- **Why:** the common tail of all twelve functions' KDoc links `[TwoDoubles.modBy]` and `[TwoDoubles.amplifyBy]`, which
+  do not resolve from the `com.spartanlabs.geometry.arithmetic` package without it; the coordinator decided
+  (2026-10-20) to add the import. Importing the class needs no opt-in (only subclassing does): all three targets compile
+  with no new warning, and the dumps are unchanged.
 
 ## Observations
 
@@ -327,4 +388,20 @@ as-built record once implementation ends.
   `final fun component2(): kotlin/Double` and `final fun unaryMinus(): com.spartanlabs.geometry/Point`: the dump does not
   print the `operator` modifier, as it already does not for `plusAssign`, `minusAssign`, `timesAssign` and `divAssign`.
 - **Status:** rendering only, so recorded and continued under the coordinator's rule (2026-10-20); for the planner's
+  ledger correction.
+
+### `two-doubles` — commit (e), A4: the klib dump has no separate block for the arithmetic package
+
+- **Plan:** [plan-two-doubles.md](plan-two-doubles.md) §11 row (e), "Expected dump delta (A4)": "**klib:** a
+  `com.spartanlabs.geometry.arithmetic` package block with the same twelve functions, and the annotation class."
+- **JVM dump:** matches the prediction exactly: the annotation class `com/spartanlabs/generaltools/SupportedExtension`,
+  and a new `com/spartanlabs/geometry/arithmetic/ArithmeticKt` with twelve `public static final fun` lines (`plus` x3,
+  `minus` x3, `times` x4, `div` x2).
+- **klib dump:** the same declarations, laid out differently. The dump is one flat list sorted by declaration kind and
+  then by text, with no per-package block, so the twelve `final fun (<receiver>).com.spartanlabs.geometry.arithmetic/<op>`
+  lines land among the existing top-level extension functions: ten (receivers `Dimensions` and `Point`) after
+  `AxisAlignedBox.toSquare`, and two (receiver `kotlin/Double`) after `Square.toCenteredBox`. The annotation entry
+  `open annotation class com.spartanlabs.generaltools/SupportedExtension : kotlin/Annotation`, with the body line
+  `constructor <init>()`, sits after the `ExperimentalForInheritanceGeneralToolsApi` entry.
+- **Status:** layout only, so recorded and continued under the coordinator's rule (2026-10-20); for the planner's
   ledger correction.

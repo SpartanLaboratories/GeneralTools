@@ -10,6 +10,10 @@ open annotation class com.spartanlabs.generaltools/ExperimentalForInheritanceGen
     constructor <init>() // com.spartanlabs.generaltools/ExperimentalForInheritanceGeneralToolsApi.<init>|<init>(){}[0]
 }
 
+open annotation class com.spartanlabs.generaltools/SupportedExtension : kotlin/Annotation { // com.spartanlabs.generaltools/SupportedExtension|null[0]
+    constructor <init>() // com.spartanlabs.generaltools/SupportedExtension.<init>|<init>(){}[0]
+}
+
 abstract interface com.spartanlabs.geometry/AxisAlignedBox { // com.spartanlabs.geometry/AxisAlignedBox|null[0]
     abstract val center // com.spartanlabs.geometry/AxisAlignedBox.center|{}center[0]
         abstract fun <get-center>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/AxisAlignedBox.center.<get-center>|<get-center>(){}[0]
@@ -287,11 +291,23 @@ final val com.spartanlabs.geometry/lengthSquared // com.spartanlabs.geometry/len
     final fun (com.spartanlabs.geometry/Point).<get-lengthSquared>(): kotlin/Double // com.spartanlabs.geometry/lengthSquared.<get-lengthSquared>|<get-lengthSquared>@com.spartanlabs.geometry.Point(){}[0]
 
 final fun (com.spartanlabs.geometry/AxisAlignedBox).com.spartanlabs.geometry/toSquare(): com.spartanlabs.geometry/Square // com.spartanlabs.geometry/toSquare|toSquare@com.spartanlabs.geometry.AxisAlignedBox(){}[0]
+final fun (com.spartanlabs.geometry/Dimensions).com.spartanlabs.geometry.arithmetic/div(kotlin/Double): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/div|div@com.spartanlabs.geometry.Dimensions(kotlin.Double){}[0]
+final fun (com.spartanlabs.geometry/Dimensions).com.spartanlabs.geometry.arithmetic/minus(com.spartanlabs.geometry/Dimensions): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/minus|minus@com.spartanlabs.geometry.Dimensions(com.spartanlabs.geometry.Dimensions){}[0]
+final fun (com.spartanlabs.geometry/Dimensions).com.spartanlabs.geometry.arithmetic/plus(com.spartanlabs.geometry/Dimensions): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/plus|plus@com.spartanlabs.geometry.Dimensions(com.spartanlabs.geometry.Dimensions){}[0]
+final fun (com.spartanlabs.geometry/Dimensions).com.spartanlabs.geometry.arithmetic/times(kotlin/Double): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/times|times@com.spartanlabs.geometry.Dimensions(kotlin.Double){}[0]
+final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry.arithmetic/div(kotlin/Double): com.spartanlabs.geometry/Point // com.spartanlabs.geometry.arithmetic/div|div@com.spartanlabs.geometry.Point(kotlin.Double){}[0]
+final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry.arithmetic/minus(com.spartanlabs.geometry/Dimensions): com.spartanlabs.geometry/Point // com.spartanlabs.geometry.arithmetic/minus|minus@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Dimensions){}[0]
+final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry.arithmetic/minus(com.spartanlabs.geometry/Point): com.spartanlabs.geometry/Point // com.spartanlabs.geometry.arithmetic/minus|minus@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
+final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry.arithmetic/plus(com.spartanlabs.geometry/Dimensions): com.spartanlabs.geometry/Point // com.spartanlabs.geometry.arithmetic/plus|plus@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Dimensions){}[0]
+final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry.arithmetic/plus(com.spartanlabs.geometry/Point): com.spartanlabs.geometry/Point // com.spartanlabs.geometry.arithmetic/plus|plus@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
+final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry.arithmetic/times(kotlin/Double): com.spartanlabs.geometry/Point // com.spartanlabs.geometry.arithmetic/times|times@com.spartanlabs.geometry.Point(kotlin.Double){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/cross(com.spartanlabs.geometry/Point): kotlin/Double // com.spartanlabs.geometry/cross|cross@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/dot(com.spartanlabs.geometry/Point): kotlin/Double // com.spartanlabs.geometry/dot|dot@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/normalized(): kotlin/Result<com.spartanlabs.geometry/Point> // com.spartanlabs.geometry/normalized|normalized@com.spartanlabs.geometry.Point(){}[0]
 final fun (com.spartanlabs.geometry/Point).com.spartanlabs.geometry/projectedOnto(com.spartanlabs.geometry/Point): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/projectedOnto|projectedOnto@com.spartanlabs.geometry.Point(com.spartanlabs.geometry.Point){}[0]
 final fun (com.spartanlabs.geometry/Square).com.spartanlabs.geometry/toCenteredBox(): com.spartanlabs.geometry/CenteredBox // com.spartanlabs.geometry/toCenteredBox|toCenteredBox@com.spartanlabs.geometry.Square(){}[0]
+final fun (kotlin/Double).com.spartanlabs.geometry.arithmetic/times(com.spartanlabs.geometry/Dimensions): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry.arithmetic/times|times@kotlin.Double(com.spartanlabs.geometry.Dimensions){}[0]
+final fun (kotlin/Double).com.spartanlabs.geometry.arithmetic/times(com.spartanlabs.geometry/Point): com.spartanlabs.geometry/Point // com.spartanlabs.geometry.arithmetic/times|times@kotlin.Double(com.spartanlabs.geometry.Point){}[0]
 final fun (kotlin/String).com.spartanlabs.generaltools/trimIfLongerThan(kotlin/Int): kotlin/String // com.spartanlabs.generaltools/trimIfLongerThan|trimIfLongerThan@kotlin.String(kotlin.Int){}[0]
 final fun <#A: kotlin/Any?> (kotlin.collections/Collection<#A>).com.spartanlabs.generaltools/forEvery(kotlin/Function1<#A, kotlin/Unit>) // com.spartanlabs.generaltools/forEvery|forEvery@kotlin.collections.Collection<0:0>(kotlin.Function1<0:0,kotlin.Unit>){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> (kotlin.collections/Collection<#A>).com.spartanlabs.generaltools/forEveryIndexed(kotlin/Function2<kotlin/Int, #A, kotlin/Unit>) // com.spartanlabs.generaltools/forEveryIndexed|forEveryIndexed@kotlin.collections.Collection<0:0>(kotlin.Function2<kotlin.Int,0:0,kotlin.Unit>){0§<kotlin.Any?>}[0]

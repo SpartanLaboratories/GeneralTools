@@ -55,6 +55,7 @@ Everything below is common code, available on the `jvm`, `js` and `wasmJs` targe
   - `UserActions` — AWT screenshot capture and input automation. **JVM only.**
   - `Color` — immutable RGBA value type: transforms plus hex / packed-int codecs.
   - `ExperimentalForInheritanceGeneralToolsApi` — opt-in marker for subclassing `TwoDoubles`.
+  - `SupportedExtension` — marks a Supported Extension surface; documentation only, not an opt-in.
 - **`com.spartanlabs.geometry`**
   - `Point` / `Dimensions` — 2D coordinate / size pairs.
   - `TwoDoubles` — abstract base; subclassing is Experimental.
@@ -65,6 +66,8 @@ Everything below is common code, available on the `jvm`, `js` and `wasmJs` targe
     `normalized()`, `projectedOnto`.
   - `segmentIntersectsSegment`, `segmentIntersectsBox`, `rayIntersectsBox`
     intersection tests.
+- **`com.spartanlabs.geometry.arithmetic`**
+  - `plus`/`minus`/`times`/`div` for `Point` and `Dimensions` — import to use; Supported Extension.
 
 ## Build & test
 
@@ -212,6 +215,30 @@ when (val r = segmentIntersectsSegment(
 }
 ```
 
+### Arithmetic operators (opt-in per file)
+
+Value-returning `+`, `-`, `*` and `/` for `Point` and `Dimensions` live in their own package and work only in a
+file that imports them: `import com.spartanlabs.geometry.arithmetic.*`, or one operator such as
+`import com.spartanlabs.geometry.arithmetic.plus`, which imports all its overloads. `import com.spartanlabs.geometry.*`
+does not reach the package.
+
+```kotlin
+val corner = location + dimensions
+val mid = (a + b) / 2.0
+val doubled = 2.0 * offset
+```
+
+Each operator returns a new value and leaves its operands unchanged. `div` by `0.0` or `-0.0` throws
+`IllegalArgumentException("Cannot divide by zero")` and logs nothing, like `/=`. Each operator allocates its result;
+the in-place members (`+=`, `-=`, `*=`, `/=`, `setTo`, `modBy`, `amplifyBy`, `divideBy`) are the allocation-free
+alternative.
+
+Importing the package has three costs, confined to the importing file:
+- `+=`, `-=`, `*=` and `/=` on a `var` `Point` or `Dimensions` holder are ambiguous and stop compiling; a `val`
+  holder is unaffected;
+- a wildcard import brings every operator in, and an IDE may add the import when `p + q` does not resolve;
+- a member operator added to `Point` or `Dimensions` in a later release would shadow the extension.
+
 ## Logging
 
 GeneralTools logs through [kotlin-logging](https://github.com/oshai/kotlin-logging) 8.0.4. On the JVM
@@ -255,3 +282,4 @@ breaks: there is no deprecation cycle. Find your symptom in the first column.
 | Results of `divideBy` and `/=` can differ from 2.x in the last digit (`49.0` divided by `49.0` is exactly `1.0`) | Each component is divided directly instead of multiplied by the reciprocal | Compare with a tolerance. |
 | `Point(Double.NaN, 0.0) == Point(Double.NaN, 0.0)` is now `true` (2.x `false`), and `Point(0.0, 0.0)` / `Point(-0.0, 0.0)` now hash alike (2.x equal, different hashes) | `TwoDoubles` equality is now lawful | Only NaN-versus-NaN pairs change, from unequal to equal; no pair equal in 2.x becomes unequal; code that used `p != p` to find NaN should use `containsNaN`. |
 | Your own `operator fun Point.component1()`, `component2()` or `unaryMinus()` extension reports "extension is shadowed by a member" | `TwoDoubles` and `Point` now declare these operators | Delete the extension; the member returns the same values. |
+| After importing the package (or `arithmetic.*`), `p += q`, `-=`, `*=` or `/=` on a `var` `Point`/`Dimensions` reports an assignment-operator ambiguity; an IDE may add the import when `p + q` does not resolve; a member `plus` added in a later release would shadow the extension | The import adds a value-returning `plus`/`minus`/`times`/`div` next to the member `plusAssign`... which makes a `var` holder ambiguous in that file, a wildcard import brings every operator in, and a later member would win over the extension | These costs apply only to files that import the package: keep the holder a `val`, write `p = p + q`, or drop the import; `import com.spartanlabs.geometry.*` does not reach the package. |

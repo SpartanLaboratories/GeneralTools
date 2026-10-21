@@ -86,7 +86,8 @@ public fun Rectangle.toCenteredBox(): CenteredBox =
     )
 
 /**
- * This box as a top-left-origin [Rectangle] covering the same footprint.
+ * This box as a top-left-origin [Rectangle] covering the same footprint. An [ImmutableRectangle] converts back
+ * to a mutable [Rectangle] the same way.
  *
  * @receiver any [AxisAlignedBox]; not changed.
  * @return an independent, mutable [Rectangle] whose `location` is a new [Point] holding [AxisAlignedBox.min]

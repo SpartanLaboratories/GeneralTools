@@ -1,6 +1,7 @@
 package com.spartanlabs.testing.component.geometry
 
 import com.spartanlabs.geometry.Dimensions
+import com.spartanlabs.geometry.ImmutableRectangle
 import com.spartanlabs.geometry.Point
 import com.spartanlabs.geometry.Rectangle
 import kotlin.test.Test
@@ -90,5 +91,21 @@ class RectangleTest {
         val (l, d) = rect
         assertSame(rect.location, l)
         assertSame(rect.dimensions, d)
+    }
+
+    @Test
+    fun `toImmutable copies the current location and dimensions values`() {
+        val rect = Rectangle(Point(1.5, 2.5), Dimensions(3.5, 4.5))
+        assertEquals(ImmutableRectangle(1.5, 2.5, 3.5, 4.5), rect.toImmutable())
+    }
+
+    @Test
+    fun `a change to the rectangle after toImmutable does not reach the copy`() {
+        val rect = Rectangle(Point(1.5, 2.5), Dimensions(3.5, 4.5))
+        val copy = rect.toImmutable()
+        rect.location.setTo(9.0, 9.0)
+        rect.dimensions.setTo(7.0, 7.0)
+        assertEquals(ImmutableRectangle(1.5, 2.5, 3.5, 4.5), copy)
+        assertNotEquals<Any>(rect, copy)
     }
 }

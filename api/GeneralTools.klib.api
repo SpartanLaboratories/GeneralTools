@@ -222,6 +222,40 @@ final class com.spartanlabs.geometry/Dimensions : com.spartanlabs.geometry/TwoDo
         final fun <set-width>(kotlin/Double) // com.spartanlabs.geometry/Dimensions.width.<set-width>|<set-width>(kotlin.Double){}[0]
 }
 
+final class com.spartanlabs.geometry/ImmutableRectangle : com.spartanlabs.geometry/AxisAlignedBox { // com.spartanlabs.geometry/ImmutableRectangle|null[0]
+    constructor <init>(kotlin/Double, kotlin/Double, kotlin/Double, kotlin/Double) // com.spartanlabs.geometry/ImmutableRectangle.<init>|<init>(kotlin.Double;kotlin.Double;kotlin.Double;kotlin.Double){}[0]
+
+    final val center // com.spartanlabs.geometry/ImmutableRectangle.center|{}center[0]
+        final fun <get-center>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/ImmutableRectangle.center.<get-center>|<get-center>(){}[0]
+    final val height // com.spartanlabs.geometry/ImmutableRectangle.height|{}height[0]
+        final fun <get-height>(): kotlin/Double // com.spartanlabs.geometry/ImmutableRectangle.height.<get-height>|<get-height>(){}[0]
+    final val max // com.spartanlabs.geometry/ImmutableRectangle.max|{}max[0]
+        final fun <get-max>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/ImmutableRectangle.max.<get-max>|<get-max>(){}[0]
+    final val maxX // com.spartanlabs.geometry/ImmutableRectangle.maxX|{}maxX[0]
+        final fun <get-maxX>(): kotlin/Double // com.spartanlabs.geometry/ImmutableRectangle.maxX.<get-maxX>|<get-maxX>(){}[0]
+    final val maxY // com.spartanlabs.geometry/ImmutableRectangle.maxY|{}maxY[0]
+        final fun <get-maxY>(): kotlin/Double // com.spartanlabs.geometry/ImmutableRectangle.maxY.<get-maxY>|<get-maxY>(){}[0]
+    final val min // com.spartanlabs.geometry/ImmutableRectangle.min|{}min[0]
+        final fun <get-min>(): com.spartanlabs.geometry/Point // com.spartanlabs.geometry/ImmutableRectangle.min.<get-min>|<get-min>(){}[0]
+    final val minX // com.spartanlabs.geometry/ImmutableRectangle.minX|{}minX[0]
+        final fun <get-minX>(): kotlin/Double // com.spartanlabs.geometry/ImmutableRectangle.minX.<get-minX>|<get-minX>(){}[0]
+    final val minY // com.spartanlabs.geometry/ImmutableRectangle.minY|{}minY[0]
+        final fun <get-minY>(): kotlin/Double // com.spartanlabs.geometry/ImmutableRectangle.minY.<get-minY>|<get-minY>(){}[0]
+    final val size // com.spartanlabs.geometry/ImmutableRectangle.size|{}size[0]
+        final fun <get-size>(): com.spartanlabs.geometry/Dimensions // com.spartanlabs.geometry/ImmutableRectangle.size.<get-size>|<get-size>(){}[0]
+    final val width // com.spartanlabs.geometry/ImmutableRectangle.width|{}width[0]
+        final fun <get-width>(): kotlin/Double // com.spartanlabs.geometry/ImmutableRectangle.width.<get-width>|<get-width>(){}[0]
+    final val x // com.spartanlabs.geometry/ImmutableRectangle.x|{}x[0]
+        final fun <get-x>(): kotlin/Double // com.spartanlabs.geometry/ImmutableRectangle.x.<get-x>|<get-x>(){}[0]
+    final val y // com.spartanlabs.geometry/ImmutableRectangle.y|{}y[0]
+        final fun <get-y>(): kotlin/Double // com.spartanlabs.geometry/ImmutableRectangle.y.<get-y>|<get-y>(){}[0]
+
+    final fun copy(kotlin/Double = ..., kotlin/Double = ..., kotlin/Double = ..., kotlin/Double = ...): com.spartanlabs.geometry/ImmutableRectangle // com.spartanlabs.geometry/ImmutableRectangle.copy|copy(kotlin.Double;kotlin.Double;kotlin.Double;kotlin.Double){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/ImmutableRectangle.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/ImmutableRectangle.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.spartanlabs.geometry/ImmutableRectangle.toString|toString(){}[0]
+}
+
 final class com.spartanlabs.geometry/Point : com.spartanlabs.geometry/TwoDoubles { // com.spartanlabs.geometry/Point|null[0]
     constructor <init>(com.spartanlabs.geometry/Point) // com.spartanlabs.geometry/Point.<init>|<init>(com.spartanlabs.geometry.Point){}[0]
     constructor <init>(kotlin/Double = ..., kotlin/Double = ...) // com.spartanlabs.geometry/Point.<init>|<init>(kotlin.Double;kotlin.Double){}[0]
@@ -288,6 +322,7 @@ final class com.spartanlabs.geometry/Rectangle : com.spartanlabs.geometry/AxisAl
     final fun copy(com.spartanlabs.geometry/Point = ..., com.spartanlabs.geometry/Dimensions = ...): com.spartanlabs.geometry/Rectangle // com.spartanlabs.geometry/Rectangle.copy|copy(com.spartanlabs.geometry.Point;com.spartanlabs.geometry.Dimensions){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.spartanlabs.geometry/Rectangle.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.spartanlabs.geometry/Rectangle.hashCode|hashCode(){}[0]
+    final fun toImmutable(): com.spartanlabs.geometry/ImmutableRectangle // com.spartanlabs.geometry/Rectangle.toImmutable|toImmutable(){}[0]
     final fun toString(): kotlin/String // com.spartanlabs.geometry/Rectangle.toString|toString(){}[0]
 }
 

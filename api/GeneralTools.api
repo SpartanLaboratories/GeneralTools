@@ -150,6 +150,28 @@ public final class com/spartanlabs/geometry/Dimensions : com/spartanlabs/geometr
 	public final fun setWidth (D)V
 }
 
+public final class com/spartanlabs/geometry/ImmutableRectangle : com/spartanlabs/geometry/AxisAlignedBox {
+	public fun <init> (DDDD)V
+	public fun contains (Lcom/spartanlabs/geometry/Point;)Z
+	public final fun copy (DDDD)Lcom/spartanlabs/geometry/ImmutableRectangle;
+	public static synthetic fun copy$default (Lcom/spartanlabs/geometry/ImmutableRectangle;DDDDILjava/lang/Object;)Lcom/spartanlabs/geometry/ImmutableRectangle;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCenter ()Lcom/spartanlabs/geometry/Point;
+	public fun getHeight ()D
+	public fun getMax ()Lcom/spartanlabs/geometry/Point;
+	public fun getMaxX ()D
+	public fun getMaxY ()D
+	public fun getMin ()Lcom/spartanlabs/geometry/Point;
+	public fun getMinX ()D
+	public fun getMinY ()D
+	public fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
+	public fun getWidth ()D
+	public final fun getX ()D
+	public final fun getY ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/spartanlabs/geometry/IntersectionsKt {
 	public static final fun rayIntersectsBox (Lcom/spartanlabs/geometry/Ray;Lcom/spartanlabs/geometry/AxisAlignedBox;)Ljava/lang/Object;
 	public static final fun segmentIntersectsBox (Lcom/spartanlabs/geometry/Segment;Lcom/spartanlabs/geometry/AxisAlignedBox;)Ljava/lang/Object;
@@ -207,6 +229,7 @@ public final class com/spartanlabs/geometry/Rectangle : com/spartanlabs/geometry
 	public fun getSize ()Lcom/spartanlabs/geometry/Dimensions;
 	public fun getWidth ()D
 	public fun hashCode ()I
+	public final fun toImmutable ()Lcom/spartanlabs/geometry/ImmutableRectangle;
 	public fun toString ()Ljava/lang/String;
 }
 

@@ -14,12 +14,12 @@ package com.spartanlabs.geometry
  * therefore still exposes its live parts through `min` and `size`.
  *
  * **Copying.** [copy] is a shallow copy: the copy shares this rectangle's [location] and [dimensions]
- * instances. `Rectangle(Point(location), Dimensions(dimensions))`, or `toRectangle()` on any
- * [AxisAlignedBox], builds an independent mutable copy.
+ * instances. `Rectangle(Point(location), Dimensions(dimensions))`, `toImmutable().toRectangle()`, or
+ * `toRectangle()` on any [AxisAlignedBox], builds an independent mutable copy.
  *
  * **Equality.** [equals] and [hashCode] follow the current values of the parts. A `Rectangle` used as a key
  * in a hash-based collection must not be changed - through [location], [dimensions], [min] or [size] -
- * while it is in the collection.
+ * while it is in the collection; use [toImmutable] for a key that cannot change.
  *
  * Nothing is validated: a negative or `NaN` size is accepted here and reported by the intersection
  * functions, which return a failed `Result` for it.
@@ -61,4 +61,16 @@ public data class Rectangle(
 
     /** The width and height, i.e. [dimensions] itself (not a copy). */
     override val size: Dimensions get() = dimensions
+
+    /**
+     * An immutable copy of this rectangle's current values, for handing out or for use as a hash key.
+     *
+     * The copy takes the four numbers now; it shares no part with this rectangle, so later changes to
+     * [location] or [dimensions] do not reach it, and changes to it are impossible.
+     *
+     * @return a new [ImmutableRectangle] with `x = location.x`, `y = location.y`, `width = dimensions.width`,
+     *   `height = dimensions.height`.
+     * @since 3.0.0
+     */
+    public fun toImmutable(): ImmutableRectangle = ImmutableRectangle(minX, minY, width, height)
 }

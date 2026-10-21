@@ -2,12 +2,13 @@ package com.spartanlabs.geometry
 
 /**
  * The shape contract common to every axis-aligned rectangle in this package, however it stores its origin:
- * top-left for [Rectangle], centre for [CenteredBox].
+ * top-left for [Rectangle], centre for [CenteredBox], origin-plus-size for [ImmutableRectangle].
  *
  * **A shape contract, not a read-only guarantee.** The interface has no setters, but the values it returns
  * need not be copies: a [Rectangle] handed out as an `AxisAlignedBox` still exposes its live
  * [Rectangle.location] and [Rectangle.dimensions] through [min] and [size], and a [CenteredBox] exposes its
- * stored [center]. To give callers a box they cannot change, hand out a copy.
+ * stored [center]. To give callers a box they cannot change, copy it once with [Rectangle.toImmutable] and
+ * hand out the [ImmutableRectangle].
  *
  * **Primitive accessors.** [minX], [minY], [maxX], [maxY], [width] and [height] read one coordinate without
  * building a [Point] or [Dimensions]. Their default bodies derive them from [min], [max] and [size] (and

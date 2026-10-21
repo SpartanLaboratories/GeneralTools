@@ -327,6 +327,40 @@ as-built record once implementation ends.
 - **Why:** every other one-line KDoc in `CenteredBox.kt` and `Rectangle.kt` is a sentence ending with a full stop; the
   plan gives the text in quotation marks inside a parenthesis, where no punctuation is carried.
 
+### `box-model` — commit (c) removes the "commit (c) appends ..." comment from `BoxFixtures.kt`
+
+- **Plan:** [plan-box-model.md](plan-box-model.md) §8.2 (b), the `BoxFixtures.kt` listing, which ends the list with
+  `)   // commit (c) appends "ImmutableRectangle" to ImmutableRectangle(x, y, w, h)`, and §8.2 (c): "`BoxFixtures.kt`
+  gains the `ImmutableRectangle` entry".
+- **What differs:** commit (c) adds the entry `"ImmutableRectangle" to ImmutableRectangle(x, y, w, h),` and deletes the
+  trailing comment, leaving `)`.
+- **Why:** the comment is an instruction for this commit; once the entry exists it describes nothing still to do.
+
+### `box-model` — commit (c) computes the test's `0.0 / 0.0` NaN through a local
+
+- **Plan:** [plan-box-model.md](plan-box-model.md) §8.2 (c), `ImmutableRectangleTest`, row `NaN components are equal and
+  hash alike`: "`Double.NaN` and `0.0 / 0.0`, equal and equal hashes".
+- **What differs:** the second rectangle is built from `zero / zero`, with `val zero = 0.0` declared just above it,
+  instead of the literal `0.0 / 0.0`.
+- **Why:** written as literals, `0.0 / 0.0` makes the compiler print a "Division by zero" warning four times per target.
+  Through the local, the test still divides `0.0` by `0.0` at run time, which is the plan's NaN, and the build prints no
+  new warning.
+
+### `box-model` — commit (c) names `ImmutableRectangle` as an implementor in the README paragraph and a test KDoc
+
+- **Plan:** [plan-box-model.md](plan-box-model.md) §6.3, README: "Modules: the `AxisAlignedBox` bullet lists `Rectangle`,
+  `ImmutableRectangle` and `CenteredBox`". §6.3 says nothing about the Geometry quick reference's `AxisAlignedBox`
+  paragraph or the `AxisAlignedBoxTest` class KDoc.
+- **What differs:** two sentences now name all three implementors:
+  - in the README `AxisAlignedBox` paragraph, "Both `Rectangle` and `CenteredBox` implement it, and the
+    box-intersection functions accept either" becomes "`Rectangle`, `ImmutableRectangle` and `CenteredBox` implement
+    it, and the box-intersection functions accept any of them";
+  - in `AxisAlignedBoxTest`'s class KDoc, "checked against both implementors ([Rectangle], [CenteredBox])" becomes
+    "checked against all three implementors ([Rectangle], [ImmutableRectangle], [CenteredBox])".
+- **Why:** commit (c) adds a third implementor, and the plan updated only the Modules bullet. Without the change, both
+  sentences would be false. The README-currency rule requires the README to stay accurate. The coordinator decided this
+  on 2026-10-20.
+
 ## Observations
 
 ### `commonize` — commit 7, Level 5: kotlin-logging console rendering on `js` and `wasmJs`

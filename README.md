@@ -60,7 +60,7 @@ Everything below is common code, available on the `jvm`, `js` and `wasmJs` targe
   - `Point` / `Dimensions` — 2D coordinate / size pairs.
   - `TwoDoubles` — abstract base; subclassing is Experimental.
   - `AxisAlignedBox` — shared box contract, implemented by `Rectangle`
-    (top-left origin) and `CenteredBox` (centre origin).
+    (top-left origin), `ImmutableRectangle` (top-left origin, immutable) and `CenteredBox` (centre origin).
   - `Segment`, `Ray` — line primitives.
   - Vector algebra on `Point`: `dot`, `cross`, `length`, `lengthSquared`,
     `normalized()`, `projectedOnto`.
@@ -159,6 +159,9 @@ composites as immutable and do not mutate shared components):
   parts, changed in place (`rect.location.setTo(...)`); `min`/`size` return those live parts, `max`/`center` return
   new points; `copy()` shares the parts; a `Rectangle` or `Point` used as a hash key must not change while in the
   collection.
+- `ImmutableRectangle(x, y, width, height)` — immutable; `copy(...)` replaces the named components; value equality
+  including `-0.0`/NaN (as `Point`); never equal to a `Rectangle`. Convert with `Rectangle.toImmutable()` /
+  `AxisAlignedBox.toRectangle()`.
 - `CenteredBox(center, halfExtents)` — centre origin; `CenteredBox.fromCorners(c1, c2)`.
 
 `TwoDoubles` is abstract. Subclassing it needs `@OptIn(ExperimentalForInheritanceGeneralToolsApi::class)` and may
@@ -177,9 +180,19 @@ none).
 
 `AxisAlignedBox` is the shared box contract: a shape contract, not a read-only guarantee. It has `min`, `max`,
 `center` and `size`; the six accessors `minX`, `minY`, `maxX`, `maxY`, `width` and `height` (no allocation on
-`Rectangle`/`CenteredBox`); and `contains(p)`, written `p in box` or `box contains p`. Both `Rectangle` and
-`CenteredBox` implement it, and the box-intersection functions accept either. Convert with `Rectangle.toCenteredBox()`
+`Rectangle`/`CenteredBox`); and `contains(p)`, written `p in box` or `box contains p`. `Rectangle`,
+`ImmutableRectangle` and `CenteredBox` implement it, and the box-intersection functions accept any of them. Convert with `Rectangle.toCenteredBox()`
 / `AxisAlignedBox.toRectangle()` (an independent mutable copy).
+
+To hand callers a box they cannot change, copy it once with `toImmutable()`:
+
+```kotlin
+class Zone(bounds: Rectangle) {
+    val bounds: ImmutableRectangle = bounds.toImmutable()   // one copy at construction, none per read
+}
+val key = zone.bounds                                        // a stable hash key
+val inside = Point(1.0, 2.0) in zone.bounds                  // allocation-free
+```
 
 Vector algebra (extension functions on `Point`, in `Vectors.kt`):
 `a dot b`, `a cross b` (2D perp-dot), `p.length`, `p.lengthSquared`,

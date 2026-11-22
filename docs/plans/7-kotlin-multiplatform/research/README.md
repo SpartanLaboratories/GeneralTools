@@ -511,6 +511,41 @@ questions:
 - Maven Central serves `gametools`, `gametools-core` and `gametools-world` 5.1.0, and
   `gametools-core` 5.1.0 requires GeneralTools `2.2.0`.
 
+**Questions 11 to 13.** Their 58 load-bearing claims were re-opened at their sources on 2026-11-21
+and 2026-11-22. All hold and none is unclear. One of them is the result of a scratch build, which no
+source can re-check.
+
+| Findings file | Claims checked | Hold | Do not hold |
+|---|---|---|---|
+| [`published-shape-after-the-split.md`](published-shape-after-the-split.md) | 22, plus the published artifacts it decodes | all | 0 |
+| [`build-logic-and-version-catalog.md`](build-logic-and-version-catalog.md) | 17 | 17 | 0 |
+| [`java-floor-on-a-multiplatform-jvm-target.md`](java-floor-on-a-multiplatform-jvm-target.md) | 19 | 18, and one scratch-build result | 0 |
+
+Four claims hold more narrowly than their wording:
+
+- `kotlin-stdlib` 2.4.21's `dependencyConstraints` also pin `kotlin-stdlib-common` to 2.4.21; the
+  quote in published-shape claim 3 shows only the two retired artifacts.
+- Gradle's rule in published-shape claim 22 reads "Unless otherwise indicated, if at any point no
+  candidates remain, resolution fails". Nothing here relies on an exception to it.
+- Two of the version-catalog quotes in build-logic claim 4 describe `buildSrc`. The same page shows
+  the `from(files("../gradle/libs.versions.toml"))` import, and Okio 3.18.2 uses that import from an
+  included build (build-logic claim 8), which is the form this design takes.
+- The compiler reports the conflict in java-floor claim 3 only when a `-jvm-target` is given that
+  differs from the release. `jvmTarget` is therefore always set to the same value as the release.
+
+Claims about this repository, checked against the code directly for these three questions:
+
+- `settings.gradle.kts:4` names the root project `GeneralTools`.
+- `build.gradle.kts:31` sets `jvmFloor = 17`, which feeds both `jvmToolchain` (`:35`) and the
+  by-hand `TargetJvmVersion` attribute of the JVM target (`:54`).
+- `UserActions.kt` uses no other declaration of the library: its imports (`:3-14`) are commons-io,
+  slf4j, AWT, `java.io`, `java.net` and `javax.imageio`, and its `Rectangle` is the imported
+  `java.awt.Rectangle`. It is the only file that uses AWT and commons-io.
+- `Misc.kt:1-2` and `MiscJvm.kt:1-2` both declare `@file:JvmMultifileClass` and
+  `@file:JvmName("MiscKt")`.
+- The published 2.2.0 artifacts are class-file major 67, and their Gradle module file declares
+  `org.gradle.jvm.version` 23.
+
 ---
 
 ## Summary

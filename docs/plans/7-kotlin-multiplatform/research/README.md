@@ -5,11 +5,16 @@
   same change resolves
   [SpartanLaboratories/GeneralTools#8](https://github.com/SpartanLaboratories/GeneralTools/issues/8),
   *"Read-only views for Point and Square so libraries can expose geometry without copying"*.
-- **Release:** `3.0.0`, a major version, published to Maven Central by hand.
+- **Release:** `3.0.0`, a major version, released to Maven Central automatically when it lands on
+  `master`.
 - **Baseline:** the branch `feat/issue-7-kotlin-multiplatform` starts from `master` @ `17d30bc`, and
   the main sources are unchanged since `6926069`. `./gradlew build` passes there with 185 tests, no
   failures and none skipped. `master` has since moved to `c196d1a`, which only deletes
   `src/test/resources/keys.txt`.
+- **Branch state for questions 11 to 13:** `29dd4ff`, where the build migration, explicit API,
+  logging, common code, the `TwoDoubles` and box-model changes and the `Misc`/`Color` breaks are
+  built. `./gradlew build` passes there with 392 JVM, 354 JS and 354 Wasm tests, none failing or
+  skipped, and `checkKotlinAbi` green.
 - **Citations:** documents by section, code by symbol; outside repositories at a pinned tag or
   commit.
 
@@ -21,18 +26,27 @@ findings live in the file it names.
 
 ## What 3.0.0 is
 
-- **Targets.** `jvm` (bytecode 17), `js` and `wasmJs`, built from one Kotlin Multiplatform
-  module. There are no Android or native targets.
+- **Targets and modules.** `jvm` (bytecode 17), `js` and `wasmJs`, built by a shared core
+  multiplatform module, `GeneralTools-core`. The JVM-only desktop code ships in a module of its
+  own, `GeneralTools-desktop`, and `GeneralTools` is a source-less umbrella that depends on both.
+  There are no Android or native targets.
 - **Placement.** `Color`, the whole `com.spartanlabs.geometry` package and the platform-neutral
-  `Misc` helpers live in common code. `read`, `asURL`, the slf4j `Logger.time` extension and
-  `UserActions` stay JVM-only.
-- **Logging.** Common code logs through kotlin-logging, which delegates to slf4j on the JVM, so a
-  consumer's logging backend keeps working unchanged. One internal helper logs each expected
-  failure at WARN and builds its `Result.failure`; every failure site goes through it. Exception
-  messages stay as in 2.x, and the WARN line keeps the diagnostic values 2.x logged.
+  `Misc` helpers live in common code. `read`, `asURL` and the slf4j `Logger.time` extension stay
+  JVM-only in the core module's JVM target, because they share the JVM facade class `MiscKt` with
+  the common `Misc` helpers. `UserActions` lives in `GeneralTools-desktop`, in the same package.
+- **Logging.** All code, the JVM sources included, logs through kotlin-logging 8.0.7, which
+  delegates to slf4j on the JVM, so a consumer's logging backend keeps working unchanged. One
+  internal helper logs each expected failure at WARN and builds its `Result.failure`; every failure
+  site goes through it. Exception messages stay as in 2.x, and the WARN line keeps the diagnostic
+  values 2.x logged.
+- **Build.** The versions of every dependency and plugin live in `gradle/libs.versions.toml`, and
+  the configuration the modules share lives in convention plugins in an included `build-logic`
+  build. The Java floor, 17, is set apart from the toolchain and guarded in `check`. Each published
+  module's javadoc jar is its Dokka output.
 - **Breaking changes, and only these.**
-  - The library becomes multiplatform. Gradle consumers resolve the right variant automatically;
-    Maven-only consumers switch to `GeneralTools-jvm`.
+  - The library becomes multiplatform and is split into `GeneralTools-core` and
+    `GeneralTools-desktop`. `GeneralTools` 3.0.0 is an umbrella over both, so a consumer of
+    `GeneralTools` keeps its coordinate, in Gradle and in plain Maven alike.
   - `TwoDoubles` is no longer `sealed`. Subclassing it is Experimental, behind an ERROR-level
     opt-in marker.
   - `TwoDoubles.divideBy` divides in place and returns `Result<Unit>` instead of throwing. A zero
@@ -70,13 +84,16 @@ findings live in the file it names.
 - **Not part of the change.** `src/test/resources/keys.txt` is already deleted on `master`. Moving
   the test sources neither moves nor modifies it, and bringing `master` into the branch removes it
   there.
-- **Coordinates.** `io.github.spartanlaboratories:GeneralTools` and every package name stay.
-- **Release notes.** Migration notes covering every break go in the README and the GitHub
-  release. The repository has no CHANGELOG.md.
-- **Release mechanics.** A maintainer publishes by hand; there is no CI publish. Before the
-  irreversible step, a throwaway MyGameTools migration and a consumer smoke project, both kept
-  outside the repository, are built against the new artifacts. The release is tagged with a bare
-  `3.0.0` and gets a GitHub release.
+- **Coordinates.** Group `io.github.spartanlaboratories`. The artifacts are `GeneralTools` (the
+  umbrella), `GeneralTools-core` (with its `-jvm`, `-js` and `-wasm-js` artifacts) and
+  `GeneralTools-desktop`, all at one version. Every package name stays.
+- **Release notes.** `CHANGELOG.md`, in the Keep a Changelog layout, carries a `3.0.0` section that
+  lists every change and links the README's migration notes, which hold the symptom, cause and fix
+  of each break. The GitHub release notes open with that section.
+- **Release mechanics.** There is no CI publish. Before the landing on `master`, a throwaway
+  MyGameTools migration and a consumer smoke project, both kept outside the repository, are built
+  against a file-repository publication of the exact tree that lands. The landing is then released
+  automatically as one release event, tagged with a bare `3.0.0`, and given a GitHub release.
 - **Downstream.** MyGameTools (SpartanLabsGaming/MyGameTools) consumes GeneralTools `2.2.0` as an
   `api` dependency on `master`, and builds with Kotlin 2.2.0. Of its published releases, `gametools`
   5.1.0 also requires GeneralTools `2.2.0`; 5.0.0, which MyGameClient and MyGameServer use,
@@ -303,6 +320,119 @@ findings live in the file it names.
   [`downstream-blast-radius.md`](downstream-blast-radius.md) and the dump method in
   [`idiomatic-kotlin-api-mechanics.md`](idiomatic-kotlin-api-mechanics.md).
 - **Findings:** [`downstream-under-mutable-model.md`](downstream-under-mutable-model.md).
+
+### 11. How are the core module, the desktop module and the source-less `GeneralTools` umbrella built and published, so that 2.x consumers keep their coordinate, plain-Maven consumers get real classes, and no consumer's build ends up with two copies of the same classes?
+
+- **Options.**
+  - The desktop module as a Kotlin/JVM module (one jar), or as a multiplatform module with a
+    `jvm()` target only (a root artifact plus a `-jvm` artifact).
+  - The umbrella as a JVM-only module with `api` dependencies on the core and desktop modules; as a
+    multiplatform module whose `jvm` variant depends on both and whose `js` and `wasmJs` variants
+    depend on the core module; or as a metadata-only publication. MyGameTools' `gametools`
+    umbrella is prior art.
+  - Against a `GeneralTools:2.2.0` that a published `gametools` 5.x still pulls in beside the new
+    artifacts: dependency constraints from the new modules on `GeneralTools` 3.0.0 (as
+    `kotlin-stdlib` 1.8.0 aligned `kotlin-stdlib-jdk7` and `-jdk8`), Gradle capabilities, or a
+    statement in the migration notes only.
+  - For the package `com.spartanlabs.generaltools`, present in both the core JVM jar and the desktop
+    jar: `Automatic-Module-Name` entries, or none.
+  - The release rehearsal: every module published to one file repository and resolved from there by
+    the smoke matrix, then one `publishAndReleaseToMavenCentral` invocation for every module.
+- **Requirements.**
+  - The artifacts are `GeneralTools-core` (multiplatform: `jvm`, `js`, `wasmJs`, with the derived
+    `-jvm`, `-js` and `-wasm-js` artifacts), `GeneralTools-desktop` (JVM) and `GeneralTools`, a
+    source-less umbrella that depends on both. All carry one version, 3.0.0, under the group
+    `io.github.spartanlaboratories`.
+  - `GeneralTools` 3.0.0 works as a dependency of a Gradle JVM project, of a Gradle multiplatform
+    project, and of a plain Maven project, which then gets real classes.
+  - The core module's JVM variant keeps `read`, `asURL` and `Logger.time`, which share the JVM facade
+    class `MiscKt` with common code; the desktop module holds `UserActions` (AWT, commons-io), in
+    the same package.
+  - JVM consumers on Kotlin 2.2.0 and 2.1.20 resolve and compile against the artifacts; web
+    consumers need Kotlin 2.4.
+  - Every artifact meets Maven Central's requirements (POM metadata, sources and javadoc jars,
+    signatures), and every javadoc jar is Dokka output.
+  - The release is one release event from one Gradle invocation, after a rehearsal against a
+    file-repository publication of the exact tree that lands.
+- **Evidence that settles it.** Gradle's documentation on module metadata, variant selection,
+  dependency constraints, capabilities and how each maps to a POM; the vanniktech plugin's
+  documentation and source at `0.37.0` (Kotlin/JVM and multiplatform configurations, a module with
+  no sources, the upload of several modules as one deployment); Maven Central's publishing
+  requirements; the published metadata of `kotlin-stdlib` 1.8.0; MyGameTools' umbrella build; the
+  JPMS rules for split packages in automatic modules; published multiplatform libraries that ship
+  an umbrella or split artifacts. It builds on
+  [`kmp-maven-central-publishing.md`](kmp-maven-central-publishing.md).
+- **Findings:** [`published-shape-after-the-split.md`](published-shape-after-the-split.md).
+
+### 12. How is the build organised into convention plugins in an included `build-logic` build, with a version catalog, so that the core, desktop and umbrella modules share one configuration under Kotlin Gradle plugin 2.4.21 and Gradle 9.0.0?
+
+- **Options.**
+  - Convention plugins as precompiled script plugins (`kotlin-dsl`) or as plugin classes; how many,
+    and how they compose (for example one for multiplatform libraries, one for JVM libraries, one
+    for publishing). WebTools' and MyGameTools' `build-logic` builds are prior art.
+  - Reading `gradle/libs.versions.toml` from `build-logic` (the generated `libs` accessors are not
+    available inside precompiled script plugins without a workaround; plugin artifacts become
+    `build-logic` dependencies) and from the root and module build scripts; where the settings
+    plugin's version lives.
+  - `includeBuild("build-logic")` inside `pluginManagement` or at the top level of the settings;
+    the root build script's `apply false` plugins.
+  - Dokka 2 in V2 mode, applied by the publishing convention plugin:
+    `JavadocJar.Dokka("dokkaGeneratePublicationHtml")` for the multiplatform and the JVM modules,
+    `failOnWarning`, the aggregation at the root (`dokka(project(...))`), and the umbrella's own
+    javadoc jar.
+  - Where the KGP ABI validation, the `-PtestLevel` selection and the committed
+    `kotlin-js-store/yarn.lock` sit once there are several modules.
+- **Requirements.**
+  - The shared build configuration lives in convention plugins in a `build-logic` build that the
+    settings include; the versions of every dependency and plugin live in
+    `gradle/libs.versions.toml`; publishing goes through `com.vanniktech.maven.publish` with every
+    publication signed; the Gradle wrapper stays at 9 or later.
+  - Dokka 2 in V2 mode is applied in the convention plugin for published modules; every Dokka
+    configuration sets `failOnWarning`; the Kotlin plugins sit on the root project's plugin
+    classpath with `apply false`.
+  - What is built keeps working unchanged: the language and API pins at 2.2, the published
+    `kotlin-stdlib` 2.2.0 requirement, the web stdlib at the plugin's version, `explicitApi()`,
+    `abiValidation()` with a committed dump per module, `-PtestLevel=<set>[,<set>]` on every test
+    task, and the `jvm`, `js` and `wasmJs` targets on Node.
+  - Each step of the restructuring leaves the published output identical except where it is meant
+    to change (the javadoc jar gaining content, the split's new coordinates), and that is provable,
+    for example by comparing the generated POM and module files before and after.
+  - New Kotlin files follow the organization's import grouping.
+- **Evidence that settles it.** Gradle's documentation on sharing build logic, precompiled script
+  plugins and version catalogs in included builds; the Kotlin Gradle plugin 2.4.21 documentation;
+  Dokka 2's documentation (V2 mode, multi-module builds, javadoc jars, multiplatform); the vanniktech
+  plugin's documentation; WebTools' and MyGameTools' `build-logic`; the `build-logic` of published
+  multiplatform libraries. It builds on
+  [`kmp-build-and-kotlin-compat.md`](kmp-build-and-kotlin-compat.md) and
+  [`kmp-test-levels-and-names.md`](kmp-test-levels-and-names.md).
+- **Findings:** [`build-logic-and-version-catalog.md`](build-logic-and-version-catalog.md).
+
+### 13. How does a multiplatform library's JVM target set its Java floor apart from the toolchain, and guard it in `check`, under Kotlin Gradle plugin 2.4.21?
+
+- **Options.**
+  - `jvmTarget` with `-Xjdk-release` on the `jvm()` compilations, or `jvmTarget` alone with a
+    toolchain equal to the floor; which JDK the toolchain runs the build on.
+  - Publishing the floor as `org.gradle.jvm.version` on the multiplatform JVM variants (set by hand
+    today) and on the desktop and umbrella modules' variants.
+  - A `verifyJavaFloor` task that reads the class-file versions of the built jar and its runtime
+    classpath, as WebTools' does, with its inputs for a multiplatform `jvm` target and for a
+    Kotlin/JVM module, wired into `check`.
+- **Requirements.**
+  - The floor is the oldest Java release the compiled output runs on, set on its own apart from the
+    toolchain, and never below 11. WebTools is the worked example: one constant sets `jvmTarget` and
+    `-Xjdk-release`, the floor is published as the `TargetJvmVersion` attribute, and a
+    `verifyJavaFloor` task guards it in `check`.
+  - GeneralTools' floor is 17 (class-file major 61) on every JVM artifact; the JVM classes built
+    today are already 17.
+  - The `js` and `wasmJs` compilations are unaffected.
+  - One constant in `build-logic` sets the floor for every module.
+- **Evidence that settles it.** The Kotlin Gradle plugin's documentation and source for
+  `-Xjdk-release` in multiplatform JVM compilations; Kotlin's issue tracker on `-Xjdk-release`;
+  Gradle's documentation on `TargetJvmVersion` and on the JVM variants of a multiplatform
+  publication; WebTools' `VerifyJavaFloor.kt` and `JavaFloorScan.kt`. It builds on
+  [`kmp-build-and-kotlin-compat.md`](kmp-build-and-kotlin-compat.md).
+- **Findings:**
+  [`java-floor-on-a-multiplatform-jvm-target.md`](java-floor-on-a-multiplatform-jvm-target.md).
 
 ---
 

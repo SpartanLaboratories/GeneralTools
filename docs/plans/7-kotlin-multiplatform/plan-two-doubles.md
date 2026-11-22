@@ -182,7 +182,7 @@ commit (a) delta of section 11 and ledger row 2; the exact dump text is read fro
 
 | # | Assumption | If false |
 |---|---|---|
-| A4 | The dump lines predicted in section 11 (the `TwoDoubles` constructor lines, the mangled name `divideBy-IoAF18A`, the klib text) follow the ledger in architecture section 11.3. They are derived by hand, not produced by the tool. | The actual diff is the authority: the implementer reconciles every line of `git diff -- api/` with the ledger, records any difference in `final-implementation.md`, and the planner corrects the ledger. A line outside the corrected ledger is a defect or a missing migration row. |
+| A4 | The dump lines predicted in section 11 (the `TwoDoubles` constructor lines, the mangled name `divideBy-IoAF18A`, the klib text) follow the ledger in architecture section 11.3. They are derived by hand, not produced by the tool. | The actual diff is the authority: the implementer reconciles every line of `git diff -- api/` with the ledger, records any difference in `final-implementation.md`, and the ledger is corrected to match. A line outside the corrected ledger is a defect or a missing migration row. |
 | A5 | `this::class` in `equals`/`hashCode` costs nothing measurable on the JVM: the `ClassReference` it allocates is removed by escape analysis. `Actor.isAtDestination` in MyGameTools compares `Point`s with `==` every frame. | Replace the class comparison and the class term of the hash with two `internal expect` functions whose JVM actuals use `javaClass` (section 6.2, "Contingency for A5"). No public signature changes. |
 | A6 | `@SubclassOptInRequired(Marker::class)` on an `abstract class` in the same module forces `@OptIn` only on its subclasses (`Point`, `Dimensions`), and a `@Target()` marker is accepted by the compiler at `languageVersion` 2.2. | The marker gets a non-empty `@Target` (for example `CLASS`), or the module compiles with `-opt-in=com.spartanlabs.generaltools.ExperimentalForInheritanceGeneralToolsApi` for its own sources only; the dump shows the marker class either way. |
 | A12 | An extension operator declared in `com.spartanlabs.geometry.arithmetic` takes part in resolving `a += b` only in a file that imports it. A file without the import resolves `+=` on a `var` `Point` to the member `plusAssign`. In an importing file the same statement is an ambiguity error. | The import does not confine the ambiguity, so the package would break `var` holders in files that never imported it; the arithmetic package does not ship and commit (e) is replaced by a plan revision. |
@@ -817,7 +817,7 @@ Rings touched:
 - **Ring 3 (boundary):** the WARN side effect of `divideBy` (logger name, text, level) in its KDoc and in
   the README migration row; no serialisation or network effect; `toString` platform formatting.
 - **Ring 4 (architecture):** no new topology. If the dump deltas (A4) differ from architecture section
-  11.3, the difference is recorded in `final-implementation.md` and the planner corrects the ledger.
+  11.3, the difference is recorded in `final-implementation.md` and the ledger is corrected to match.
 
 **README (same commit as each change).** Sections: "Modules", "Geometry quick reference",
 `## 3.0.0 migration notes` (table: Symptom | Cause | Fix; rows appended, never reordered). The existing

@@ -1,12 +1,14 @@
 # Plan: `release` - prove, publish, tag and announce GeneralTools 3.0.0
 
+> Superseded by [the amended architecture](../architecture.md), section 11.4, which designs the release of the three-module set. The `release` unit's own plan replaces this one.
+
 - **Covers:**
   - [SpartanLaboratories/GeneralTools#7](https://github.com/SpartanLaboratories/GeneralTools/issues/7),
     *"Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)"*.
   - [SpartanLaboratories/GeneralTools#8](https://github.com/SpartanLaboratories/GeneralTools/issues/8),
     *"Read-only views for Point and Square so libraries can expose geometry without copying"*,
     resolved by the same release.
-- **Architecture:** [`architecture.md`](architecture.md), unit `release` (section 11.2 row 8, section
+- **Architecture:** [`architecture.md`](../architecture.md), unit `release` (section 11.2 row 8, section
   11.4), against the break ledger in section 11.3.
 - **Landing order:** unit 8 of 8, the last. It depends on units 1 to 7 (`kmp-build`, `explicit-api`,
   `logging`, `commonize`, `two-doubles`, `box-model`, `generaltools-breaks`).
@@ -95,7 +97,7 @@ Stated as plain requirements, each with its acceptance check.
 - **The maintainer's machine** (`~/.gradle/gradle.properties`, property names only; values were not
   read): `mavenCentralUsername`, `mavenCentralPassword`, `signing.keyId`, `signing.password`,
   `signing.secretKeyRingFile` and `org.gradle.configuration-cache` are defined. That is the keyring-file
-  signing mode the plugin documents ([`kmp-maven-central-publishing.md`](research/kmp-maven-central-publishing.md)
+  signing mode the plugin documents ([`kmp-maven-central-publishing.md`](../research/kmp-maven-central-publishing.md)
   F3), not the in-memory mode the current README names.
 - **Published versions.** Tag `2.2.0` is an *annotated* tag (tag object `d2abd03`, message
   `GeneralTools 2.2.0`) peeling to `dcbdc9a`, the merge commit of PR #6 on `master`. GitHub releases:
@@ -103,7 +105,7 @@ Stated as plain requirements, each with its acceptance check.
   ..." and then grouped notes) and `1.0`. Merged PRs are merge commits (`Merge pull request #N ...`).
   Maven Central serves `GeneralTools:2.2.0`; `gametools`, `gametools-core`, `gametools-net` 5.1.0 and
   `gametools-world` 5.1.0 are also on Central, and `gametools-core` 5.1.0 requires GeneralTools `2.2.0`
-  ([`downstream-under-mutable-model.md`](research/downstream-under-mutable-model.md) 3.3).
+  ([`downstream-under-mutable-model.md`](../research/downstream-under-mutable-model.md) 3.3).
 - **Downstream at survey time** (read-only): MyGameTools `master` @ `dc5214f`, clean working tree, builds
   with Kotlin 2.2.0 and pins `api("io.github.spartanlaboratories:GeneralTools:2.2.0")` in
   `build-logic/src/main/kotlin/gametools.kotlin-library.gradle.kts:18`, toolchain 23
@@ -113,16 +115,16 @@ Stated as plain requirements, each with its acceptance check.
 
 | Fact | Source |
 |---|---|
-| `publishToMavenCentral` uploads one bundle as `USER_MANAGED` and does not release; `publishAndReleaseToMavenCentral` uploads as `AUTOMATIC`; the upload happens at the end of the build and logs `Uploaded bundle to Central Portal as USER_MANAGED, deployment id: <id>`; the bundle zip is kept in `build/publish/`; a build that fails after registration drops the deployment; `dropMavenCentralDeployment --deployment-id=<id>` drops one on demand | [`kmp-maven-central-publishing.md`](research/kmp-maven-central-publishing.md) F6 |
+| `publishToMavenCentral` uploads one bundle as `USER_MANAGED` and does not release; `publishAndReleaseToMavenCentral` uploads as `AUTOMATIC`; the upload happens at the end of the build and logs `Uploaded bundle to Central Portal as USER_MANAGED, deployment id: <id>`; the bundle zip is kept in `build/publish/`; a build that fails after registration drops the deployment; `dropMavenCentralDeployment --deployment-id=<id>` drops one on demand | [`kmp-maven-central-publishing.md`](../research/kmp-maven-central-publishing.md) F6 |
 | There is no dry run of the Central upload; `prepareMavenCentralPublishing` needs `mavenCentralUsername`/`mavenCentralPassword` | same, F6, pitfall 4 |
 | Portal API (re-read 2026-10-19): status `POST /api/v1/publisher/status?id=<id>` returns `deploymentState` in `PENDING`, `VALIDATING`, `VALIDATED`, `PUBLISHING`, `PUBLISHED`, `FAILED`; publish `POST /api/v1/publisher/deployment/<id>` (204); drop `DELETE` on the same path for `VALIDATED` or `FAILED`; a failed deployment should be read before it is dropped | <https://central.sonatype.org/publish/publish-portal-api/> |
-| A validated bundle can be a dependency through `https://central.sonatype.com/api/v1/publisher/deployments/download/` (any validated deployment containing the file) or `.../deployment/<id>/download/` (one deployment), with a Bearer header built from the Portal user token | same page; [`kmp-maven-central-publishing.md`](research/kmp-maven-central-publishing.md) F7 |
+| A validated bundle can be a dependency through `https://central.sonatype.com/api/v1/publisher/deployments/download/` (any validated deployment containing the file) or `.../deployment/<id>/download/` (one deployment), with a Bearer header built from the Portal user token | same page; [`kmp-maven-central-publishing.md`](../research/kmp-maven-central-publishing.md) F7 |
 | Central is immutable: published components are never removed or modified | <https://central.sonatype.org/publish/requirements/immutability/> |
-| A Kotlin compiler reads metadata one minor ahead; web klibs carry the building compiler's ABI version, so JS/Wasm consumers need Kotlin 2.4 or newer | [`kmp-build-and-kotlin-compat.md`](research/kmp-build-and-kotlin-compat.md) F1-F5 |
-| Plain Maven ignores `.module`; the root POM has only runtime-scope dependencies and the root jar has no classes, so Maven consumers need `GeneralTools-jvm` | [`kmp-maven-central-publishing.md`](research/kmp-maven-central-publishing.md) F9 |
+| A Kotlin compiler reads metadata one minor ahead; web klibs carry the building compiler's ABI version, so JS/Wasm consumers need Kotlin 2.4 or newer | [`kmp-build-and-kotlin-compat.md`](../research/kmp-build-and-kotlin-compat.md) F1-F5 |
+| Plain Maven ignores `.module`; the root POM has only runtime-scope dependencies and the root jar has no classes, so Maven consumers need `GeneralTools-jvm` | [`kmp-maven-central-publishing.md`](../research/kmp-maven-central-publishing.md) F9 |
 | Composite-build substitution replaces `io.github.spartanlaboratories:GeneralTools` with the project, using the project's own variants rather than the published `.module`, so it does not prove the publication | same, F9 (claim 20) |
-| kotlin-logging 8 prints `kotlin-logging: initializing... active logger factory: <name>` once on first use; opt-outs: JVM `-Dkotlin-logging.logStartupMessage=false` or env `KOTLIN_LOGGING_STARTUP_MESSAGE=false`, and the same env var in Node | [`kotlin-logging-adoption.md`](research/kotlin-logging-adoption.md), the startup-message findings |
-| Published `gametools-core` 5.0.0/5.1.0 and `gametools-world` 5.1.0 reference `com/spartanlabs/geometry/Square` (first `new` at `VisibleObject.<init>(Dimensions, Point)` pc 13 in 5.1.0, reached from `Actor.<init>`; `Alive.<init>` pc 226; `TiledMap.<init>` pc 364; `ZoneGrid.<init>` pc 290). The resulting `NoClassDefFoundError` is derived from bytecode, **not executed** | [`downstream-under-mutable-model.md`](research/downstream-under-mutable-model.md) 3.3 |
+| kotlin-logging 8 prints `kotlin-logging: initializing... active logger factory: <name>` once on first use; opt-outs: JVM `-Dkotlin-logging.logStartupMessage=false` or env `KOTLIN_LOGGING_STARTUP_MESSAGE=false`, and the same env var in Node | [`kotlin-logging-adoption.md`](../research/kotlin-logging-adoption.md), the startup-message findings |
+| Published `gametools-core` 5.0.0/5.1.0 and `gametools-world` 5.1.0 reference `com/spartanlabs/geometry/Square` (first `new` at `VisibleObject.<init>(Dimensions, Point)` pc 13 in 5.1.0, reached from `Actor.<init>`; `Alive.<init>` pc 226; `TiledMap.<init>` pc 364; `ZoneGrid.<init>` pc 290). The resulting `NoClassDefFoundError` is derived from bytecode, **not executed** | [`downstream-under-mutable-model.md`](../research/downstream-under-mutable-model.md) 3.3 |
 
 ---
 

@@ -13,6 +13,9 @@ on the JVM only, file and URL helpers and AWT-based user-action automation.
 `read`, `asURL`, the slf4j `Logger.time` extension and `UserActions` exist on the JVM only. Upgrading from 2.x:
 see the [3.0.0 migration notes](#300-migration-notes).
 
+State boards: [`docs/dashboards/`](docs/dashboards/index.html) shows the library's systems and its build as built at a named commit, with planned parts drawn dashed.
+Work boards: the [repository work board](docs/plans/index.html) shows every planning and development run, and each issue's board under `docs/plans/` traces every part of a change through its gap, the options considered, the verdict and the as-built state, with the work in progress.
+
 ## Maven coordinates
 
 Published to Maven Central as `io.github.spartanlaboratories:GeneralTools:3.0.0`. The coordinate `GeneralTools`

@@ -1,0 +1,359 @@
+/* board.js: board.json as a script, written by plan/scripts/embed.js beside the board for its live view (plan/RULES.md §1). Do not edit: edit board.json and re-embed. */
+window.dashboardLive&&window.dashboardLive("board",
+{
+  "schema": "work-board/1",
+  "repo": "SpartanLaboratories/GeneralTools",
+  "generated": "2026-11-23T00:07:51Z",
+  "asOf": "2026-11-23",
+  "tree": {
+    "ref": "feat/issue-7-kotlin-multiplatform",
+    "sha": "a500e44"
+  },
+  "links": {
+    "repoBoard": "../dashboards/index.html"
+  },
+  "systems": [
+    {
+      "slug": "failure-and-logging-seam",
+      "name": "Failure and logging seam",
+      "slot": 2,
+      "top": "Failure and logging seam",
+      "status": "built",
+      "board": "docs/dashboards/failure-and-logging-seam/index.html"
+    },
+    {
+      "slug": "build-logic",
+      "name": "Build logic",
+      "slot": 1,
+      "top": "Gradle build",
+      "status": "planned",
+      "board": null
+    },
+    {
+      "slug": "version-catalog",
+      "name": "Version catalog",
+      "slot": 1,
+      "top": "Gradle build",
+      "status": "planned",
+      "board": null
+    },
+    {
+      "slug": "java-floor",
+      "name": "Java floor",
+      "slot": 1,
+      "top": "Gradle build",
+      "status": "planned",
+      "board": null
+    },
+    {
+      "slug": "module-layout-and-published-shape",
+      "name": "Module layout and published shape",
+      "slot": 1,
+      "top": "Gradle build",
+      "status": "planned",
+      "board": null
+    },
+    {
+      "slug": "gradle-build",
+      "name": "Gradle build",
+      "slot": 1,
+      "top": "Gradle build",
+      "status": "built",
+      "board": "docs/dashboards/gradle-build/index.html"
+    },
+    {
+      "slug": "color",
+      "name": "Color",
+      "slot": 6,
+      "top": "Color",
+      "status": "built",
+      "board": "docs/dashboards/color/index.html"
+    },
+    {
+      "slug": "geometry-value-core",
+      "name": "Geometry value core",
+      "slot": 3,
+      "top": "Geometry value core",
+      "status": "built",
+      "board": "docs/dashboards/geometry-value-core/index.html"
+    },
+    {
+      "slug": "desktop-edge",
+      "name": "Desktop edge",
+      "slot": 8,
+      "top": "Desktop edge",
+      "status": "built",
+      "board": "docs/dashboards/desktop-edge/index.html"
+    },
+    {
+      "slug": "box-model",
+      "name": "Box model",
+      "slot": 4,
+      "top": "Box model",
+      "status": "built",
+      "board": "docs/dashboards/box-model/index.html"
+    },
+    {
+      "slug": "test-suite",
+      "name": "Test suite",
+      "slot": 9,
+      "top": "Test suite",
+      "status": "built",
+      "board": "docs/dashboards/test-suite/index.html"
+    },
+    {
+      "slug": "geometry-queries",
+      "name": "Geometry queries",
+      "slot": 5,
+      "top": "Geometry queries",
+      "status": "built",
+      "board": "docs/dashboards/geometry-queries/index.html"
+    }
+  ],
+  "groups": [
+    {
+      "key": "7",
+      "issue": 7,
+      "title": "Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)",
+      "board": "7-kotlin-multiplatform/dashboard.html"
+    }
+  ],
+  "rows": [
+    {
+      "issue": 7,
+      "title": "Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)",
+      "state": "OPEN",
+      "created": "2026-10-07",
+      "parent": null,
+      "waitsOn": [],
+      "blocks": [
+        {
+          "issue": 4,
+          "repo": "SpartanLaboratories/SpartanGraphics",
+          "state": "OPEN",
+          "hold": "blocks"
+        }
+      ],
+      "board": "7-kotlin-multiplatform/dashboard.html",
+      "folder": "7-kotlin-multiplatform/",
+      "branch": "feat/issue-7-kotlin-multiplatform",
+      "system": null,
+      "step": "document",
+      "detail": "Document: 1 of 3 tasks done; State boards current.",
+      "since": "2026-11-22T23:02:14Z",
+      "updated": "2026-11-22T23:08:08Z",
+      "qa": [],
+      "qaMax": 3,
+      "status": "planning",
+      "fixOf": null,
+      "landed": null,
+      "reconciliation": {
+        "state": "planned",
+        "landed": 0,
+        "total": 8
+      },
+      "active": false,
+      "chain": {
+        "total": 8,
+        "landed": 0,
+        "dropped": 0,
+        "deferred": 0,
+        "left": 0,
+        "planned": true,
+        "done": false,
+        "current": [],
+        "next": {
+          "issue": null,
+          "slug": "kotlin-logging-version",
+          "blockedBy": []
+        },
+        "units": [
+          {
+            "n": 1,
+            "issue": null,
+            "name": "kotlin-logging 8.0.7",
+            "state": "todo"
+          },
+          {
+            "n": 2,
+            "issue": null,
+            "name": "kotlin-logging in the JVM sources",
+            "state": "todo"
+          },
+          {
+            "n": 3,
+            "issue": null,
+            "name": "Version catalog",
+            "state": "todo"
+          },
+          {
+            "n": 4,
+            "issue": null,
+            "name": "Convention plugins and Dokka javadoc jars",
+            "state": "todo"
+          },
+          {
+            "n": 5,
+            "issue": null,
+            "name": "Java floor 17, guarded in check",
+            "state": "todo"
+          },
+          {
+            "n": 6,
+            "issue": null,
+            "name": "Module split: core, desktop and the umbrella",
+            "state": "todo"
+          },
+          {
+            "n": 7,
+            "issue": null,
+            "name": "Review of the seven built units",
+            "state": "todo"
+          },
+          {
+            "n": 8,
+            "issue": null,
+            "name": "Release 3.0.0",
+            "state": "todo"
+          }
+        ]
+      },
+      "systemName": "Failure and logging seam, Gradle build, Test suite",
+      "group": "7",
+      "order": 0
+    }
+  ],
+  "roadmap": [
+    {
+      "issue": 7,
+      "title": "Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)",
+      "state": "OPEN",
+      "board": "7-kotlin-multiplatform/dashboard.html",
+      "items": []
+    }
+  ],
+  "unscheduled": [
+    {
+      "issue": 26,
+      "title": "Depend on kotlin-logging 8.0.7",
+      "labels": [],
+      "created": "2026-11-21",
+      "system": "failure-and-logging-seam"
+    },
+    {
+      "issue": 25,
+      "title": "Keep the shared build configuration in convention plugins",
+      "labels": [],
+      "created": "2026-11-21",
+      "system": "build-logic"
+    },
+    {
+      "issue": 24,
+      "title": "Keep dependency and plugin versions in a version catalog",
+      "labels": [],
+      "created": "2026-11-21",
+      "system": "version-catalog"
+    },
+    {
+      "issue": 23,
+      "title": "Set a Java floor on master",
+      "labels": [],
+      "created": "2026-11-21",
+      "system": "java-floor"
+    },
+    {
+      "issue": 22,
+      "title": "Group imports as the Commenting page sets out",
+      "labels": [],
+      "created": "2026-11-21",
+      "system": null
+    },
+    {
+      "issue": 21,
+      "title": "Split the multiplatform build into a core module and a module per device family before 3.0.0 ships",
+      "labels": [],
+      "created": "2026-11-11",
+      "system": "module-layout-and-published-shape"
+    },
+    {
+      "issue": 20,
+      "title": "Log through kotlin-logging in the JVM sources as well (MiscJvm.kt, UserActions.kt)",
+      "labels": [],
+      "created": "2026-11-11",
+      "system": "failure-and-logging-seam"
+    },
+    {
+      "issue": 19,
+      "title": "Generate API docs with Dokka: javadoc jar and GitHub Pages site",
+      "labels": [],
+      "created": "2026-11-08",
+      "system": "gradle-build"
+    },
+    {
+      "issue": 18,
+      "title": "Cache Node and Yarn downloads in CI",
+      "labels": [],
+      "created": "2026-10-20",
+      "system": "gradle-build"
+    },
+    {
+      "issue": 17,
+      "title": "Make the root GeneralTools artifact usable from plain Maven",
+      "labels": [],
+      "created": "2026-10-20",
+      "system": "module-layout-and-published-shape"
+    },
+    {
+      "issue": 16,
+      "title": "Add a Color factory that returns a Result",
+      "labels": [],
+      "created": "2026-10-20",
+      "system": "color"
+    },
+    {
+      "issue": 15,
+      "title": "Add immutable counterparts for Point and Segment",
+      "labels": [],
+      "created": "2026-10-20",
+      "system": "geometry-value-core"
+    },
+    {
+      "issue": 14,
+      "title": "Add a screenshotArea overload that takes an AxisAlignedBox",
+      "labels": [],
+      "created": "2026-10-20",
+      "system": "desktop-edge"
+    },
+    {
+      "issue": 13,
+      "title": "Add toImmutable() for every AxisAlignedBox",
+      "labels": [],
+      "created": "2026-10-20",
+      "system": "box-model"
+    },
+    {
+      "issue": 12,
+      "title": "Add a compile-fail test for TwoDoubles' subclassing opt-in",
+      "labels": [],
+      "created": "2026-10-20",
+      "system": "test-suite"
+    },
+    {
+      "issue": 11,
+      "title": "Make EPSILON a parameter of the geometry functions that use it",
+      "labels": [],
+      "created": "2026-10-20",
+      "system": "geometry-queries"
+    },
+    {
+      "issue": 8,
+      "title": "Read-only views for Point and Square so libraries can expose geometry without copying",
+      "labels": [
+        "enhancement"
+      ],
+      "created": "2026-10-08",
+      "system": "box-model"
+    }
+  ]
+}
+);

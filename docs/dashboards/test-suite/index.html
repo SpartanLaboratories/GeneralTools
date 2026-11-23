@@ -1,0 +1,1671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="template" content="system/template/system.html">
+<title>system-slug</title>
+<script>/* the theme switch's choice (GUIDANCE.md §1, Themes) and the inspector switch's (§6, "The inspector switch"), applied before the first paint; none chosen: the system setting, the inspector shown */try{var t=localStorage.getItem("dashboards-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;if(localStorage.getItem("dashboards-inspector")==="hidden")document.documentElement.dataset.inspector="hidden"}catch(e){}</script>
+<style>
+/* Layout: header band → KPI strip → tabbed stage with a sticky side inspector → guarantee cards → Context cards → provenance footer.
+   System board template (dashboards skill, system set: system/RULES.md): the C4 tab is rendered at load from the Structurizr DSL embedded below.
+   Colour plan: --server / --client / --wire are the board's three hue slots (its "sides"), --ph-1..3 the ordinal phase ramp
+   (Lifecycles), --good / --warning / --serious / --critical are status (outcomes only, always beside a label). Dashed = planned, and nothing else: lifelines, returns and frames are solid. */
+:root{
+  --bg:#f3f5f8; --surface:#fcfcfd; --surface-2:#eef1f6; --ink:#0e1420; --ink-2:#4a5468; --muted:#7d879a;
+  --line:#dfe4ec; --hair:rgba(14,20,32,.10);
+  --server:#2a78d6; --client:#653184; --wire:#0d7680;
+  --server-soft:#e2edfa; --client-soft:#eae3ee; --wire-soft:#deecee;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --ph-1:#a49bed; --ph-2:#6250d6; --ph-3:#352a91;
+  --on:#0e1420; --dim:.28; --focus:#2a78d6; --rel:#6b7382;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141b;--surface:#171c25;--surface-2:#1f2530;--ink:#eef1f6;--ink-2:#b8c0ce;--muted:#8a93a5;--line:#2a313d;--hair:rgba(255,255,255,.10);--server:#3987e5;--client:#8a44d8;--wire:#1f8089;--server-soft:rgba(57,135,229,.20);--client-soft:rgba(138,68,216,.20);--wire-soft:rgba(31,128,137,.22);--ph-1:#5546c0;--ph-2:#8a7ee6;--ph-3:#c9c2f7;--on:#eef1f6;--focus:#3987e5;--rel:#9aa3b2;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141b;--surface:#171c25;--surface-2:#1f2530;--ink:#eef1f6;--ink-2:#b8c0ce;--muted:#8a93a5;--line:#2a313d;--hair:rgba(255,255,255,.10);--server:#3987e5;--client:#8a44d8;--wire:#1f8089;--server-soft:rgba(57,135,229,.20);--client-soft:rgba(138,68,216,.20);--wire-soft:rgba(31,128,137,.22);--ph-1:#5546c0;--ph-2:#8a7ee6;--ph-3:#c9c2f7;--on:#eef1f6;--focus:#3987e5;--rel:#9aa3b2;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);padding-block:0 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.page{max-width:1280px;margin:0 auto}
+a{color:inherit}
+code{font-family:var(--mono);font-size:.92em;overflow-wrap:anywhere;background:var(--surface-2);border:1px solid var(--hair);padding:1px 4px;border-radius:3px}
+/* the code label (GUIDANCE.md §12, "Code"; dashboards-skill/42): every inline code drawn as a label of its own,
+   in both themes, at normal weight inside bold text; inside a chip, a pill, a tile, a badge or a tag (a label or a figure already: each
+   class carries its type word, a tag's a whole part of the class, so .stage, .outage and .tags are not taken) it stays plain mono text */
+:is(b,strong,.name,.nm,dt,th) code{font-weight:400}
+:is([class*="chip"],[class*="pill"],[class*="tile"],[class*="badge"],[class*="tag-"],[class$="tag"],[class*="tag "]) code{background:none;border:0;padding:0;border-radius:0}
+h1,h2,h3{text-wrap:balance}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* header */
+.crumbs{font-size:12px;color:var(--muted);padding-top:18px;overflow-wrap:anywhere}
+.crumbs a{text-decoration:none}
+/* The header's tools right of the breadcrumb: the inspector switch and the theme switch (GUIDANCE.md §6, §12), which the renderer adds to the header. */
+.systools{float:right;display:flex;gap:6px;align-items:center;margin:14px 0 4px 12px}
+/* The header's switches (GUIDANCE.md §12, "Switch"): a track with a knob that slides to the side of the state shown, a real toggle
+   (role="switch", aria-checked) in the boards' neutrals, never the accent or a status colour. The theme switch's ends are ☀ light and
+   ☾ night, its knob at the palette shown; the inspector switch's knob stands right, its track filled, while the inspector is shown. The
+   knob slides in a short transition, and jumps under reduced motion. */
+.switch{appearance:none;display:inline-flex;align-items:center;gap:5px;font:600 11px/1 var(--mono);padding:3px 7px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.switch:hover{color:var(--ink);border-color:var(--ink-2)}
+.switch-track{position:relative;flex:none;width:28px;height:16px;border:1px solid var(--ink-2);border-radius:8px;background:var(--surface-2);transition:background-color .18s ease}
+.switch-knob{position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--ink-2);transition:transform .18s ease}
+.switch[aria-checked="true"] .switch-track{background:color-mix(in srgb,var(--ink-2) 35%,var(--surface))}
+.switch[aria-checked="true"] .switch-knob{transform:translateX(12px);background:var(--ink)}
+.switch-end{font-size:12px;color:var(--muted)}
+.switch[aria-checked="false"] .switch-end.off,.switch[aria-checked="true"] .switch-end.on{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.switch-track,.switch-knob{transition:none}}
+.crumbs a:hover{text-decoration:underline}
+h1{font-size:28px;margin:4px 0 2px;letter-spacing:-.01em;font-family:var(--mono);overflow-wrap:anywhere}
+.function{color:var(--ink-2);margin:0 0 10px;max-width:78ch;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+.chip{font:12px/1 var(--mono);padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink-2);max-width:100%;overflow-wrap:anywhere}
+.chip b{color:var(--ink);font-weight:600}
+.chip a{text-decoration:none;border-bottom:1px solid var(--line)}
+/* a chip drawn from state.json (renderState()) stays hidden on every layout until it is drawn; one with nothing to say is removed */
+.chip[hidden]{display:none!important}
+/* The header's two halves (GUIDANCE.md §6, "The header"): from 940 px the intro (the title, the issue line, the function) fills the
+   left half and the tags stand in the right half beside it, each a small card with its label over its value, growing to fill its line, a
+   long one across the half (.wide); under 940 px the two stack and the tags wrap as chips, the label before the value. The topbar (the breadcrumb, the
+   live indicator, the theme switch) runs across the top. The same rules on every dashboard type. */
+.issueline{font:12.5px/1.4 var(--mono);color:var(--ink-2);margin:0 0 8px;overflow-wrap:anywhere}
+.issueline a{text-decoration:none;border-bottom:1px solid var(--line)}
+.issueline a:hover{border-bottom-color:var(--ink)}
+.chip .ck{font:700 10px/1.2 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.chip .sysl{display:inline-flex;align-items:center;margin-right:10px;white-space:nowrap}
+.chip .sysl:last-child{margin-right:0}
+@media (min-width:940px){
+  header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;column-gap:28px}
+  header>.topbar{grid-column:1/-1;grid-row:1}
+  header>.crumbs{grid-column:1;grid-row:1}
+  header>.systools{grid-column:2;grid-row:1;justify-self:end;align-self:start;float:none;margin:14px 0 4px}
+  header>h1{grid-column:1;grid-row:2}
+  header>.issueline{grid-column:1;grid-row:3}
+  header>.function{grid-column:1;grid-row:4;max-width:none}
+  header>.chips{grid-column:2;grid-row:2/-1;align-self:start;align-content:flex-start;gap:8px;margin:8px 0 6px}
+  header>.chips>.chip{display:block;flex:1 1 190px;padding:7px 10px 8px;font-size:12.5px;line-height:1.4;border-radius:6px}
+  header>.chips>.chip .ck{display:block;margin:0 0 2px}
+  header>.chips>.chip.wide{flex-basis:100%}
+}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:10px;margin:14px 0 18px}
+.kpi-tile{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.kpi-tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.kpi-tile .v{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi-tile .s{font-size:12px;color:var(--ink-2);margin-top:2px}
+
+/* tabs + stage */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto;overflow-y:hidden}
+.tab{appearance:none;border:0;background:none;color:var(--ink-2);font:inherit;font-weight:600;padding:10px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.tab:hover{color:var(--ink)}
+.tab.model::after{content:" DSL";font:10px var(--mono);color:var(--muted);vertical-align:super}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
+@media (max-width:940px){.stage{grid-template-columns:minmax(0,1fr)}.inspector{position:static;max-height:none;overflow:visible}}
+.stage>div{min-width:0}
+.view{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+.view svg{display:block;width:100%;height:auto}
+.view h2{font-size:15px;margin:0 0 4px}
+.lede{font-size:13px;color:var(--ink-2);margin:0 0 10px;max-width:90ch}
+/* the inspector stays in view beside the tab and scrolls inside itself when its entry is taller than the window */
+.inspector{position:sticky;top:calc(12px + env(safe-area-inset-top,0px));background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0;max-height:calc(100vh - 24px);overflow:auto}
+/* The inspector switch (GUIDANCE.md §6, "The inspector switch"): hidden, the inspector leaves the stage and the tab takes its width */
+:root[data-inspector="hidden"] .stage{grid-template-columns:minmax(0,1fr)}
+:root[data-inspector="hidden"] .inspector{display:none}
+.inspector h2{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px}
+/* The inspector's head (GUIDANCE.md §6, "The inspector switch"): its heading, and at its right the Hide button, an eye struck through and
+   the word "Hide", which hides the inspector as the header's inspector switch does; a button in the boards' neutrals, never the accent or
+   a status colour, its focus ring the boards' own */
+.inspector .insp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+.inspector .insp-head h2{margin:0}
+.hide-button{appearance:none;display:inline-flex;align-items:center;gap:4px;flex:none;font:600 11px/1 var(--mono);padding:3px 7px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.hide-button:hover{color:var(--ink);border-color:var(--ink-2)}
+.hide-button svg{flex:none;width:14px;height:14px}
+.inspector .kicker{font:11px var(--mono);color:var(--muted);letter-spacing:.04em}
+.inspector .name{font-weight:700;font-size:15px;font-family:var(--mono);word-break:break-word}
+.inspector .vis{font-size:12px;color:var(--ink-2);margin:2px 0 8px}
+.inspector p{margin:0 0 8px;color:var(--ink-2);font-size:13px}
+.inspector dl{margin:0;font-size:12.5px}
+.inspector dt{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-size:10.5px;margin-top:8px}
+.inspector dd{margin:2px 0 0}
+.inspector dd a{font-family:var(--mono);font-size:12px;text-decoration:none;border-bottom:1px solid var(--line)}
+.inspector dd a:hover{border-bottom-color:var(--ink)}
+.linkbtn{appearance:none;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:12px var(--mono);padding:5px 8px;border-radius:4px;cursor:pointer;text-align:left}
+.linkbtn:hover{border-color:var(--ink)}
+.tchip{display:inline-block;font:11px var(--mono);padding:3px 6px;border:1px solid var(--line);border-radius:3px;margin:2px 4px 0 0;color:var(--ink-2)}
+.tchip.server{border-left:3px solid var(--server)}.tchip.client{border-left:3px solid var(--client)}
+/* Legends. Every tab carries one .legend (the C4 tab's is .c4-legend): its colour grouping, then its line and shape encodings,
+   ending with planned. check-board.js fails a tab without a visible one. */
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:10px 0 0;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:11px;border-radius:3px;border:1.5px solid var(--ink-2);background:var(--surface);flex:none}
+.legend i.pub{background:var(--surface-2)}.legend i.std{border-style:dotted}.legend i.pln{border-style:dashed;background:none;opacity:.6}
+.legend i.srv{border-color:var(--server)}.legend i.cli{border-color:var(--client)}.legend i.wir{border-color:var(--wire)}
+.legend i.pub.srv{background:var(--server-soft)}.legend i.pub.cli{background:var(--client-soft)}.legend i.pub.wir{background:var(--wire-soft)}
+.legend i.con{border-color:var(--ink)}.legend i.ext{border-color:var(--muted);background:var(--surface-2)}
+.legend i.bs{border-left:4px solid var(--server)}.legend i.bc{border-left:4px solid var(--client)}.legend i.bw{border-left:4px solid var(--wire)}
+.legend i.ph1{background:var(--ph-1);border-color:var(--ph-1)}.legend i.ph2{background:var(--ph-2);border-color:var(--ph-2)}.legend i.ph3{background:var(--ph-3);border-color:var(--ph-3)}
+.legend i.ln{width:18px;height:0;border:0;border-top:2px solid var(--ink-2);border-radius:0;background:none}.legend i.ln.dash{border-top-style:dashed}.legend i.ln.ret{position:relative;border-top-width:1px;width:20px}.legend i.ln.ret::after{content:"";position:absolute;right:0;top:-4px;width:6px;height:6px;border-top:1.2px solid var(--ink-2);border-right:1.2px solid var(--ink-2);transform:rotate(45deg)}.legend i.ln.on{border-top:2.5px solid var(--on)}.legend i.ln.off{border-top-color:var(--line)}
+.legend i.hex{border:0;border-radius:0;background:var(--ink-2);clip-path:polygon(22% 0,78% 0,100% 50%,78% 100%,22% 100%,0 50%)}
+.legend i.end{border-radius:1px;border-color:var(--line);border-left-width:4px;background:var(--surface-2)}
+.legend i.band{border:0;background:var(--surface-2)}
+.legend i.dot{width:10px;height:10px;border:0;border-radius:50%;background:var(--ink)}
+.legend .pill{align-self:center}
+
+/* structure svg */
+.band{fill:var(--surface-2)}
+.lane{font-size:11px;fill:var(--muted);letter-spacing:.1em;font-family:var(--sans)}
+.note{font-size:10.5px;fill:var(--ink-2);font-family:var(--sans)}
+.node{cursor:pointer}
+.node rect{fill:var(--surface);stroke-width:1.5}
+.node.pub rect{stroke-width:2}
+.node.server rect{stroke:var(--server)}.node.server.pub rect{fill:var(--server-soft)}
+.node.client rect{stroke:var(--client)}.node.client.pub rect{fill:var(--client-soft)}
+.node.wire rect{stroke:var(--wire)}.node.wire.pub rect{fill:var(--wire-soft)}
+.node.standalone rect{stroke:var(--muted);stroke-dasharray:2 3;fill:var(--surface-2)}
+.node.planned{opacity:.6}.node.planned rect{stroke-dasharray:6 4}
+.node.container rect{fill-opacity:.55}
+.node text{fill:var(--ink);font-family:var(--sans)}
+.node .t{font-weight:700;font-size:10.5px}
+.node.container .t{font-size:13px}
+.node .s{font-size:10px;fill:var(--ink-2)}
+.node.chip .t{font-family:var(--mono);font-size:11px}
+.node.chip .s{font-family:var(--mono);font-size:8.5px}
+.node.sel rect{stroke:var(--on);stroke-width:3}
+
+/* datagram flow svg */
+.fnode{cursor:default}
+.fnode rect,.fnode polygon{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.fnode.t rect{fill:var(--surface-2)}
+.fnode rect.stripe,.fnode.on rect.stripe{stroke:none}
+.fnode text{fill:var(--ink);font-size:10.5px;font-family:var(--sans)}
+.fnode .lvl{font-family:var(--mono);font-size:8.5px;fill:var(--muted)}
+.fnode.on rect,.fnode.on polygon{stroke:var(--on);stroke-width:2.5}
+.fnode.off{opacity:var(--dim)}
+.fnode.planned rect,.fnode.planned polygon{stroke-dasharray:6 4}.fnode.planned:not(.off){opacity:.6}
+.fedge{stroke:var(--line);stroke-width:1.5;fill:none}
+.fedge.on{stroke:var(--on);stroke-width:2.5}
+.fedge.off{opacity:var(--dim)}
+.fedge.planned{stroke-dasharray:6 4}
+.flabel{font-size:9.5px;fill:var(--muted);font-family:var(--mono)}
+.flabel.on{fill:var(--ink);font-weight:600}
+.flabel.off{opacity:var(--dim)}
+.outcome{font-size:13px;margin:0 0 10px;padding:8px 10px;border-radius:4px;background:var(--surface-2);border-left:3px solid var(--ink)}
+.outcome code{font-weight:600}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 10px;align-items:center}
+.ctl label{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;align-items:center;text-transform:uppercase;letter-spacing:.06em;max-width:100%}
+/* A segmented control wraps onto a second row at phone width rather than pushing the board sideways. */
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:5px;overflow:hidden;max-width:100%}
+.seg button{appearance:none;border:0;background:var(--surface);color:var(--ink-2);font:12px/1 var(--mono);padding:7px 9px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button[aria-disabled="true"]{opacity:.35;cursor:default}
+.seg button:hover:not([aria-pressed="true"]):not([aria-disabled="true"]){background:var(--surface-2)}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:12px var(--mono);padding:7px 10px;border-radius:5px;cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* sequence svg */
+.life{stroke:var(--line);stroke-width:1.2}.life.planned{stroke-dasharray:6 4}
+.lh rect{fill:var(--surface-2);stroke:var(--line)}
+.lh.server rect{fill:var(--server-soft);stroke:var(--server)}.lh.client rect{fill:var(--client-soft);stroke:var(--client)}.lh.wire rect{fill:var(--wire-soft);stroke:var(--wire)}
+.lh.consumer rect{fill:var(--surface);stroke:var(--ink)}.lh.external rect{fill:var(--surface-2);stroke:var(--muted)}
+.lh.planned{opacity:.6}.lh.planned rect{stroke-dasharray:6 4}
+.lh text{font-size:10.5px;font-weight:700;fill:var(--ink);font-family:var(--mono)}
+.phase rect{fill:var(--surface-2);opacity:.55}
+.phase text{font-size:9.5px;fill:var(--muted);font-family:var(--mono);letter-spacing:.08em}
+.msg{cursor:pointer}
+.msg line,.msg path{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+.msg.ret line{stroke-width:1}
+.msg text{font-size:10px;fill:var(--ink-2);font-family:var(--sans)}
+.msg .lbg{fill:var(--surface);stroke:none}
+.msg .num{font-family:var(--mono);font-size:9px;fill:var(--muted)}
+.msg.cur line,.msg.cur path{stroke:var(--on);stroke-width:2.5}
+.msg.cur text{fill:var(--ink);font-weight:600}
+.msg.future{opacity:.3}
+.msg.planned line,.msg.planned path{stroke-dasharray:6 4}.msg.planned:not(.future){opacity:.6}
+
+/* C4 model tab — rendered from the DSL. A level ladder on the left (C4 is about zooming in), typed element
+   cards whose header colour comes from the DSL's styles block, relationships routed orthogonally in lanes,
+   the scope drawn as a boundary frame, and the dynamic view drawn as the sequence it is. */
+.c4wrap{display:grid;grid-template-columns:1fr;gap:10px;align-items:start}
+.ladder{display:flex;flex-wrap:wrap;gap:7px;min-width:0}
+.rung{appearance:none;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:6px;padding:7px 10px;cursor:pointer;display:grid;grid-template-columns:24px 1fr;gap:0 8px;align-items:center;min-width:0;position:relative;flex:1 1 150px;max-width:230px}
+.rung .lv{font:700 13px var(--mono);color:var(--muted);grid-row:span 2;text-align:center}
+.rung .nm{font-weight:700;font-size:12.5px;color:var(--ink)}
+.rung .sc{font:11px var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rung:hover{border-color:var(--ink-2)}
+.rung[aria-pressed="true"]{border-color:var(--ink);background:var(--surface-2)}
+.rung[aria-pressed="true"] .lv{color:var(--ink)}
+.rung.sep{margin-left:8px}
+.rung.lvl::after{content:"";position:absolute;right:-8px;top:50%;width:8px;height:2px;background:var(--line)}
+.rung.lvl.last::after{display:none}
+.c4main{min-width:0}
+.c4head{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;margin:0 0 8px}
+.c4head .zoom{margin-left:auto;display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;align-self:center}
+.c4head .zoom button{appearance:none;border:0;background:var(--surface);color:var(--ink-2);font:11px var(--mono);padding:5px 9px;cursor:pointer}
+.c4head .zoom button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.c4head .lvl{font:700 10.5px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.c4head .ttl{font-weight:700;font-size:14px}
+.c4head .desc{font-size:12.5px;color:var(--ink-2)}
+.c4canvas{border:1px solid var(--line);border-radius:6px;padding:6px;background-color:var(--surface);background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:22px 22px;overflow-x:auto}
+.c4canvas svg{max-width:none}
+.c4-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 0;font-size:11.5px;color:var(--ink-2)}
+.c4-legend span{display:inline-flex;align-items:center;gap:6px}
+.c4-legend i{display:inline-block;width:16px;height:11px;border-radius:3px;border:1.5px solid rgba(0,0,0,.35)}
+.c4-legend i.arrow{width:18px;height:0;border:0;border-top:1.5px solid var(--rel);border-radius:0}
+.c4-legend i.arrow.dashed{border-top-style:dashed}
+.c4-legend i.frame{background:var(--surface-2);border:1.5px solid var(--line);border-radius:4px}
+.c4el{cursor:pointer}
+.c4el .card{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.c4el .hdr{stroke:none}
+.c4el text{font-family:var(--sans)}
+.c4el .n{font-weight:700;font-size:12px}
+.c4el .m{font-size:9.5px;font-family:var(--mono);fill:var(--muted)}
+.c4el .d{font-size:10px;fill:var(--ink-2)}
+.c4el .tg{font-size:8.5px;font-family:var(--mono);fill:var(--muted);letter-spacing:.04em}
+.c4el.sel .card{stroke:var(--on);stroke-width:2.5}
+.c4el.hl .card{stroke:var(--ink-2);stroke-width:2}
+.c4el.dim{opacity:.3}
+.c4el.planned>.card{stroke-dasharray:6 4}
+.c4rel path{stroke:var(--rel);stroke-width:1.4;fill:none;stroke-linejoin:round}
+.c4rel.dashed path{stroke-dasharray:6 4}
+.c4rel text{font-size:9.5px;fill:var(--ink-2);font-family:var(--sans)}
+.c4rel .lbg{fill:var(--surface);stroke:var(--line);stroke-width:.8}
+.c4rel.dim{opacity:.12}
+.c4rel.hl path{stroke:var(--ink);stroke-width:2.2}
+.c4rel.hl text{fill:var(--ink);font-weight:600}
+.c4rel.hl .lbg{stroke:var(--ink-2)}
+.c4rel.cur path{stroke:var(--on);stroke-width:2.5}
+.c4rel.cur text{fill:var(--ink);font-weight:600}
+.c4rel .num circle{fill:var(--ink);stroke:none}
+.c4rel .num text{fill:var(--bg);font-weight:700;font-size:9.5px;font-family:var(--mono)}
+.c4bound{fill:var(--surface-2);fill-opacity:.45;stroke:var(--line);stroke-width:1.5}
+.c4boundl rect{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.c4boundl text{font:700 10px var(--mono);fill:var(--ink-2)}
+.c4band{font-size:9.5px;font-family:var(--mono);fill:var(--muted);letter-spacing:.14em}
+.c4life{stroke:var(--line);stroke-width:1.2}.c4life.planned{stroke-dasharray:6 4}.c4rel.planned path{stroke-dasharray:6 4}
+pre.dsl{margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:14px;font:12px/1.5 var(--mono);overflow-x:auto;color:var(--ink);max-height:70vh}
+pre.dsl .c{color:var(--muted)} pre.dsl .k{color:var(--server);font-weight:600} pre.dsl .s{color:var(--ink-2)}
+.steps-list{margin:8px 0 0;padding:0;list-style:none;font-size:12.5px}
+.steps-list li{display:grid;grid-template-columns:22px 1fr;gap:6px;padding:4px 0;border-top:1px solid var(--hair);color:var(--ink-2);cursor:pointer}
+.steps-list li b{font-family:var(--mono);color:var(--ink)}
+.steps-list li.on{color:var(--ink)}
+
+/* threads */
+.threads{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.threads{grid-template-columns:1fr}}
+.tside h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 6px}
+.thread{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 10px;border:1px solid var(--line);border-left-width:4px;border-radius:4px;margin-bottom:6px;background:var(--surface);cursor:pointer;min-width:0}
+.thread.server{border-left-color:var(--server)}.thread.client{border-left-color:var(--client)}.thread.wire{border-left-color:var(--wire)}
+.thread.planned{border-style:dashed;opacity:.6}
+.thread .n{font:12px var(--mono);font-weight:600}
+.thread .r{grid-column:1/-1;font-size:12px;color:var(--ink-2)}
+.thread.sel{outline:2px solid var(--on)}
+/* When a thread starts: filled = eagerly, outlined = lazily on first use, dotted = only under a condition. Dashed stays free for planned. */
+.pill{font:10px/1 var(--mono);padding:3px 6px;border-radius:3px;border:1.5px solid var(--ink-2);color:var(--ink-2);align-self:start;white-space:nowrap}
+.pill.eager{background:var(--ink-2);color:var(--surface)}.pill.cond{border-style:dotted}.pill.planned{border-style:dashed;opacity:.6}
+.scroll{overflow-x:auto}
+.matrix{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;min-width:560px}
+.matrix th,.matrix td{padding:6px 8px;border-top:1px solid var(--hair);text-align:center;vertical-align:top}
+.matrix th{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.matrix td:first-child,.matrix th:first-child{text-align:left}
+.matrix td:first-child{color:var(--ink-2)}
+.matrix .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.matrix tr:hover td{background:var(--surface-2)}
+
+/* lifecycles */
+.lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.card h3{font-size:13px;margin:0 0 8px}
+.card h3 small{font-weight:400;color:var(--muted);font-family:var(--mono);font-size:11px}
+.steps{list-style:none;counter-reset:s;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px}
+.steps li{counter-increment:s;font:12px var(--mono);border:1px solid var(--line);border-radius:4px;padding:5px 8px;background:var(--surface)}
+.steps li::before{content:counter(s) " ";color:var(--muted)}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th,.tbl td{text-align:left;padding:6px 6px;border-top:1px solid var(--hair);vertical-align:top}
+.tbl td{overflow-wrap:anywhere}
+.tbl th{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+/* Phases (the Lifecycles colour plan): .ph1 start / creation, .ph2 run / steady state, .ph3 stop / teardown. A class sets --ph;
+   a card takes it as its top rule, a callout as its left rule, a step or table row as a left mark, a state box as its stroke. */
+.ph1{--ph:var(--ph-1)}.ph2{--ph:var(--ph-2)}.ph3{--ph:var(--ph-3)}
+.card.ph1,.card.ph2,.card.ph3{border-top:3px solid var(--ph)}
+.steps li.ph1,.steps li.ph2,.steps li.ph3{border-left:3px solid var(--ph)}.steps li.planned{border-style:dashed;opacity:.6}
+.tbl tr.ph1>:first-child,.tbl tr.ph2>:first-child,.tbl tr.ph3>:first-child{border-left:3px solid var(--ph)}
+.callout{border-left:3px solid var(--ph,var(--ink-2));padding:8px 10px;background:var(--surface-2);border-radius:4px;font-size:13px;color:var(--ink-2);margin-top:8px}
+.callout b{color:var(--ink)}
+.states text{font-family:var(--mono);font-size:11px;fill:var(--ink)}
+.states .lab{font-family:var(--sans);font-size:9.5px;fill:var(--muted)}
+.states rect{fill:var(--surface-2);stroke:var(--ink-2);stroke-width:1.5}
+.states rect.ph1,.states rect.ph2,.states rect.ph3{stroke:var(--ph);stroke-width:2;fill:color-mix(in srgb,var(--ph) 14%,var(--surface))}
+.states rect.planned{stroke-dasharray:6 4;opacity:.6}
+.states line,.states path{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+
+/* guarantees — always visible under the tab stage, whatever tab is open; one compact titled guarantee card per guarantee */
+.guarantees{margin-top:20px}
+.guarantees>h2{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 10px}
+.guarantee-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px}
+.guarantee-card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-width:0;font-size:12.5px;color:var(--ink-2)}
+.guarantee-card h3{font-size:12.5px;margin:0 0 6px;color:var(--ink)}
+.guarantee-card h3 small{font-weight:400;color:var(--muted);font-family:var(--mono);font-size:11px}
+.guarantee-card ul{margin:0;padding:0 0 0 15px}
+.guarantee-card li{margin:3px 0}
+.guarantee-card p{margin:6px 0 0}
+.guarantee-card code{color:var(--ink)}
+.guarantee-card .gap{color:var(--muted);font-style:italic}
+.guarantee-card .badge{margin-left:2px}
+
+/* Wide desktop (16:9 screens, GUIDANCE.md §6): the board uses most of the window, so the C4 canvas, the thread columns, the
+   lifecycle cards, the Guarantees and the Context get room; a diagram drawn to a fixed aspect grows to at most 1280 px wide, so it
+   is never smaller than in the 1280 px layout and never outgrows the screen, and prose keeps its own measure. At 1500 px and below
+   the board keeps its 1280 px measure and the narrow layouts below 940 and 700 px apply. */
+@media (min-width:1500px){
+  .page{max-width:min(2400px,100%)}
+  .stage{grid-template-columns:minmax(0,1fr) 360px}
+  .view>svg{max-width:1280px}
+  .guarantee-cards{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+}
+
+/* context */
+.context{margin-top:24px}
+.context h2{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.issues{list-style:none;margin:0;padding:0;font-size:12.5px}
+.issues li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:5px 0;border-top:1px solid var(--hair);align-items:start}
+.issues a{font-family:var(--mono);text-decoration:none;color:var(--ink-2)}
+.issues a:hover{color:var(--ink)}
+.badge{font:10px/1 var(--mono);padding:3px 6px;border-radius:3px;border:1px solid var(--line);white-space:nowrap;color:var(--ink-2)}
+/* a bug is a label, not an outcome: neutral, told by its ▲ and its word (no status colour, GUIDANCE.md §1) */
+.badge.bug::before{content:"▲ ";color:var(--ink-2)}
+/* a tracking issue's chain on the roadmap (GUIDANCE.md §5): units landed of all units, and its units as a StepBar on a line of its own under
+   the roadmap item (dashboards-skill/54) */
+.chainprog{display:inline-flex;align-items:center;gap:6px;font:11px var(--mono);color:var(--ink-2);white-space:nowrap}
+/* The StepBar (nomenclature/ui.md, StepBar; dashboards-skill/54): the steps of a sequence in order, each a chevron with its name inside,
+   done, current or to come. An ordered list, the current step aria-current="step", each step's state said in words to a screen reader
+   (.sb-st). It stands on a line of its own and wraps inside itself at phone width, never widening the board; a long name wraps inside its
+   chevron. Done: solid, the strong neutral with a faint wash; current: solid, in ink and bold; to come: dashed and muted. Each chevron is
+   its list item clipped to the shape, its edge (::before) and its fill (::after) layered inside it, so a dashed edge and a mark follow the
+   chevron; each nests into the notch of the next. The same rules on every dashboard type that draws one. */
+.stepbar{list-style:none;margin:6px 0 2px;padding:0 0 0 7px;display:flex;flex-wrap:wrap;gap:4px 0;min-width:0;max-width:100%}
+.stepbar>li{--sb-edge:var(--ink-2);--sb-fill:color-mix(in srgb,var(--ink-2) 14%,var(--surface));--sb-w:1.5px;position:relative;z-index:0;display:flex;align-items:center;min-width:0;max-width:calc(100% + 7px);min-height:26px;margin-left:-7px;padding:4px 15px 4px 19px;font:11.5px/1.25 var(--mono);color:var(--ink);overflow-wrap:anywhere;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%,10px 50%)}
+.stepbar>li:first-child{padding-left:11px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%)}
+.stepbar>li::before,.stepbar>li::after{content:"";position:absolute;inset:0;z-index:-2;background:var(--sb-edge)}
+.stepbar>li::after{z-index:-1;inset:var(--sb-w);background:var(--sb-fill);clip-path:polygon(1px 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,1px 100%,10.5px 50%)}
+.stepbar>li:first-child::after{clip-path:polygon(0 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,0 100%)}
+.stepbar>li.cur{--sb-edge:var(--ink);--sb-fill:color-mix(in srgb,var(--ink) 7%,var(--surface));--sb-w:2px;font-weight:700}
+.stepbar>li.todo{--sb-edge:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 9px);--sb-fill:var(--surface);color:var(--muted)}
+.stepbar .sb-st{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.legend i.sbk{position:relative;z-index:0;width:22px;height:12px;border:0;border-radius:0;background:none;--sb-edge:var(--ink-2);--sb-fill:color-mix(in srgb,var(--ink-2) 14%,var(--surface));--sb-w:1.5px;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 50%,calc(100% - 6px) 100%,0 100%,6px 50%)}
+.legend i.sbk::before,.legend i.sbk::after{content:"";position:absolute;inset:0;z-index:-2;background:var(--sb-edge)}
+.legend i.sbk::after{z-index:-1;inset:var(--sb-w);background:var(--sb-fill);clip-path:polygon(1px 0,calc(100% - 5px) 0,100% 50%,calc(100% - 5px) 100%,1px 100%,6.5px 50%)}
+.legend i.sbk.cur{--sb-edge:var(--ink);--sb-fill:color-mix(in srgb,var(--ink) 7%,var(--surface));--sb-w:2px}
+.legend i.sbk.todo{--sb-edge:repeating-linear-gradient(90deg,var(--muted) 0 3px,transparent 3px 5px);--sb-fill:var(--surface)}
+.roadmap>li>.stepbar{margin:5px 0 3px 14px}
+.legend i.swk{width:10px;height:10px;border:0;border-radius:2px;background:var(--c,var(--muted))}
+.legend i.barsk{height:6px;border:0;border-radius:0 3px 3px 0;background:var(--ink-2)}
+.legend i.gapk{border:0;background:none;width:auto;height:auto;font-style:italic;color:var(--muted)}
+.legend .badge{align-self:center}
+/* the Guarantees' and the Context's legends (GUIDANCE.md §2), generated from what each section draws */
+.guarantees>.legend,.context>.legend{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 12px;margin-top:10px}
+.badge.planned{border-style:dashed}
+.badge.closed{color:var(--muted)}
+.tags{display:inline-flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+@media (max-width:520px){.issues li{grid-template-columns:auto 1fr}.issues li>.tags{grid-column:2;justify-content:flex-start}}
+/* roadmap: each item (a tracking issue, or an entry in the repository's roadmap document) with the issues mapped to it */
+.roadmap{list-style:none;margin:0;padding:0;font-size:12.5px}
+.roadmap>li{padding:6px 0;border-top:1px solid var(--hair)}
+.roadmap .ri{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start}
+.roadmap .ri>span:nth-child(2){font-weight:600;color:var(--ink)}
+.roadmap .ri small{font:400 11px var(--mono);color:var(--muted)}
+.roadmap .ri a{font-family:var(--mono);text-decoration:none;color:var(--ink-2)}
+.roadmap .issues{margin:4px 0 0 14px}
+.roadmap .more{margin:4px 0 0 14px;font-size:12px;color:var(--muted)}
+/* An issue's number and its title are two links (GUIDANCE.md §5): the number opens the GitHub issue, the title its issue board
+   (plain text while it has none, linkIssues() below) */
+.issues span a,.roadmap .ri span a{font-family:inherit;color:inherit;text-decoration:none;border-bottom:1px solid var(--line)}
+.issues span a:hover,.roadmap .ri span a:hover{border-bottom-color:var(--ink)}
+/* one series (test classes), so one neutral fill: a hue here would read as a side */
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:5px 10px;align-items:center;font-size:12px}
+.bars .lbl{color:var(--ink-2);font-family:var(--mono);font-size:11.5px}
+.bars .trk{height:10px;background:var(--surface-2);border-radius:2px;overflow:hidden;position:relative}
+.bars .fil{position:absolute;left:0;top:0;height:100%;background:var(--ink-2);border-radius:0 4px 4px 0}
+.bars .val{font-variant-numeric:tabular-nums;color:var(--ink)}
+.docs{margin:0;padding:0;list-style:none;font-size:12.5px}
+.docs li{padding:4px 0;border-top:1px solid var(--hair)}
+.docs a{text-decoration:none;border-bottom:1px solid var(--line)}
+.docs a:hover{border-bottom-color:var(--ink)}
+/* the last amendment, said in the Context Panel (an issue: the part above Context names none) */
+.context .amended{font-size:12.5px;color:var(--ink-2);margin:-4px 0 10px;overflow-wrap:anywhere}
+.context .amended .ck{font:700 10px/1.2 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.context .amended a{text-decoration:none;border-bottom:1px solid var(--line)}
+footer{margin-top:28px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+footer code{color:var(--ink-2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* an archived system holds no colour (GUIDANCE.md §1): the board's three sides neutral, the sides told apart by their labels */
+:root:has(.chip[data-sys-status="archived"]){--server:var(--muted);--client:var(--muted);--wire:var(--muted);--server-soft:var(--surface-2);--client-soft:var(--surface-2);--wire-soft:var(--surface-2)}
+/* a system under Internal Tooling takes no colour (GUIDANCE.md §1): the three sides in the plain ink, told apart by their labels; state.colour "plain" sets the attribute */
+:root[data-sys-colour="plain"]{--server:var(--ink);--client:var(--ink);--wire:var(--ink);--server-soft:var(--surface-2);--client-soft:var(--surface-2);--wire-soft:var(--surface-2)}
+/* the displays' wiring (displays:begin in the script): a host stands empty until its display draws; a display that could not be drawn says so in one line */
+.slot-host:empty{display:none}
+.draw-failed{margin:6px 0;padding:6px 10px;border:1px solid var(--line);border-radius:4px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px}
+span.draw-failed{display:inline-block;margin:0 4px;padding:0 5px;font-size:11px}
+/* the slots' CSS (verify/slots.json), each owned by one job */
+/* slot s51 begin */
+/* slot s51 end */
+/* slot s52 begin */
+/* slot s52 end */
+/* slot s53 begin */
+/* slot s53 end */
+/* slot s54 begin */
+/* slot s54 end */
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <div class="crumbs"><a href="../index.html">GeneralTools</a> › test-suite</div>
+  <h1>test-suite</h1>
+  <p class="function">Prove each system's behaviour on every target it ships on, organised by named test set: the pure tests in commonTest run on the JVM, JS and Wasm/JS, the JVM-only tests in jvmTest, each class in com.spartanlabs.testing.&lt;set&gt;.&lt;package&gt;.</p>
+  <div class="chips">
+    <span class="chip" id="chip-version" hidden></span>
+    <span class="chip"><span class="ck">source sets</span> <b>commonTest · jvmTest</b></span>
+    <span class="chip"><span class="ck">runs on</span> <b>JUnit Platform on the JVM · Node.js for js and wasmJs</b></span>
+    <span class="chip"><span class="ck">visibility</span> <b>⌂ internal · repo</b></span>
+    <span class="chip" id="chip-asis" hidden></span>
+    <span class="chip" id="chip-written" hidden></span>
+    <span class="chip model"><span class="ck">C4 model</span> <b>workspace.dsl</b> · <span id="dsl-stats">…</span></span>
+  </div>
+</header>
+
+<section class="kpis" aria-label="Key figures">
+  <div class="kpi-tile"><div class="l">Source</div><div class="v">50 files</div><div class="s">49 Kotlin files, 4,241 lines · logback-test.xml</div></div>
+  <div class="kpi-tile"><div class="l">Test classes</div><div class="v">46</div><div class="s">36 in commonTest · 10 in jvmTest · one per file</div></div>
+  <div class="kpi-tile"><div class="l">Tests</div><div class="v">392 on the JVM</div><div class="s">354 on js · 354 on wasmJs</div></div>
+  <div class="kpi-tile"><div class="l">Test sets</div><div class="v">5 of 7</div><div class="s">gating and uat hold no test yet</div></div>
+  <div class="kpi-tile"><div class="l">Support</div><div class="v">3 helpers</div><div class="s">two fixtures and a log capture · no tests</div></div>
+  <div class="kpi-tile"><div class="l">Open issues</div><div class="v">4</div><div class="s">1 tracking issue · 2 on its roadmap · 1 unscheduled · no bug</div></div>
+</section>
+
+<div class="tabs" role="tablist" aria-label="Views">
+  <button class="tab" role="tab" id="t-structure" aria-controls="p-structure" aria-selected="true">Structure</button>
+  <button class="tab model" role="tab" id="t-c4" aria-controls="p-c4" aria-selected="false">C4 model</button>
+  <button class="tab" role="tab" id="t-threads" aria-controls="p-threads" aria-selected="false">Runners</button>
+  <button class="tab" role="tab" id="t-datagrams" aria-controls="p-datagrams" aria-selected="false">Test set selection</button>
+  <button class="tab" role="tab" id="t-reliable" aria-controls="p-reliable" aria-selected="false">A failure site, captured</button>
+  <button class="tab" role="tab" id="t-lifecycles" aria-controls="p-lifecycles" aria-selected="false">Lifecycles</button>
+</div>
+
+<div class="stage">
+<div>
+  <section class="view" role="tabpanel" id="p-structure" aria-labelledby="t-structure">
+    <h2>The test sets × the systems they test</h2>
+    <p class="lede">Each source set holds its test sets; each inner box is the classes of one set that test one system. Click a box for its classes.</p>
+    <svg id="svg-structure" viewBox="0 0 1000 650" role="img" aria-label="Component map of test-suite"></svg>
+    <div class="legend"><span><i class="srv"></i>commonTest · runs on jvm, js and wasmJs</span><span><i class="cli"></i>jvmTest · the JVM only</span><span><i class="wir"></i>support · fixtures, capture and configuration, no tests</span><span><i class="pln"></i>planned, not built</span></div>
+  </section>
+
+  <section class="view" role="tabpanel" id="p-c4" aria-labelledby="t-c4" hidden>
+    <h2>C4 model <small style="font:11px var(--mono);color:var(--muted);font-weight:400">rendered from workspace.dsl at load</small></h2>
+    <p class="lede">Nothing here is drawn by hand. Step down the ladder to zoom in; hover an element to see what it touches.</p>
+    <div class="c4wrap">
+      <nav class="ladder" id="c4-ladder" aria-label="C4 levels"></nav>
+      <div class="c4main">
+        <div class="c4head" id="c4-head"></div>
+        <div class="c4canvas" id="c4-canvas"><svg id="svg-c4" viewBox="0 0 900 300" role="img" aria-label="C4 view"></svg></div>
+        <div class="c4-legend" id="c4-key"></div>
+        <pre class="dsl" id="dsl-view" hidden></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" role="tabpanel" id="p-threads" aria-labelledby="t-threads" hidden>
+    <h2>Runner inventory</h2>
+    <p class="lede">The tests start no thread of their own: each runs on its target's test task. Click a runner for what runs on it.</p>
+    <div class="threads">
+      <div class="tside"><h3>JVM</h3>
+        <div class="thread client" data-t="jvmTest" tabindex="0" role="button"><span class="n">jvmTest</span><span class="pill lazy">when its task runs</span><span class="r">commonTest and jvmTest on the JUnit Platform, one test at a time: 46 classes, 392 tests</span></div>
+      </div>
+      <div class="tside"><h3>Node.js</h3>
+        <div class="thread server" data-t="jsNodeTest" tabindex="0" role="button"><span class="n">jsNodeTest</span><span class="pill lazy">when its task runs</span><span class="r">commonTest compiled to JS, under Mocha: 36 classes, 354 tests</span></div>
+        <div class="thread server" data-t="wasmJsNodeTest" tabindex="0" role="button"><span class="n">wasmJsNodeTest</span><span class="pill lazy">when its task runs</span><span class="r">commonTest compiled to Wasm/JS, under the Kotlin plugin's own runner: 36 classes, 354 tests</span></div>
+      </div>
+    </div>
+    <div class="legend"><span><i class="bc"></i>runs jvmTest's classes, and commonTest's</span><span><i class="bs"></i>runs commonTest's classes alone</span><span><span class="pill lazy">lazy</span>started when its test task runs</span><span><i class="dot"></i>runs the set (table below)</span></div>
+    <h2 style="margin-top:16px">Which runner runs which set</h2>
+    <p class="lede">check and allTests run all three tasks; a set with no class on a task leaves it green with zero tests.</p>
+    <div class="scroll"><table class="matrix">
+      <thead><tr><th>Test set · source set</th><th>jvmTest</th><th>jsNodeTest</th><th>wasmJsNodeTest</th></tr></thead>
+      <tbody>
+        <tr><td>component · commonTest (30 classes)</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+        <tr><td>deterministic · commonTest (4)</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+        <tr><td>e2e · commonTest (2)</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+        <tr><td>component · jvmTest (2)</td><td><span class="dot"></span></td><td></td><td></td></tr>
+        <tr><td>deterministic · jvmTest (1)</td><td><span class="dot"></span></td><td></td><td></td></tr>
+        <tr><td>integration · jvmTest (6)</td><td><span class="dot"></span></td><td></td><td></td></tr>
+        <tr><td>nonfunctional · jvmTest (1)</td><td><span class="dot"></span></td><td></td><td></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="view" role="tabpanel" id="p-datagrams" aria-labelledby="t-datagrams" hidden>
+    <h2>Test set selection</h2>
+    <p class="lede">Pick a set for -PtestLevel and a test task; what that task runs lights up.</p>
+    <div class="ctl" id="flow-ctl"></div>
+    <p class="outcome" id="outcome"></p>
+    <svg id="svg-flow" viewBox="0 0 980 580" role="img" aria-label="Test set selection"></svg>
+    <div class="legend" id="flow-key"></div>
+  </section>
+
+  <section class="view" role="tabpanel" id="p-reliable" aria-labelledby="t-reliable" hidden>
+    <h2>A failure site, captured</h2>
+    <p class="lede">One integration test of FailureSitesLoggingTest, a zero-direction ray against a box; step through it, or click any message.</p>
+    <div class="ctl">
+      <button class="btn" id="seq-prev">‹ prev</button>
+      <button class="btn" id="seq-next">next ›</button>
+      <button class="btn" id="seq-play" aria-pressed="false">play</button>
+      <span id="seq-pos" style="font:12px var(--mono);color:var(--muted)"></span>
+    </div>
+    <svg id="svg-seq" viewBox="0 0 1000 600" role="img" aria-label="Sequence diagram of a log-capture test"></svg>
+    <div class="legend" id="seq-key"></div>
+  </section>
+
+  <section class="view" role="tabpanel" id="p-lifecycles" aria-labelledby="t-lifecycles" hidden>
+    <h2>Lifecycles and invariants</h2>
+    <p class="lede">A test run in order, the rules the suite keeps, and what is planned for it.</p>
+    <div class="lgrid">
+      <div class="card"><h3>A test run, in order <small>./gradlew check, or one test task</small></h3>
+        <ol class="steps"><li class="ph1">-PtestLevel read at configuration; an unknown set fails here</li><li class="ph1">each test task compiles its source sets</li><li class="ph2">jvmTest: commonTest and jvmTest on the JUnit Platform</li><li class="ph2">jsNodeTest, wasmJsNodeTest: commonTest on Node.js</li><li class="ph3">a failing test fails its task, and check with it</li><li class="ph3">allTests: one report for the three targets</li></ol>
+        <div class="callout"><b>A set with no class on a task</b> leaves that task green with zero tests: the filter sets <code>failOnNoMatchingTests = false</code> on every test task. A filtered web task still starts Node.js.</div></div>
+      <div class="card ph2"><h3>Rules the suite keeps</h3>
+        <div class="callout"><b>The package names the set.</b> Every test class is in <code>com.spartanlabs.testing.&lt;set&gt;.&lt;package&gt;</code>, one class per file, so the package filter selects a set on all three runners.</div>
+        <div class="callout"><b>Common tests use kotlin-test alone</b>: no slf4j, no JUnit tag, no assumption. JVM tests may use JUnit's assumptions: UserActionsTest skips its two screenshots without a display, and the allocation test skips where the JVM cannot measure.</div>
+        <div class="callout"><b>One JVM test at a time.</b> No parallel execution is configured; CapitalizeEveryWordLocaleTest changes the JVM default locale for its duration and relies on it.</div>
+        <div class="callout"><b>Log capture crosses the real path</b>, kotlin-logging, slf4j, logback: it pins the logger name, the level, the line and the absent throwable, and every capture is closed by <code>use { }</code>, a <code>finally</code> or <code>@AfterTest</code>.</div></div>
+      <div class="card"><h3>Planned <small>the parts the suite does not have yet</small></h3>
+        <ol class="steps"><li data-part="generaltools.testSuite.jvmLogCapture">log-capture tests for asURL, read and the UserActions functions that run headless · <a data-board="7">its plan</a></li><li data-part="generaltools.testSuite.desktopTests">the desktop tests, with their own logback-test.xml and log-capture helper, in the GeneralTools-desktop module</li><li class="planned">the whole suite audited against the named test sets, in the review of the built units</li></ol></div>
+    </div>
+    <div class="legend"><span><i class="ph1"></i>configure · the set selected, the tests compiled</span><span><i class="ph2"></i>run · and the rules the suite keeps</span><span><i class="ph3"></i>report · the outcome and the report</span><span><i class="pln"></i>planned, not built</span></div>
+  </section>
+</div>
+
+<aside class="inspector" id="inspector" aria-live="polite">
+  <div class="insp-head"><h2>Inspector</h2><button class="hide-button" id="inspector-hide" type="button" aria-controls="inspector" aria-label="Hide the inspector"><svg class="hide-eye" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M1.5 8s2.4-4.5 6.5-4.5 6.5 4.5 6.5 4.5-2.4 4.5-6.5 4.5S1.5 8 1.5 8z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 2.5l11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span class="hide-word">Hide</span></button></div>
+  <div id="insp-body"><p>Select a box, a C4 element, a runner, a selection or a sequence step to see its details here.</p></div>
+</aside>
+</div>
+
+<section class="guarantees" aria-label="Guarantees">
+  <h2>Guarantees</h2>
+  <div class="guarantee-cards">
+    <div class="guarantee-card"><h3>Failure model</h3>
+      <ul>
+        <li>A failing assertion fails its test task, and so <code>check</code> and <code>build</code>; nothing is retried.</li>
+        <li>An unknown set in <code>-PtestLevel</code> fails configuration, before any task runs. A known set with no class on a task leaves it green with zero tests.</li>
+        <li>Skipped, not failed: the two screenshot tests without a display, and the allocation test where the JVM cannot measure per-thread allocation or runs interpreted.</li>
+      </ul></div>
+    <div class="guarantee-card"><h3>Extension points</h3>
+      <ul>
+        <li>None: build tooling inside the repository, not API, and published nowhere.</li>
+        <li>A new test joins by its package, <code>com.spartanlabs.testing.&lt;set&gt;.&lt;package&gt;</code>: in commonTest when it can run on every target, in jvmTest when it needs the JVM.</li>
+      </ul></div>
+    <div class="guarantee-card"><h3>Test sets <small>46 classes</small></h3>
+      <div class="bars" role="table" aria-label="Test classes per test set">
+        <span class="lbl">component</span><span class="trk"><span class="fil" style="width:100%"></span></span><span class="val">32</span>
+        <span class="lbl">integration</span><span class="trk"><span class="fil" style="width:19%"></span></span><span class="val">6</span>
+        <span class="lbl">deterministic</span><span class="trk"><span class="fil" style="width:16%"></span></span><span class="val">5</span>
+        <span class="lbl">e2e</span><span class="trk"><span class="fil" style="width:6%"></span></span><span class="val">2</span>
+        <span class="lbl">nonfunctional</span><span class="trk"><span class="fil" style="width:3%"></span></span><span class="val">1</span>
+      </div>
+      <p>gating and uat hold no class yet. <code>./gradlew check -PtestLevel=gating,component</code> runs named sets; <code>./gradlew allTests</code> writes one report, build/reports/tests/allTests/index.html.</p></div>
+    <div class="guarantee-card"><h3>Compatibility &amp; versioning</h3>
+      <ul>
+        <li>No version of its own: it ships in no artifact, and no test-fixtures artifact is published.</li>
+        <li>It holds the library's observable 2.x behaviour in place: the integration tests pin each failure's exception text, logger name, level and line.</li>
+        <li>The public API is held by <code>checkKotlinAbi</code>, not by the suite: the suite proves behaviour the dumps cannot see.</li>
+      </ul></div>
+    <div class="guarantee-card"><h3>Thread safety</h3>
+      <ul>
+        <li>One test JVM runs the JVM tests one at a time; each web task runs its tests in Node.js.</li>
+        <li><code>RecordingKLogger</code> is not thread-safe, for single-threaded tests, as its KDoc says; the locale test is safe only because JVM tests run sequentially.</li>
+        <li><span class="gap">Nothing enforces the sequential run: a parallel setting added later would break the locale test.</span></li>
+      </ul></div>
+    <div class="guarantee-card"><h3>Resources to close</h3>
+      <ul>
+        <li><code>LogCapture</code> is <code>AutoCloseable</code>: <code>close()</code> detaches its appender from the logback logger and stops it. Every capture is closed.</li>
+        <li>Temporary files: UserActionsTest deletes its own in a <code>finally</code>; ReadTest marks its file <code>deleteOnExit</code>.</li>
+        <li>The locale test and EvaluateListLoggingTest put back the default locale and the logger level they changed.</li>
+      </ul></div>
+    <div class="guarantee-card"><h3>On your classpath</h3>
+      <ul>
+        <li>Nothing: test dependencies stay out of the published artifact.</li>
+        <li>On the test classpaths: <code>kotlin("test")</code> in commonTest, and <code>ch.qos.logback:logback-classic:1.5.13</code> in jvmTest.</li>
+        <li>Internal to this repository: only its maintainers rely on it.</li>
+      </ul></div>
+  </div>
+</section>
+
+<section class="context">
+  <h2>Context</h2>
+  <div class="cards">
+    <div class="card"><h3>Roadmap <small>1 item · 2026-11-22</small></h3>
+      <ol class="roadmap">
+        <li><div class="ri"><a href="https://github.com/SpartanLaboratories/GeneralTools/issues/7" target="_blank" rel="noopener">#7</a><span><a data-board="7">Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)</a> <small>tracking issue</small> <span class="chainprog" data-landed="0" data-total="8"><span data-unit="todo">kotlin-logging 8.0.7</span><span data-unit="todo">kotlin-logging in the JVM sources</span><span data-unit="todo">Version catalog</span><span data-unit="todo">Convention plugins and Dokka javadoc jars</span><span data-unit="todo">Java floor 17, guarded in check</span><span data-unit="todo">Module split: core, desktop and the umbrella</span><span data-unit="todo">Review of the seven built units</span><span data-unit="todo">Release 3.0.0</span></span></span><span class="tags"><span class="badge">open</span></span></div>
+          <ul class="issues">
+            <li><a href="https://github.com/SpartanLaboratories/GeneralTools/issues/20" target="_blank" rel="noopener">#20</a><span><a data-board="20">Log through kotlin-logging in the JVM sources as well (MiscJvm.kt, UserActions.kt)</a></span><span class="tags"><span class="badge">open</span></span></li>
+            <li><a href="https://github.com/SpartanLaboratories/GeneralTools/issues/21" target="_blank" rel="noopener">#21</a><span><a data-board="21">Split the multiplatform build into a core module and a module per device family before 3.0.0 ships</a></span><span class="tags"><span class="badge">open</span></span></li>
+          </ul>
+          <p class="more"><a data-issue="20">#20</a> adds the JVM log-capture tests; <a data-issue="21">#21</a> moves the desktop tests into their module. The review of the built units, not filed yet, audits the suite. 6 more of its issues touch other systems.</p></li>
+      </ol></div>
+    <div class="card"><h3>Unscheduled issues <small>1 open · 2026-11-22</small></h3>
+      <ul class="issues">
+        <li><a href="https://github.com/SpartanLaboratories/GeneralTools/issues/12" target="_blank" rel="noopener">#12</a><span><a data-board="12">Add a compile-fail test for TwoDoubles' subclassing opt-in</a></span><span class="tags"><span class="badge">open</span></span></li>
+      </ul></div>
+    <div class="card"><h3>Plans and documents</h3>
+      <ul class="docs">
+        <li><a href="https://github.com/SpartanLaboratories/GeneralTools/blob/a500e447e13ef6ea8f985aaf09af22cfc94bda93/docs/plans/7-kotlin-multiplatform/architecture.md" target="_blank" rel="noopener">architecture.md</a> — the 3.0.0 design: what the build proves (3.1), S10 Test suite, the remaining units (11.2); this board's source with the code</li>
+        <li><a href="https://github.com/SpartanLaboratories/GeneralTools/blob/a500e447e13ef6ea8f985aaf09af22cfc94bda93/docs/plans/7-kotlin-multiplatform/research/kmp-test-levels-and-names.md" target="_blank" rel="noopener">kmp-test-levels-and-names.md</a> — the research behind the package filter, the three runners and the test names</li>
+        <li><code>workspace.dsl</code> — the C4 model beside this board; the C4 tab is rendered from it</li>
+        <li>The issue board that amended it: <a href="https://github.com/SpartanLaboratories/GeneralTools/issues/7" target="_blank" rel="noopener">#7</a> <a data-board="7">Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)</a> — through its <a href="https://github.com/SpartanLaboratories/GeneralTools/blob/a500e447e13ef6ea8f985aaf09af22cfc94bda93/docs/plans/7-kotlin-multiplatform/plan-kmp-build.md" target="_blank" rel="noopener">build</a> (-PtestLevel), <a href="https://github.com/SpartanLaboratories/GeneralTools/blob/a500e447e13ef6ea8f985aaf09af22cfc94bda93/docs/plans/7-kotlin-multiplatform/plan-commonize.md" target="_blank" rel="noopener">commonize</a> (the tests sorted into sets and moved to commonTest) and <a href="https://github.com/SpartanLaboratories/GeneralTools/blob/a500e447e13ef6ea8f985aaf09af22cfc94bda93/docs/plans/7-kotlin-multiplatform/plan-logging.md" target="_blank" rel="noopener">logging</a> (the log-capture tests) plans</li>
+        <li>The systems it tests: <a href="../failure-and-logging-seam/index.html">failure and logging seam</a> · <a href="../geometry-value-core/index.html">geometry value core</a> · <a href="../box-model/index.html">box model</a> · <a href="../geometry-queries/index.html">geometry queries</a> · <a href="../color/index.html">color</a> · <a href="../misc-helpers/index.html">misc helpers</a> · <a href="../desktop-edge/index.html">desktop edge</a>; the build that runs it: <a href="../gradle-build/index.html">gradle build</a></li>
+        <li><a data-workboard>Repository work board</a> — every planning and development run in the repository</li>
+      </ul></div>
+  </div>
+</section>
+
+<footer>Corresponds to <code>workspace.dsl</code>. Code is authoritative on any conflict.</footer>
+</div>
+
+<!-- The board's state. A verbatim copy of state.json beside the board (scripts/embed.js state.json index.html state): its stamp, version and
+     last amendment, which apply-state.js restamps on a feature branch and at the landing (system/RULES.md §10). -->
+<script type="application/json" id="state">
+{
+  "slug": "test-suite",
+  "version": null,
+  "asIs": {"ref": "feat/issue-7-kotlin-multiplatform", "sha": "a500e44", "date": "2026-11-22T23:05:21Z"},
+  "lastAmended": {"issue": 7, "title": "Make GeneralTools Kotlin Multiplatform (Color and geometry usable from common code)", "sha": "a500e44"},
+  "written": {"sha": "a500e44"}
+}
+</script>
+
+<!-- The C4 model. A verbatim copy of workspace.dsl, re-embedded here on every run,
+     and the C4 tab is parsed from this text at load, so what the tab shows is what the file says. -->
+<script type="text/plain" id="dsl">
+// test-suite — C4 model as code (Structurizr DSL). Source of truth for the structure shown on the board beside it.
+// As-is at GeneralTools feat/issue-7-kotlin-multiplatform a500e44 (2026-11-22), test-suite, unversioned. Code is authoritative on any conflict.
+workspace "GeneralTools" "A Kotlin Multiplatform library of generic helpers: Color, 2D geometry and small utilities for the JVM, JS and Wasm/JS." {
+
+    !identifiers hierarchical
+
+    model {
+        maintainer = person "Maintainer" "Works on the library and runs its tests through Gradle, every set or one at a time."
+        generaltools = softwareSystem "GeneralTools" "The repository as a software system: one Kotlin Multiplatform library, published as one artifact." {
+            gradleBuild = container "Gradle build" "Builds, tests, checks and publishes the library; its -PtestLevel filter selects test sets by package on every test task." "Gradle 9.0.0 · Kotlin Gradle plugin 2.4.21" "Internal"
+            failureSeam = container "Failure and logging seam" "The internal KLogger.failure helper: one WARN line on the caller's logger and a Result.failure." "Kotlin Multiplatform · commonMain · internal" "Internal"
+            valueCore = container "Geometry value core" "TwoDoubles, Point and Dimensions with their equality contract and the import-gated arithmetic." "Kotlin Multiplatform · commonMain"
+            boxModel = container "Box model" "AxisAlignedBox, Rectangle, ImmutableRectangle and CenteredBox." "Kotlin Multiplatform · commonMain"
+            queries = container "Geometry queries" "Vector algebra on Point, Segment, Ray and the intersection tests." "Kotlin Multiplatform · commonMain"
+            colorValue = container "Color" "The validated RGBA value type with its transforms and codecs." "Kotlin Multiplatform · commonMain"
+            misc = container "Misc helpers" "The small helpers on the facade MiscKt: common, and asURL, read and Logger.time on the JVM." "Kotlin Multiplatform · commonMain and jvmMain"
+            desktopEdge = container "Desktop edge" "Screenshots, the browser and image files through AWT, ImageIO and commons-io." "Kotlin/JVM · jvmMain"
+            testSuite = container "Test suite" "Each system's behaviour proved on every target it ships on, organised by named test set." "kotlin-test · JUnit Platform on the JVM · Node.js on js and wasmJs" "Internal" {
+                // ---- commonTest: compiled for, and run on, jvm, js and wasmJs ----
+                commonComponent     = component "component · commonTest" "30 classes, 336 tests: each system's behaviour in isolation, pure, nothing mocked." "kotlin-test · com.spartanlabs.testing.component.*" "Internal"
+                commonDeterministic = component "deterministic · commonTest" "4 classes, 11 tests: fixed input-to-output tables, identical on every target." "kotlin-test · com.spartanlabs.testing.deterministic.*" "Internal"
+                commonE2e           = component "e2e · commonTest" "2 classes, 7 tests: a consumer's journey through the real types." "kotlin-test · com.spartanlabs.testing.e2e.*" "Internal"
+                commonSupport       = component "Common test support" "BoxFixtures, one box per implementor, and RecordingKLogger, a KLogger that records what it would emit." "internal test helpers · no tests" "Internal"
+                // ---- jvmTest: the JVM only ----
+                jvmComponent        = component "component · jvmTest" "2 classes, 3 tests: asURL and the slf4j Logger.time." "kotlin-test on JUnit 5 · com.spartanlabs.testing.component.*" "Internal"
+                jvmDeterministic    = component "deterministic · jvmTest" "1 class, 1 test: capitalizeEveryWord under another JVM default locale." "kotlin-test on JUnit 5 · com.spartanlabs.testing.deterministic.*" "Internal"
+                jvmIntegration      = component "integration · jvmTest" "6 classes, 32 tests: the real logback backend, real files and, with a display, the real screen." "kotlin-test on JUnit 5 · com.spartanlabs.testing.integration.*" "Internal"
+                jvmNonfunctional    = component "nonfunctional · jvmTest" "1 class, 2 tests: equals and hashCode allocate nothing measurable." "kotlin-test on JUnit 5 · com.spartanlabs.testing.nonfunctional.*" "Internal"
+                jvmSupport          = component "JVM test support" "LogCapture, a logback ListAppender on one named logger, and logback-test.xml." "internal test helper and resource · no tests" "Internal"
+                // ---- planned, not built (drawn dashed and faded; only Planned is dashed) ----
+                jvmLogCapture       = component "JVM log-capture tests" "Pin the logger name, level and text of asURL, read and the UserActions functions that run headless." "kotlin-test on JUnit 5 · integration" "Internal,Planned"
+                desktopTests        = component "Desktop module tests" "UserActionsTest and the log capture of UserActions, with their own logback-test.xml and log-capture helper, in the GeneralTools-desktop module." "kotlin-test on JUnit 5" "Internal,Planned"
+            }
+        }
+        nodejs = softwareSystem "Node.js" "Runs the js and wasmJs tests; the Kotlin Gradle plugin downloads it on the first run." "External"
+        logback = softwareSystem "logback" "The slf4j backend on the JVM test classpath, logback-classic 1.5.13." "External"
+
+        maintainer -> generaltools.gradleBuild "Runs check, allTests or one test task, with or without -PtestLevel"
+        generaltools.gradleBuild -> generaltools.testSuite.commonComponent "Runs on jvmTest, jsNodeTest and wasmJsNodeTest"
+        generaltools.gradleBuild -> generaltools.testSuite.jvmIntegration "Runs on jvmTest"
+        generaltools.gradleBuild -> nodejs "Downloads it and runs the web test tasks on it"
+        generaltools.testSuite.commonComponent -> generaltools.valueCore "TwoDoubles, Point, Dimensions and the arithmetic"
+        generaltools.testSuite.commonComponent -> generaltools.queries "The vector algebra, Segment, Ray and the intersection tests"
+        generaltools.testSuite.commonComponent -> generaltools.boxModel "The three box forms, the accessors and contains"
+        generaltools.testSuite.commonComponent -> generaltools.colorValue "Color"
+        generaltools.testSuite.commonComponent -> generaltools.misc "The common helpers"
+        generaltools.testSuite.commonComponent -> generaltools.failureSeam "failure() against a recording logger"
+        generaltools.testSuite.commonComponent -> generaltools.testSuite.commonSupport "Uses BoxFixtures and RecordingKLogger"
+        generaltools.testSuite.commonDeterministic -> generaltools.colorValue "Hex encoding and transform ranges"
+        generaltools.testSuite.commonDeterministic -> generaltools.boxModel "The accessors' literal IEEE results"
+        generaltools.testSuite.commonDeterministic -> generaltools.valueCore "componentEquals and componentHash"
+        generaltools.testSuite.commonE2e -> generaltools.boxModel "A library hands out an immutable box copy and queries it"
+        generaltools.testSuite.commonE2e -> generaltools.valueCore "A consumer subclasses TwoDoubles behind the opt-in"
+        generaltools.testSuite.jvmComponent -> generaltools.misc "asURL and Logger.time"
+        generaltools.testSuite.jvmDeterministic -> generaltools.misc "capitalizeEveryWord under a Turkish default locale"
+        generaltools.testSuite.jvmIntegration -> generaltools.valueCore "divideBy and the arithmetic div at the logback backend"
+        generaltools.testSuite.jvmIntegration -> generaltools.queries "Every failure site's WARN line at the logback backend"
+        generaltools.testSuite.jvmIntegration -> generaltools.misc "evaluateList's TRACE lines; read on a real file"
+        generaltools.testSuite.jvmIntegration -> generaltools.desktopEdge "Real files and, with a display, the real screen"
+        generaltools.testSuite.jvmIntegration -> generaltools.testSuite.jvmSupport "Captures events with LogCapture"
+        generaltools.testSuite.jvmNonfunctional -> generaltools.valueCore "Allocated bytes of equals and hashCode, never time"
+        generaltools.testSuite.jvmSupport -> logback "Attaches a ListAppender; sets com.spartanlabs to TRACE"
+        generaltools.queries -> generaltools.failureSeam "Reports every failure"
+        generaltools.failureSeam -> logback "One WARN line per failure, through kotlin-logging and slf4j"
+        generaltools.testSuite.jvmLogCapture -> generaltools.misc "Pins the log lines of asURL and read"
+        generaltools.testSuite.jvmLogCapture -> generaltools.desktopEdge "Pins the log lines of the headless UserActions functions"
+        generaltools.testSuite.desktopTests -> generaltools.desktopEdge "Tests UserActions in its own module"
+    }
+
+    views {
+        systemContext generaltools "Context" "GeneralTools and who touches it, from the test suite's side." {
+            include *
+            autoLayout lr
+        }
+        container generaltools "Containers" "The suite, the build that runs it and the systems it tests." {
+            include *
+            autoLayout lr
+        }
+        component generaltools.testSuite "Components" "test-suite as built at a500e44: the named test sets in each source set." {
+            include *
+            autoLayout tb
+        }
+        dynamic generaltools.testSuite "FailureSiteCapture" "An integration log-capture test of one failure site, as built." {
+            generaltools.gradleBuild -> generaltools.testSuite.jvmIntegration "jvmTest runs FailureSitesLoggingTest"
+            generaltools.testSuite.jvmIntegration -> generaltools.testSuite.jvmSupport "LogCapture.attach(the Intersections logger)"
+            generaltools.testSuite.jvmSupport -> logback "addAppender(ListAppender)"
+            generaltools.testSuite.jvmIntegration -> generaltools.queries "rayIntersectsBox with a zero-direction ray"
+            generaltools.queries -> generaltools.failureSeam "failure(message) { detail }"
+            generaltools.failureSeam -> logback "WARN message: detail, no throwable"
+            autoLayout lr
+        }
+        styles {
+            element "Person"          { shape person  background #08427b color #ffffff }
+            element "Software System" { background #1168bd color #ffffff }
+            element "External"        { background #999999 color #ffffff }
+            element "Container"       { background #438dd5 color #ffffff }
+            element "Component"       { background #85bbf0 color #000000 }
+            element "Internal"        { background #c6dcf5 color #000000 }
+            element "Standalone"      { background #eeeeee color #000000 border dotted }
+            element "Planned"         { background #ffffff color #666666 border dashed opacity 60 }
+        }
+    }
+}
+</script>
+
+<script>
+"use strict";
+/* Times (GUIDANCE.md §6, "Times"): stored as UTC ISO stamps; shown in the viewer's own time zone, with the zone's abbreviation,
+   as a <time> whose datetime and title hold the exact UTC value. A date alone stays a date; a stamp with no zone is shown as written.
+   localizeTimes() formats every <time datetime> the board draws, so a stamp written into hand-made HTML is shown the same way. */
+const STAMP_RE=/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/;
+const utcIso=s=>{ const d=new Date(String(s).replace(" ","T")); return isNaN(d)?null:d.toISOString().replace(/\.000Z$/,"Z"); };
+const LOCAL_FMT={day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",timeZoneName:"short"};
+const when=v=>{ const s=String(v==null?"":v).trim(), u=STAMP_RE.test(s)&&utcIso(s); return u?`<time datetime="${u}" title="${u} (UTC)">${esc(new Date(u).toLocaleString(undefined,LOCAL_FMT))}</time>`:esc(s); };
+const day=v=>{ const s=String(v==null?"":v).trim(), u=STAMP_RE.test(s)&&utcIso(s); return u?`<time datetime="${u}" title="${u} (UTC)">${esc(new Date(u).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}))}</time>`:esc(s); };
+function localizeTimes(root){ (root||document).querySelectorAll("time[datetime]").forEach(t=>{ const u=STAMP_RE.test(t.getAttribute("datetime"))&&utcIso(t.getAttribute("datetime")); if(!u||t.dataset.local) return;
+  t.dataset.local="1"; t.title=`${u} (UTC)`; t.textContent=new Date(u).toLocaleString(undefined,LOCAL_FMT); }); }
+window.addEventListener("DOMContentLoaded",()=>localizeTimes());
+const REPO="https://github.com/SpartanLaboratories/GeneralTools";
+const SRC=REPO+"/blob/a500e447e13ef6ea8f985aaf09af22cfc94bda93/"; // fill: every d.files entry links under here
+const NS="http://www.w3.org/2000/svg";
+const mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+const txt=(p,x,y,lines,cls,anchor,dy)=>{const t=mk("text",{x,y,class:cls||"","text-anchor":anchor||"start"},p);(Array.isArray(lines)?lines:[lines]).forEach((l,i)=>{const s=mk("tspan",{x,dy:i?(dy||12):0},t);s.textContent=l;});return t;};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const flink=f=>`<a href="${SRC}${f}" target="_blank" rel="noopener">${f}</a>`;
+/* Links to an issue and its board (GUIDANCE.md §5; system/RULES.md §6). BOARDS maps an issue's number to its issue board, relative
+   to this board, for every issue the board names whose board is in the repository; it is filled from the folders on disk
+   when the board is written, on its one line, and check-board.js fails an entry whose file is not there. Where an issue's number and
+   its title appear together they are two links: the number opens the GitHub issue (pair(), or a plain href in hand-written HTML)
+   and the title opens the board, written <a data-board="N">title</a> by hand, plain text while the issue has none. A lone #n opens
+   the board when one exists and the GitHub issue otherwise: ilink(n), or <a data-issue="N">#N</a> by hand. linkIssues() resolves
+   the hand-written ones at load. */
+const BOARDS={"7":"../../plans/7-kotlin-multiplatform/dashboard.html"}; // fill: issue number → its issue board relative to this board, on this one line, e.g. {"38":"../../plans/38-slug/dashboard.html"}
+/* the newest board of each issue on this machine (plan/RULES.md §1, "The newest board on this machine"): docs/plans/.live/boards.js, beside the
+   live marker, which board.js --live writes in every checkout; opened from disk, an issue's link opens it (a run in flight in a worktree,
+   a landed issue's live view copy) before BOARDS, the boards as committed; a published copy has no marker */
+let LIVE_BOARDS=null;
+const boardOf=n=>(LIVE_BOARDS&&LIVE_BOARDS.get(String(n)))||(Object.prototype.hasOwnProperty.call(BOARDS,String(n))?BOARDS[String(n)]:null);
+/* The repository work board (GUIDANCE.md §5; system/RULES.md §6): "committed" is docs/plans/index.html relative to this board when that file exists
+   (else null: no link to a file that is not there; check-board.js fails a committed path that is missing), and "live" the live view's
+   marker, docs/plans/.live/index.js, which board.js --live writes in each checkout. A link to the repository work board opens the live view when
+   its marker loads (the board on this machine), else the committed one, else stays plain text: the hand-written
+   <a data-workboard>repository work board</a>, and the Plans card's line the renderer adds when the board has none. */
+const WORK_BOARD={"committed":"../../plans/index.html","live":"../../plans/.live/index.js"}; // fill: the repository work board relative to this board, on this one line: {"committed": "../../plans/index.html" or null, "live": "../../plans/.live/index.js"}
+/* A live marker (plan/RULES.md §5): a script in the git-ignored docs/plans/.live/ that sets one key of window.DASHBOARDS_LIVE; cb gets
+   its value, or null when the marker is not there (a published copy, another clone, no live view on this machine). */
+function liveMark(src,key,cb){ if(!src){ cb(null); return; } const sc=document.createElement("script"); sc.src=src+(src.includes("?")?"&":"?")+"t="+Date.now();
+  sc.onload=()=>{ const v=(window.DASHBOARDS_LIVE||{})[key]; sc.remove(); cb(v==null?null:v); }; sc.onerror=()=>{ sc.remove(); cb(null); }; document.head.appendChild(sc); }
+const relTo=(base,href)=>/^[a-z][a-z0-9+.-]*:/i.test(href)||href.startsWith("/")?href:base.replace(/[^/]*$/,"")+href;
+function linkWorkBoard(){ const W=WORK_BOARD&&typeof WORK_BOARD==="object"?WORK_BOARD:{};
+  const docs=[...document.querySelectorAll("section.context .docs")].pop();
+  if(docs&&!document.querySelector("a[data-workboard]")){ const li=document.createElement("li"); li.innerHTML='<a data-workboard>Repository work board</a> — every planning and development run in the repository'; docs.appendChild(li); }
+  const set=href=>document.querySelectorAll("a[data-workboard]").forEach(a=>{ if(href) a.href=href; else a.removeAttribute("href"); a.title=href&&href===W.committed?"The committed repository work board, as of the last landing":href?"The live repository work board on this machine":"No repository work board in this checkout"; });
+  set(W.committed||null);
+  liveMark(W.live,"board",b=>{ if(b) set(relTo(W.live,b)); });
+  /* the newest boards: every issue link already drawn is pointed at the newest board, and a title with no board yet gets its link */
+  const bsrc=typeof W.live==="string"&&/index\.js$/.test(W.live)?W.live.replace(/index\.js$/,"boards.js"):null;
+  liveMark(bsrc,"boards",m=>{ if(!m||typeof m!=="object"||Array.isArray(m)) return;
+    LIVE_BOARDS=new Map(Object.entries(m).filter(([,v])=>typeof v==="string"&&v.trim()).map(([k,v])=>[String(k),relTo(bsrc,v)]));
+    document.querySelectorAll("a[title$=\": its issue board\"]").forEach(a=>{ const n=(/^#(\d+):/.exec(a.title)||[])[1], b=n&&LIVE_BOARDS.get(n); if(b) a.href=b; });
+    document.querySelectorAll("a[data-issue]").forEach(a=>{ const n=a.dataset.issue, b=LIVE_BOARDS.get(String(n)); if(b){ a.href=b; a.title=`#${n}: its issue board`; a.removeAttribute("target"); a.removeAttribute("rel"); } });
+    document.querySelectorAll("span[data-issue-title]").forEach(t=>{ const n=t.dataset.issueTitle, b=LIVE_BOARDS.get(String(n)); if(!b) return;
+      const a=document.createElement("a"); a.href=b; a.title=`#${n}: its issue board`; a.dataset.issueTitle=n; a.append(...t.childNodes); t.replaceWith(a); }); }); }
+window.addEventListener("DOMContentLoaded",()=>linkWorkBoard());
+/* The board's state (system/RULES.md §2): a verbatim copy of state.json, its stamp, version and last amendment, which apply-state.js
+   restamps on a feature branch and at the landing; renderState() draws the header's chips from it. */
+const STATE=(()=>{ try{ return JSON.parse(document.getElementById("state").textContent)||{}; }catch(e){ return {}; } })();
+if(STATE.colour==="plain") document.documentElement.dataset.sysColour="plain";
+const ghIssue=n=>`${REPO}/issues/${n}`;
+const ilink=n=>{ const b=boardOf(n); return b?`<a href="${esc(b)}" title="#${esc(n)}: its issue board">#${esc(n)}</a>`:`<a href="${ghIssue(n)}" target="_blank" rel="noopener">#${esc(n)}</a>`; };
+const pair=(n,title)=>{ const b=boardOf(n); return `<a href="${ghIssue(n)}" target="_blank" rel="noopener">#${esc(n)}</a> ${b?`<a href="${esc(b)}" title="#${esc(n)}: its issue board">${esc(title)}</a>`:esc(title)}`; };
+function linkIssues(root){ const r=root||document;
+  /* a title written <a data-board="N"> is the issue's own, quoted verbatim, and keeps its mark, data-issue-title, once resolved (a link to
+     its board, or plain text while it has none): a sizing named in it is a defect in the issue, flagged by check-board.js,
+     never shown as the board's (GUIDANCE.md §5; dashboards-skill/28) */
+  r.querySelectorAll("a[data-board]").forEach(a=>{ const n=a.dataset.board, b=boardOf(n); if(b){ a.href=b; a.title=`#${n}: its issue board`; a.dataset.issueTitle=n; } else { const t=document.createElement("span"); t.dataset.issueTitle=n; t.append(...a.childNodes); a.replaceWith(t); } });
+  r.querySelectorAll("a[data-issue]").forEach(a=>{ const n=a.dataset.issue, b=boardOf(n); a.href=b||ghIssue(n); if(b) a.title=`#${n}: its issue board`; else { a.target="_blank"; a.rel="noopener"; } }); }
+window.addEventListener("DOMContentLoaded",()=>linkIssues());
+function inspect(html){ $("#insp-body").innerHTML=html; }
+function arrowDefs(svg,id,color){ const d=mk("defs",{},svg); const m=mk("marker",{id,viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"7",markerHeight:"7",orient:"auto-start-reverse"},d); mk("path",{d:"M0,0 L10,5 L0,10 z",fill:color||"var(--ink-2)"},m); const mo=mk("marker",{id:id+"-open",viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"7",markerHeight:"7",orient:"auto-start-reverse"},d); mk("path",{d:"M0,0 L10,5 L0,10",fill:"none",stroke:color||"var(--ink-2)","stroke-width":"1.5"},mo); const mon=mk("marker",{id:id+"-on",viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"7",markerHeight:"7",orient:"auto-start-reverse"},d); mk("path",{d:"M0,0 L10,5 L0,10 z",fill:"var(--on)"},mon); }
+
+/* =========================================================================
+   MODEL — the as-built behaviour this board draws (threads, flows, sequence) and the
+   hand-placed component map. Structure also lives in the DSL above; `c4` maps map
+   nodes to their DSL element so the two views cross-reference.
+   ========================================================================= */
+const MODEL = {
+  // The three hue slots: commonTest (blue, every target), jvmTest (purple, the JVM only), the support files that hold no test (teal).
+  sides:{server:"commonTest · every target",client:"jvmTest · the JVM",wire:"test support",consumer:"the build: Gradle and the test runners",external:"outside the suite: the systems under test and logback"},
+  c4:{"c-comp":"generaltools.testSuite.commonComponent","cc-vc":"generaltools.testSuite.commonComponent","cc-gq":"generaltools.testSuite.commonComponent","cc-bm":"generaltools.testSuite.commonComponent","cc-co":"generaltools.testSuite.commonComponent","cc-mi":"generaltools.testSuite.commonComponent","cc-fs":"generaltools.testSuite.commonComponent",
+      "c-det":"generaltools.testSuite.commonDeterministic","cd-co":"generaltools.testSuite.commonDeterministic","cd-bm":"generaltools.testSuite.commonDeterministic","cd-vc":"generaltools.testSuite.commonDeterministic",
+      "c-e2e":"generaltools.testSuite.commonE2e","ce-bm":"generaltools.testSuite.commonE2e","ce-vc":"generaltools.testSuite.commonE2e",
+      "cs-fix":"generaltools.testSuite.commonSupport","cs-rec":"generaltools.testSuite.commonSupport",
+      "j-comp":"generaltools.testSuite.jvmComponent","jc-mi":"generaltools.testSuite.jvmComponent",
+      "j-det":"generaltools.testSuite.jvmDeterministic","jd-mi":"generaltools.testSuite.jvmDeterministic",
+      "j-int":"generaltools.testSuite.jvmIntegration","ji-vc":"generaltools.testSuite.jvmIntegration","ji-gq":"generaltools.testSuite.jvmIntegration","ji-mi":"generaltools.testSuite.jvmIntegration","ji-de":"generaltools.testSuite.jvmIntegration",
+      "j-nf":"generaltools.testSuite.jvmNonfunctional","jn-vc":"generaltools.testSuite.jvmNonfunctional",
+      "js-cap":"generaltools.testSuite.jvmSupport","js-xml":"generaltools.testSuite.jvmSupport",
+      "p-cap":"generaltools.testSuite.jvmLogCapture","p-desk":"generaltools.testSuite.desktopTests"},
+  structure: {
+    h:650,
+    lanes:[["COMMONTEST · JVM, JS AND WASM/JS",40,44,"start"],["JVMTEST · THE JVM ONLY",510,44,"start"],["PLANNED",510,562,"start"]],
+    notes:[],
+    nodes:[
+      {id:"common",side:"server",vis:"int",container:true,x:40,y:56,w:450,h:560,t:"commonTest",s:"36 classes · 354 tests on each target · kotlin-test alone",
+        d:{role:"The pure tests, compiled for and run on jvm, js and wasmJs: every class in com.spartanlabs.testing.<set>.<package>, no slf4j, no JUnit tag, no assumption.",vis:"test source set · every target",files:["src/commonTest/"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"c-comp",side:"server",vis:"int",container:true,x:56,y:96,w:418,h:214,t:"component · 30 classes",s:"336 tests · each system in isolation, nothing mocked",
+        d:{role:"The component set in common code: each system's behaviour in isolation, pure, so nothing needs mocking.",vis:"test set · com.spartanlabs.testing.component",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cc-vc",side:"server",vis:"int",x:72,y:140,w:194,h:44,t:"geometry value core",s:"12 classes · 115 tests",
+        d:{role:"TwoDoubles, Point and Dimensions: construction, the in-place verbs, divideBy and /=, the equality and hash contract, destructuring, unaryMinus, subclassing behind the opt-in, the import-gated arithmetic, and += compiling where the arithmetic is not imported.",vis:"component · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/PointTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/PointUnaryMinusTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/TwoDoublesTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/TwoDoublesDestructuringTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/TwoDoublesDivAssignTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/TwoDoublesDivideByTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/TwoDoublesEqualityTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/TwoDoublesHashCodeTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/TwoDoublesSubclassTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/CompoundAssignmentWithoutArithmeticImportTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/arithmetic/DimensionsArithmeticTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/arithmetic/PointArithmeticTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cc-gq",side:"server",vis:"int",x:272,y:140,w:194,h:44,t:"geometry queries",s:"9 classes · 63 tests",
+        d:{role:"The vector algebra, Segment and Ray, the three intersection tests, the exact failure messages for an unusable box over every box implementor, the implementors agreeing on one footprint, and the box tests reading only the primitive accessors.",vis:"component · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/PointVectorOpsTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/SegmentTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/RayTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/SegmentSegmentIntersectionTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/SegmentBoxIntersectionTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/RayBoxIntersectionTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/BoxFailureMessagesTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/BoxIntersectionAgreementTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/BoxPrimitiveReadsTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cc-bm",side:"server",vis:"int",x:72,y:192,w:194,h:44,t:"box model",s:"6 classes · 55 tests",
+        d:{role:"AxisAlignedBox's defaults and accessor contract over every implementor, operator contains, Rectangle, ImmutableRectangle and CenteredBox, and the conversions between them.",vis:"component · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/AxisAlignedBoxTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/AxisAlignedBoxAccessorContractTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/AxisAlignedBoxContainsTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/RectangleTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/ImmutableRectangleTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/CenteredBoxTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cc-co",side:"server",vis:"int",x:272,y:192,w:194,h:44,t:"Color",s:"1 class · ColorTest, 76 tests",
+        d:{role:"Color's validation, transforms, luminance, the clamping factory and its codecs.",vis:"component · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/generaltools/ColorTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cc-mi",side:"server",vis:"int",x:72,y:244,w:194,h:44,t:"Misc helpers",s:"1 class · MiscTest, 16 tests",
+        d:{role:"The common helpers: capitalizeEveryWord, evaluateList, forEvery, forEveryIndexed, onException, profile and trimIfLongerThan.",vis:"component · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/generaltools/MiscTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cc-fs",side:"server",vis:"int",x:272,y:244,w:194,h:44,t:"failure seam",s:"1 class · FailureTest, 11 tests",
+        d:{role:"The internal failure helper against a logger that records what it would emit: the exception from the message alone, one lazy WARN line, no throwable.",vis:"component · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/generaltools/FailureTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"c-det",side:"server",vis:"int",container:true,x:56,y:322,w:418,h:104,t:"deterministic · 4 classes",s:"11 tests · fixed input-to-output tables",
+        d:{role:"Fixed tables of inputs and the outputs they must map to, identical on every target.",vis:"test set · com.spartanlabs.testing.deterministic",files:["src/commonTest/kotlin/com/spartanlabs/testing/deterministic/"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cd-co",side:"server",vis:"int",x:72,y:366,w:124,h:44,t:"Color",s:"2 classes · 3 tests",
+        d:{role:"Every channel value as two upper-case hex digits, and no factory or transform able to produce an out-of-range channel.",vis:"deterministic · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/deterministic/generaltools/ColorHexEncodingTest.kt","src/commonTest/kotlin/com/spartanlabs/testing/deterministic/generaltools/ColorTransformRangeTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cd-bm",side:"server",vis:"int",x:206,y:366,w:124,h:44,t:"box model",s:"1 class · 3 tests",
+        d:{role:"The literal IEEE results of the box accessors for fractional parts, for each storage form.",vis:"deterministic · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/deterministic/geometry/BoxAccessorTableTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cd-vc",side:"server",vis:"int",x:340,y:366,w:124,h:44,t:"value core",s:"1 class · 5 tests",
+        d:{role:"The internal componentEquals and componentHash, which define the equality and hash contract per component, over a table of inputs.",vis:"deterministic · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/deterministic/geometry/ComponentEqualityTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"c-e2e",side:"server",vis:"int",container:true,x:56,y:438,w:418,h:104,t:"e2e · 2 classes",s:"7 tests · a consumer's journey through the real types",
+        d:{role:"Journeys a consumer takes through the real types, end to end.",vis:"test set · com.spartanlabs.testing.e2e",files:["src/commonTest/kotlin/com/spartanlabs/testing/e2e/"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"ce-bm",side:"server",vis:"int",x:72,y:482,w:194,h:44,t:"box model",s:"BoxHandOutTest · 4 tests",
+        d:{role:"A library copies its box once with toImmutable, hands the copy out and queries it with the intersection tests; contrasted with handing out the live Rectangle.",vis:"e2e · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/e2e/geometry/BoxHandOutTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"ce-vc",side:"server",vis:"int",x:272,y:482,w:194,h:44,t:"value core",s:"TwoDoublesConsumerJourneyTest",
+        d:{role:"A consumer subclasses TwoDoubles behind the opt-in, inherits the in-place verbs, equality, hashing and destructuring, and adds its own extension operator. 3 tests.",vis:"e2e · commonTest",files:["src/commonTest/kotlin/com/spartanlabs/testing/e2e/geometry/TwoDoublesConsumerJourneyTest.kt"],threads:["jvmTest","jsNodeTest","wasmJsNodeTest"]}},
+      {id:"cs-fix",side:"wire",vis:"int",x:56,y:556,w:206,h:44,t:"BoxFixtures",s:"one box per implementor",
+        d:{role:"One box per AxisAlignedBox implementor for a footprint, a defaults-only box among them, so a test runs once per storage form.",vis:"internal test helper · no tests",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/geometry/BoxFixtures.kt"]}},
+      {id:"cs-rec",side:"wire",vis:"int",x:268,y:556,w:206,h:44,t:"RecordingKLogger",s:"a KLogger that records its events",
+        d:{role:"A KLogger that records the events it would emit, checking the level before it runs the lazy message as a backend does. Not thread-safe; for single-threaded tests.",vis:"internal test helper · no tests",files:["src/commonTest/kotlin/com/spartanlabs/testing/component/generaltools/RecordingKLogger.kt"]}},
+      {id:"jvm",side:"client",vis:"int",container:true,x:510,y:56,w:450,h:480,t:"jvmTest",s:"10 classes · 38 tests · logback as the slf4j backend",
+        d:{role:"The tests that need the JVM: asURL, read, the slf4j Logger.time, the default locale, the real logback backend, the screen and the allocation counter.",vis:"test source set · the JVM only",files:["src/jvmTest/"],threads:["jvmTest"]}},
+      {id:"j-comp",side:"client",vis:"int",container:true,x:526,y:96,w:206,h:96,t:"component · 2",s:"3 tests",
+        d:{role:"The component set on the JVM.",vis:"test set · com.spartanlabs.testing.component",files:["src/jvmTest/kotlin/com/spartanlabs/testing/component/"],threads:["jvmTest"]}},
+      {id:"jc-mi",side:"client",vis:"int",x:538,y:136,w:182,h:44,t:"Misc helpers",s:"AsUrlTest · LoggerTimeTest",
+        d:{role:"asURL parsing a valid URL and throwing on an invalid one, opening no connection; Logger.time on a logger the test builds.",vis:"component · jvmTest",files:["src/jvmTest/kotlin/com/spartanlabs/testing/component/generaltools/AsUrlTest.kt","src/jvmTest/kotlin/com/spartanlabs/testing/component/generaltools/LoggerTimeTest.kt"],threads:["jvmTest"]}},
+      {id:"j-det",side:"client",vis:"int",container:true,x:742,y:96,w:202,h:96,t:"deterministic · 1",s:"1 test",
+        d:{role:"The deterministic set on the JVM.",vis:"test set · com.spartanlabs.testing.deterministic",files:["src/jvmTest/kotlin/com/spartanlabs/testing/deterministic/"],threads:["jvmTest"]}},
+      {id:"jd-mi",side:"client",vis:"int",x:754,y:136,w:178,h:44,t:"Misc helpers",s:"CapitalizeEveryWordLocaleTest",
+        d:{role:"capitalizeEveryWord gives the same result under a Turkish default locale. It changes the JVM default for its duration and puts it back in a finally, safe because JVM tests run one at a time.",vis:"deterministic · jvmTest",files:["src/jvmTest/kotlin/com/spartanlabs/testing/deterministic/generaltools/CapitalizeEveryWordLocaleTest.kt"],threads:["jvmTest"]}},
+      {id:"j-int",side:"client",vis:"int",container:true,x:526,y:204,w:418,h:152,t:"integration · 6 classes",s:"32 tests · logback, real files, the screen",
+        d:{role:"The integration set: the real kotlin-logging, slf4j and logback path, real files and, with a display, the real screen.",vis:"test set · com.spartanlabs.testing.integration",files:["src/jvmTest/kotlin/com/spartanlabs/testing/integration/"],threads:["jvmTest"]}},
+      {id:"ji-vc",side:"client",vis:"int",x:542,y:248,w:194,h:44,t:"geometry value core",s:"2 classes · 11 tests",
+        d:{role:"divideBy's WARN line on the TwoDoubles logger at the logback backend, /= and the arithmetic div throwing by zero without logging.",vis:"integration · jvmTest",files:["src/jvmTest/kotlin/com/spartanlabs/testing/integration/geometry/TwoDoublesDivisionLoggingTest.kt","src/jvmTest/kotlin/com/spartanlabs/testing/integration/geometry/arithmetic/ArithmeticDivisionLoggingTest.kt"],threads:["jvmTest"]}},
+      {id:"ji-gq",side:"client",vis:"int",x:746,y:248,w:186,h:44,t:"geometry queries",s:"FailureSitesLoggingTest",
+        d:{role:"The eleven expected-failure sites of the geometry package, ten of them the geometry queries' and Point.distanceFrom the eleventh: each keeps its 2.x message and logs exactly one WARN line, without a throwable, on its file's 2.x logger name; successful calls log nothing. 13 tests.",vis:"integration · jvmTest",files:["src/jvmTest/kotlin/com/spartanlabs/testing/integration/geometry/FailureSitesLoggingTest.kt"],threads:["jvmTest"]}},
+      {id:"ji-mi",side:"client",vis:"int",x:542,y:300,w:194,h:44,t:"Misc helpers",s:"2 classes · evaluateList, read",
+        d:{role:"evaluateList's TRACE lines on the Misc logger at the logback backend, and read on a real temporary file. 3 tests.",vis:"integration · jvmTest",files:["src/jvmTest/kotlin/com/spartanlabs/testing/integration/generaltools/EvaluateListLoggingTest.kt","src/jvmTest/kotlin/com/spartanlabs/testing/integration/generaltools/ReadTest.kt"],threads:["jvmTest"]}},
+      {id:"ji-de",side:"client",vis:"int",x:746,y:300,w:186,h:44,t:"desktop edge",s:"UserActionsTest · 5 tests",
+        d:{role:"cropImage, saving and copying images as real files, and two screenshots of the real screen, skipped without a display.",vis:"integration · jvmTest",files:["src/jvmTest/kotlin/com/spartanlabs/testing/integration/generaltools/UserActionsTest.kt"],threads:["jvmTest"]}},
+      {id:"j-nf",side:"client",vis:"int",container:true,x:526,y:368,w:418,h:96,t:"nonfunctional · 1 class",s:"2 tests",
+        d:{role:"The nonfunctional set: a measured property, not a behaviour.",vis:"test set · com.spartanlabs.testing.nonfunctional",files:["src/jvmTest/kotlin/com/spartanlabs/testing/nonfunctional/"],threads:["jvmTest"]}},
+      {id:"jn-vc",side:"client",vis:"int",x:542,y:408,w:390,h:44,t:"geometry value core",s:"TwoDoublesEqualsAllocationTest · allocated bytes, never time",
+        d:{role:"equals and hashCode allocate nothing measurable once compiled: an allocation budget over millions of calls, asserted in bytes, never in time. Skipped where the JVM cannot measure per-thread allocation or runs interpreted.",vis:"nonfunctional · jvmTest",files:["src/jvmTest/kotlin/com/spartanlabs/testing/nonfunctional/geometry/TwoDoublesEqualsAllocationTest.kt"],threads:["jvmTest"]}},
+      {id:"js-cap",side:"wire",vis:"int",x:526,y:476,w:206,h:44,t:"LogCapture",s:"a ListAppender · AutoCloseable",
+        d:{role:"Records the events logback receives on one named logger; close() detaches and stops the appender. Used through use { }, a finally or @AfterTest.",vis:"internal test helper · no tests",files:["src/jvmTest/kotlin/com/spartanlabs/testing/integration/generaltools/LogCapture.kt"],threads:["jvmTest"]}},
+      {id:"js-xml",side:"wire",vis:"int",x:742,y:476,w:202,h:44,t:"logback-test.xml",s:"com.spartanlabs at TRACE",
+        d:{role:"The JVM tests' logback configuration: a console appender, the com.spartanlabs loggers at TRACE, the root at INFO.",vis:"test resource",files:["src/jvmTest/resources/logback-test.xml"],threads:["jvmTest"]}},
+      {id:"p-cap",side:"client",vis:"int",x:510,y:572,w:220,h:56,t:"JVM log-capture tests",s:["asURL, read and the headless","UserActions functions"],
+        d:{role:"Log-capture tests that pin the logger name, the level and the rendered text of asURL, read and the UserActions functions that run headless, when the JVM sources move onto kotlin-logging.",vis:"planned · integration · jvmTest",files:[]}},
+      {id:"p-desk",side:"client",vis:"int",x:740,y:572,w:220,h:56,t:"Desktop module tests",s:["UserActionsTest and its capture,","own logback-test.xml"],
+        d:{role:"The desktop tests in the GeneralTools-desktop module's test source set, with their own logback-test.xml and log-capture helper: no test-fixtures artifact is shared or published.",vis:"planned · the desktop module",files:[]}}
+    ]
+  },
+  threads:{
+    "jvmTest":{side:"client",kind:"test task · JVM",daemon:false,created:"when the jvmTest task runs, alone or under check or allTests: a test JVM on the JUnit Platform",runs:"commonTest and jvmTest compiled for the JVM: 46 classes, 392 tests, one at a time; no parallel execution is configured.",sends:[],note:"logback-classic is the slf4j backend here; logback-test.xml prints the com.spartanlabs loggers at TRACE to the console."},
+    "jsNodeTest":{side:"server",kind:"test task · Node.js",daemon:false,created:"when the jsNodeTest task runs; the Kotlin Gradle plugin downloads Node.js on the first run",runs:"commonTest compiled to JS, under Mocha: 36 classes, 354 tests.",sends:[],note:"kotlin-logging writes to standard error with the console level in front, and prints whole doubles without .0."},
+    "wasmJsNodeTest":{side:"server",kind:"test task · Node.js",daemon:false,created:"when the wasmJsNodeTest task runs, on the same downloaded Node.js",runs:"commonTest compiled to Wasm/JS, under the Kotlin plugin's own Wasm runner: 36 classes, 354 tests.",sends:[],note:"kotlin-logging writes to standard out and prints doubles as the JVM does."}
+  },
+  flows:[
+    {id:"level",label:"-PtestLevel",kicker:"TEST SET SELECTION",runsOn:"",foot:"-PtestLevel=<set>[,<set>] · blank entries ignored, duplicates dropped · the same filter on every test task",
+     controls:[
+       {key:"set",label:"-PtestLevel",def:"unset",options:[["unset","unset"],["gating","gating"],["component","component"],["integration","integration"],["deterministic","deterministic"],["e2e","e2e"],["nonfunctional","nonfunctional"],["uat","uat"],["unknown","an unknown name"]]},
+       {key:"task",label:"Task",def:"jvm",options:[["jvm","jvmTest"],["js","jsNodeTest"],["wasm","wasmJsNodeTest"]]}],
+     names:{unset:"-PtestLevel unset",gating:"-PtestLevel=gating",component:"-PtestLevel=component",integration:"-PtestLevel=integration",deterministic:"-PtestLevel=deterministic",e2e:"-PtestLevel=e2e",nonfunctional:"-PtestLevel=nonfunctional",uat:"-PtestLevel=uat",unknown:"-PtestLevel=<an unknown name>"},
+     nodes:{
+      IN:{c:0,r:0,k:"p",t:["-PtestLevel","read at configuration"]},
+      SET:{c:1,r:0,k:"d",t:["any set","named?"]},
+      ALL:{c:1,r:1,k:"t",lvl:"RUN",t:["every class","the task compiles"]},
+      KNOWN:{c:2,r:0,k:"d",t:["every name a","known set?"]},
+      FAIL:{c:2,r:1,k:"t",lvl:"ERROR",t:["configuration","fails"]},
+      FILTER:{c:3,r:0,k:"p",t:["filter","…testing.<set>.*"]},
+      MATCH:{c:4,r:0,k:"d",t:["classes of the set","on this task?"]},
+      RUN:{c:5,r:0,k:"t",lvl:"RUN",t:["only that set's","classes run"]},
+      ZERO:{c:4,r:1,k:"t",lvl:"NONE",t:["green with","zero tests"]}},
+     edges:[["IN","SET"],["SET","ALL","no"],["SET","KNOWN","yes"],["KNOWN","FAIL","no"],["KNOWN","FILTER","yes"],["FILTER","MATCH"],["MATCH","RUN","yes"],["MATCH","ZERO","no"]],
+     rules(s){
+       const p=["IN","SET"], R=(outcome,irrelevant)=>({path:p,outcome,irrelevant:irrelevant||[]});
+       const web={js:"jsNodeTest",wasm:"wasmJsNodeTest"}, task=web[s.task]||"jvmTest";
+       const jvm={unset:[46,392],component:[32,339],integration:[6,32],deterministic:[5,12],e2e:[2,7],nonfunctional:[1,2]};
+       const common={unset:[36,354],component:[30,336],deterministic:[4,11],e2e:[2,7]};
+       const C=s.task==="jvm"?jvm:common;
+       if(s.set==="unset"){ p.push("ALL"); const [n,m]=C.unset; return R(`No filter: ${task} runs every class it compiles, ${s.task==="jvm"?"commonTest and jvmTest":"commonTest"}: ${n} classes, ${m} tests.`); }
+       p.push("KNOWN");
+       if(s.set==="unknown"){ p.push("FAIL"); return R("A GradleException names the unknown set and the seven known ones, and no task runs.",["task"]); }
+       p.push("FILTER","MATCH");
+       const c=C[s.set];
+       if(c){ p.push("RUN"); return R(`${task} runs the ${s.set} set alone: ${c[0]} ${c[0]===1?"class":"classes"}, ${c[1]} ${c[1]===1?"test":"tests"}.`); }
+       p.push("ZERO");
+       return R(`${task} has no ${s.set} class${s.set==="gating"||s.set==="uat"?" (no source set holds one yet)":""}: failOnNoMatchingTests is off, so the task ends green with zero tests${s.task==="jvm"?"":", though it still starts Node.js"}.`);
+     }}
+  ],
+  sequence:{
+    kicker:"A FAILURE SITE, CAPTURED",
+    lifelines:[{n:"JUnit Platform",side:"consumer"},{n:"the test",side:"client"},{n:"LogCapture",side:"wire"},{n:"rayIntersectsBox",side:"external"},{n:"KLogger.failure",side:"external"},{n:"logback",side:"external"}],
+    phases:[["ARRANGE",0,2],["ACT",3,8],["ASSERT",9,11]],
+    steps:[
+      {f:0,t:1,l:"run one test",n:"jvmTest runs FailureSitesLoggingTest's test of a zero-direction ray on the JUnit Platform, one test at a time."},
+      {f:1,t:2,l:"attach(the Intersections logger)",n:"LogCapture.attach(\"com.spartanlabs.geometry.Intersections\"): the 2.x logger name the failure must keep."},
+      {f:2,t:5,l:"addAppender(ListAppender)",n:"A started ListAppender on that logback logger records every event it receives from now on."},
+      {f:1,t:3,l:"rayIntersectsBox(zero-direction ray, box)",n:"The real function of the geometry queries, with Ray(Point(0.0, 0.0), Point(0.0, 0.0)) and a valid CenteredBox."},
+      {f:3,t:4,l:"failure(message) { detail }",n:"Its zero-direction site: the message \"Ray direction must be longer than EPSILON\" and a detail naming the function and the ray."},
+      {f:4,t:5,l:"WARN message: detail",n:"Through kotlin-logging and slf4j to logback: one event, at WARN, on com.spartanlabs.geometry.Intersections, with no throwable."},
+      {f:5,t:2,l:"the event, into the list",n:"logback hands the event to the attached appender, which keeps it in order."},
+      {f:4,t:3,l:"Result.failure",ret:true,n:"An IllegalArgumentException carrying the message alone."},
+      {f:3,t:1,l:"Result.failure",ret:true,n:"Nothing is thrown into the test."},
+      {f:1,t:1,self:true,l:"assertLoggedFailure",n:"The result failed with the message; the capture holds exactly one event; its level is WARN, its logger the Intersections logger, its line the message and the detail, and it carries no throwable."},
+      {f:1,t:2,l:"close(), at the end of use { }",n:"Detaches the appender from the logger and stops it, so no later test sees it."},
+      {f:1,t:0,l:"passed",ret:true,n:"A failed assertion would fail the test, and jvmTest and check with it."}
+    ]
+  }
+};
+
+/* =========================================================================
+   C4 — a Structurizr DSL reader for the subset this workspace uses (hierarchical
+   identifiers; person / softwareSystem / container / component with tags; relationships;
+   systemContext / container / component / dynamic views; element styles), and renderers
+   that lay the views out by rank. Structurizr Lite would render the same file.
+   ========================================================================= */
+function parseDsl(src){
+  const M={elements:{},order:[],rels:[],views:[],styles:[]}, stack=[];
+  const TYPE={person:"Person",softwareSystem:"Software System",container:"Container",component:"Component"};
+  const tok=l=>{const out=[],re=/"([^"]*)"|(\S+)/g;let m;while((m=re.exec(l)))out.push(m[1]!==undefined?{s:m[1]}:{t:m[2]});return out;};
+  const strs=T=>T.filter(x=>x.s!==undefined).map(x=>x.s);
+  const parentEl=()=>{for(let i=stack.length-1;i>=0;i--) if(stack[i].kind==="element") return stack[i].id; return null;};
+  const inBlock=k=>stack.some(f=>f.kind===k);
+  const splitTags=s=>(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+  src.split(/\r?\n/).forEach(raw=>{
+    let line=raw.trim(); if(!line||line.startsWith("//")) return;
+    if(line==="}"){ stack.pop(); return; }
+    const opens=line.endsWith("{"); if(opens) line=line.slice(0,-1).trim();
+    const T=tok(line); if(!T.length){ if(opens) stack.push({kind:"anon"}); return; }
+    const t0=T[0].t;
+    /* a block keyword followed by "=" is an identifier assigned an element ("model = component …"), never the block: read it below */
+    if(["workspace","model","views","styles"].includes(t0)&&!(T[1]&&T[1].t==="=")){ if(opens) stack.push({kind:t0}); return; }
+    if(t0==="!identifiers") return;
+    if(inBlock("styles")){ if(t0==="element"){ const props={}, body=T.slice(2).map(x=>x.t!==undefined?x.t:x.s).filter(x=>x!=="{"&&x!=="}"); for(let i=0;i+1<body.length;i+=2) props[body[i]]=body[i+1]; M.styles.push({tag:T[1].s,props}); } return; }
+    if(inBlock("views")){
+      const cur=stack[stack.length-1];
+      if(cur&&cur.kind==="view"&&cur.view.type==="dynamic"&&T.length>=3&&T[1].t==="->"){ cur.view.steps.push({from:T[0].t,to:T[2].t,desc:T[3]?T[3].s:""}); return; }
+      if(["systemContext","container","component","dynamic"].includes(t0)){ const v={type:t0,scope:T[1].t,key:T[2]?T[2].s:t0,desc:T[3]?T[3].s:"",steps:[]}; M.views.push(v); if(opens) stack.push({kind:"view",view:v}); return; }
+      if(opens) stack.push({kind:"anon"}); return;
+    }
+    if(T.length>=3&&T[1].t==="->"){ M.rels.push({from:T[0].t,to:T[2].t,desc:T[3]?T[3].s:"",tech:T[4]?T[4].s:""}); if(opens) stack.push({kind:"anon"}); return; }
+    if(T.length>=3&&T[1].t==="="&&TYPE[T[2].t]){
+      const type=T[2].t, S=strs(T.slice(3)), parent=parentEl(), id=parent?parent+"."+t0:t0;
+      const el={id,ident:t0,type,name:S[0]||t0,desc:S[1]||"",tech:"",tags:[],parent};
+      if(type==="person"||type==="softwareSystem") el.tags=splitTags(S[2]); else { el.tech=S[2]||""; el.tags=splitTags(S[3]); }
+      el.tags=["Element",TYPE[type],...el.tags];
+      M.elements[id]=el; M.order.push(id);
+      if(opens) stack.push({kind:"element",id}); return;
+    }
+    if(opens) stack.push({kind:"anon"});
+  });
+  return M;
+}
+/* a count and its noun, "1 view", "2 views" */
+const plural=(n,one,many)=>`${n} ${Number(n)===1?one:(many||one+"s")}`;
+const C4=parseDsl(document.getElementById("dsl").textContent);
+$("#dsl-stats").textContent=`${plural(C4.order.length,"element")} · ${plural(C4.rels.length,"relationship")} · ${plural(C4.views.length,"view")}`;
+
+const el=id=>C4.elements[id];
+/* Planned, from the data (system/RULES.md §2, "Planned parts"): a part tied to a DSL element — a structure node through MODEL.c4 or its
+   own `part`, a thread, a flow node, a lifeline or a sequence step through `part`, a hand-written element through data-part="<element
+   id>" — is planned while that element carries the Planned tag, so apply-state.js marks it built by editing workspace.dsl alone. A
+   literal kind "planned" or planned:true still draws an untied part dashed. */
+const dslPlanned=id=>!!(id&&el(id)&&el(id).tags.includes("Planned"));
+const isPlanned=x=>!!x&&typeof x==="object"&&(x.planned===true||x.kind==="planned"||dslPlanned(x.part));
+function applyParts(root){ (root||document).querySelectorAll("[data-part]").forEach(e=>e.classList.toggle("planned",dslPlanned(e.dataset.part)));
+  document.querySelectorAll(".thread[data-t]").forEach(e=>{ const t=MODEL.threads[e.dataset.t]; if(t&&t.part) e.classList.toggle("planned",isPlanned(t)); }); }
+applyParts();
+function isWithin(id,scope){ let e=el(id); while(e){ if(e.id===scope) return true; e=el(e.parent); } return false; }
+function topOf(id){ let e=el(id); while(e&&e.parent) e=el(e.parent); return e?e.id:id; }
+function childIn(id,scope){ let e=el(id); while(e){ if(e.parent===scope) return e.id; e=el(e.parent); } return null; }
+function styleFor(e){ const st={background:"#dddddd",color:"#000000",border:"solid",shape:"box",opacity:"100"}; e.tags.forEach(tag=>C4.styles.forEach(s=>{ if(s.tag===tag) Object.assign(st,s.props); })); return st; }
+const TYPE_LABEL={person:"Person",softwareSystem:"Software System",container:"Container",component:"Component"};
+const LEVEL={systemContext:["1","System Context"],container:["2","Containers"],component:["3","Components"],dynamic:["⟲","Dynamic"]};
+const fit=(s,n)=>s.length>n?s.slice(0,n-1)+"…":s;
+function wrap(s,maxChars){ const out=[]; let cur=""; s.split(/\s+/).forEach(w=>{ if((cur+" "+w).trim().length>maxChars){ if(cur) out.push(cur); cur=w; } else cur=(cur+" "+w).trim(); }); if(cur) out.push(cur); return out; }
+function edgePoint(box,tx,ty){ const [x,y,w,h]=box,cx=x+w/2,cy=y+h/2,dx=tx-cx,dy=ty-cy; if(!dx&&!dy) return [cx,cy]; const t=Math.min(Math.abs(w/2/(dx||1e-9)),Math.abs(h/2/(dy||1e-9))); return [cx+dx*t,cy+dy*t]; }
+
+/* Which elements a view shows and how the model's relationships map onto them (Structurizr's "include *" with implied relationships). */
+function resolveView(v){
+  let scoped, map;
+  if(v.type==="systemContext"){ scoped=[v.scope]; map=id=>isWithin(id,v.scope)?v.scope:topOf(id); }
+  else if(v.type==="container"){ scoped=C4.order.filter(id=>el(id).parent===v.scope); map=id=>isWithin(id,v.scope)?(id===v.scope?null:childIn(id,v.scope)):topOf(id); }
+  else if(v.type==="component"){ const sys=el(v.scope).parent; scoped=C4.order.filter(id=>el(id).parent===v.scope); map=id=>isWithin(id,v.scope)?(id===v.scope?null:childIn(id,v.scope)):(sys&&isWithin(id,sys)?childIn(id,sys):topOf(id)); }
+  else { const ids=[]; v.steps.forEach(s=>{[s.from,s.to].forEach(x=>{ if(!ids.includes(x)) ids.push(x); });}); return {els:ids,scoped:[],rels:v.steps.map((s,i)=>({a:s.from,b:s.to,desc:s.desc,num:i+1})),boundary:null}; }
+  const els=new Set(scoped), rels=[], seen={};
+  C4.rels.forEach(r=>{ const a=map(r.from), b=map(r.to); if(!a||!b||a===b) return; if(!scoped.includes(a)&&!scoped.includes(b)) return; els.add(a); els.add(b); const k=a+">"+b; if(seen[k]){ seen[k].n++; return; } seen[k]={a,b,desc:r.desc,n:1,dashed:el(r.from).tags.includes("Planned")||el(r.to).tags.includes("Planned")}; rels.push(seen[k]); });
+  const s=el(v.scope);
+  return {els:C4.order.filter(id=>els.has(id)),scoped,rels,boundary:v.type==="systemContext"?null:{label:`${s.name} · ${TYPE_LABEL[s.type]}${s.tech?" · "+s.tech:""}`}};
+}
+
+/* Layout: the scoped elements sit inside a boundary frame in bands (public surface / internals / outside the
+   stack), people outside on the left, other systems outside on the right. Internals are ordered by the mean
+   position of the public elements they touch, so most relationships run straight down. Relationships are
+   routed orthogonally through lanes in the gaps between bands, so no line crosses a card. */
+const bandOf=id=>{ const t=el(id).tags; return t.includes("Planned")||t.includes("Standalone")?2:t.includes("Internal")?1:0; };
+const BAND_NAMES={component:["PUBLIC SURFACE","INTERNALS","OUTSIDE THE STACK · PLANNED"],container:["SYSTEMS","INTERNAL","PLANNED"],systemContext:["","",""]};
+function layoutC4(R,vtype){
+  const W=184,H=118,GX=22,GY=20,PAD=18,LANE=12,LABEL=26;
+  const scoped=R.scoped.filter(id=>R.els.includes(id));
+  const left=R.els.filter(id=>!scoped.includes(id)&&el(id).type==="person");
+  const right=R.els.filter(id=>!scoped.includes(id)&&el(id).type!=="person");
+  const raw=[[],[],[]]; scoped.forEach(id=>raw[bandOf(id)].push(id));
+  const idx0={}; raw[0].forEach((id,i)=>idx0[id]=i);
+  const bary=id=>{ const ns=R.rels.filter(r=>r.a===id||r.b===id).map(r=>r.a===id?r.b:r.a).filter(n=>idx0[n]!==undefined).map(n=>idx0[n]); return ns.length?ns.reduce((s,x)=>s+x,0)/ns.length:99; };
+  raw[1].sort((p,q)=>bary(p)-bary(q)||scoped.indexOf(p)-scoped.indexOf(q));
+  const bands=[],names=[]; raw.forEach((b,i)=>{ if(b.length){ bands.push(b); names.push((BAND_NAMES[vtype]||BAND_NAMES.component)[i]); } });
+  const bandIndex={}; bands.forEach((b,i)=>b.forEach(id=>bandIndex[id]=i));
+  const laneCount=new Array(bands.length+1).fill(0);
+  const plans=R.rels.map(r=>{
+    const ia=bandIndex[r.a], ib=bandIndex[r.b], p={r};
+    if(ia===undefined&&ib===undefined){ p.kind="ext"; p.sides=[]; }
+    else if(ia===undefined){ p.kind="fromExt"; p.region=ib; p.sides=[[r.a,"inner"],[r.b,"top"]]; }
+    else if(ib===undefined){ p.kind="toExt"; p.region=ia; p.sides=[[r.a,"top"],[r.b,"inner"]]; }
+    else if(ia===ib){ p.kind="same"; p.below=ia!==0; p.region=ia===0?0:ia+1; const s=p.below?"bottom":"top"; p.sides=[[r.a,s],[r.b,s]]; }
+    else if(ib===ia+1){ p.kind="down"; p.region=ib; p.sides=[[r.a,"bottom"],[r.b,"top"]]; }
+    else if(ib===ia-1){ p.kind="up"; p.region=ia; p.sides=[[r.a,"top"],[r.b,"bottom"]]; }
+    else { p.kind="around"; p.upward=ib<ia; p.region=p.upward?ia:ia+1; p.region2=ib; p.sides=[[r.a,p.upward?"top":"bottom"],[r.b,"top"]]; }
+    if(p.region!==undefined) p.lane=laneCount[p.region]++;
+    if(p.region2!==undefined) p.lane2=laneCount[p.region2]++;
+    return p;
+  });
+  const regionH=laneCount.map(n=>Math.max(36,n*LANE+22));
+  const innerW=Math.max(W,...bands.map(b=>b.length*W+(b.length-1)*GX))+2*GX;
+  const bx0=PAD+(left.length?W+2*GX:0), pos={}, regionY=[], bandBox=[];
+  let y=PAD+(R.boundary?LABEL:0);
+  bands.forEach((b,i)=>{ regionY[i]=y; y+=regionH[i]; const total=b.length*W+(b.length-1)*GX, x0=bx0+(innerW-total)/2; b.forEach((id,k)=>pos[id]=[x0+k*(W+GX),y,W,H]); bandBox[i]=[y,y+H]; y+=H; });
+  regionY[bands.length]=y; y+=regionH[bands.length];
+  const boundary=R.boundary?{x:bx0,y:PAD,w:innerW,h:y-PAD,label:R.boundary.label}:null;
+  const cy0=bands.length?(bandBox[0][0]+bandBox[0][1])/2:y/2;
+  // Clamp the column's start once, not each card: a column taller than the band row would otherwise pin several cards to PAD, one on top of another.
+  const stack=(ids,x)=>{ const tot=ids.length*H+(ids.length-1)*GY, y0=Math.max(PAD,cy0-tot/2); ids.forEach((id,k)=>pos[id]=[x,y0+k*(H+GY),W,H]); };
+  stack(left,PAD); stack(right,bx0+innerW+2*GX);
+  const width=bx0+innerW+(right.length?2*GX+W:0)+PAD;
+  const height=Math.max(y+PAD,...Object.values(pos).map(p=>p[1]+p[3]+PAD));
+  return {pos,width,height,boundary,regionY,bands,names,bandBox,plans,LANE,bx0,innerW,left,right};
+}
+function drawRoutes(svg,L){
+  const slots={}; L.plans.forEach(p=>p.sides.forEach(([id,side])=>{ const k=id+"|"+side; (slots[k]=slots[k]||{n:0,k:0}).n++; }));
+  const take=(id,side)=>{ const s=slots[id+"|"+side]; const off=(s.k-(s.n-1)/2)*16; s.k++; return off; };
+  const P=L.pos, laneY=(rg,l)=>L.regionY[rg]+12+l*L.LANE;
+  const box=id=>{ const [x,y,w,h]=P[id]; return {x,y,w,h,cx:x+w/2,cy:y+h/2,top:y,bottom:y+h,left:x,right:x+w}; };
+  const innerX=id=>L.left.includes(id)?box(id).right:box(id).left;
+  const turnX=(id,lane)=>L.left.includes(id)?L.bx0-10-(lane%4)*6:L.bx0+L.innerW+10+(lane%4)*6;
+  L.plans.forEach(p=>{
+    const r=p.r, A=box(r.a), B=box(r.b); let d, seg;
+    switch(p.kind){
+      case "ext": { const [ax,ay]=edgePoint(P[r.a],B.cx,B.cy),[bx,by]=edgePoint(P[r.b],A.cx,A.cy); d=`M${ax},${ay} L${bx},${by}`; seg=[(ax+bx)/2,(ay+by)/2]; break; }
+      case "same": { const ly=laneY(p.region,p.lane), s=p.below?"bottom":"top", ax=A.cx+take(r.a,s), bx=B.cx+take(r.b,s), ya=p.below?A.bottom:A.top, yb=p.below?B.bottom:B.top; d=`M${ax},${ya} L${ax},${ly} L${bx},${ly} L${bx},${yb}`; seg=[(ax+bx)/2,ly]; break; }
+      case "down": { const ly=laneY(p.region,p.lane), ax=A.cx+take(r.a,"bottom"), bx=B.cx+take(r.b,"top"); d=`M${ax},${A.bottom} L${ax},${ly} L${bx},${ly} L${bx},${B.top}`; seg=[(ax+bx)/2,ly]; break; }
+      case "up": { const ly=laneY(p.region,p.lane), ax=A.cx+take(r.a,"top"), bx=B.cx+take(r.b,"bottom"); d=`M${ax},${A.top} L${ax},${ly} L${bx},${ly} L${bx},${B.bottom}`; seg=[(ax+bx)/2,ly]; break; }
+      case "fromExt": { const ly=laneY(p.region,p.lane), ay=A.cy+take(r.a,"inner"), xi=innerX(r.a), xt=turnX(r.a,p.lane), bx=B.cx+take(r.b,"top"); d=`M${xi},${ay} L${xt},${ay} L${xt},${ly} L${bx},${ly} L${bx},${B.top}`; seg=[(xt+bx)/2,ly]; break; }
+      case "toExt": { const ly=laneY(p.region,p.lane), ax=A.cx+take(r.a,"top"), by=B.cy+take(r.b,"inner"), xt=turnX(r.b,p.lane), xi=innerX(r.b); d=`M${ax},${A.top} L${ax},${ly} L${xt},${ly} L${xt},${by} L${xi},${by}`; seg=[(ax+xt)/2,ly]; break; }
+      case "around": { const l1=laneY(p.region,p.lane), l2=laneY(p.region2,p.lane2), ya=p.upward?A.top:A.bottom, ax=A.cx+take(r.a,p.upward?"top":"bottom"), bx=B.cx+take(r.b,"top"), xs=L.bx0+L.innerW-10; d=`M${ax},${ya} L${ax},${l1} L${xs},${l1} L${xs},${l2} L${bx},${l2} L${bx},${B.top}`; seg=[(bx+xs)/2,l2]; break; }
+    }
+    const g=mk("g",{class:"c4rel"+(r.dashed?" dashed":""),"data-a":r.a,"data-b":r.b},svg);
+    mk("path",{d,"marker-end":"url(#c4arr)"},g);
+    const label=fit(r.desc.split(/[—;:]/)[0].trim(),30), lw=label.length*5.1+12;
+    mk("rect",{class:"lbg",x:seg[0]-lw/2,y:seg[1]-7,width:lw,height:13,rx:6.5},g);
+    txt(g,seg[0],seg[1]+3,label,"","middle");
+  });
+}
+function drawFrame(svg,L){
+  if(L.boundary){ const b=L.boundary; mk("rect",{class:"c4bound",x:b.x,y:b.y,width:b.w,height:b.h,rx:10},svg); const g=mk("g",{class:"c4boundl"},svg); const tw=b.label.length*6.3+18; mk("rect",{x:b.x+12,y:b.y-10,width:tw,height:20,rx:10},g); txt(g,b.x+21,b.y+4,b.label,""); }
+  if(L.bands.length>1) L.bands.forEach((b,i)=>txt(svg,L.bx0+14,L.bandBox[i][0]-6,L.names[i],"c4band"));
+}
+/* One element card: header band in the DSL style's colour with a type glyph (UML component, container, system, person), body in the board's own ink. */
+function glyph(g,type,x,y,color){
+  if(type==="person"){ mk("circle",{cx:x+7,cy:y+4,r:3.2,fill:color},g); mk("path",{d:`M${x+1},${y+14} a6,6 0 0 1 12,0 z`,fill:color},g); }
+  else if(type==="softwareSystem"){ mk("rect",{x:x+1,y:y+1,width:9,height:9,rx:1.5,fill:color,opacity:.55},g); mk("rect",{x:x+4,y:y+4,width:9,height:9,rx:1.5,fill:color},g); }
+  else if(type==="container"){ mk("rect",{x:x+1,y:y+3,width:12,height:10,rx:2,fill:color},g); mk("rect",{x:x+1,y:y+1,width:6,height:3,rx:1,fill:color},g); }
+  else { mk("rect",{x:x+4,y:y+1,width:9,height:12,rx:1.5,fill:color},g); mk("rect",{x:x+1,y:y+3.5,width:6,height:2.5,fill:color},g); mk("rect",{x:x+1,y:y+8,width:6,height:2.5,fill:color},g); }
+}
+function cardEvents(g,id){
+  const go=()=>selectC4(id);
+  g.addEventListener("click",go); g.addEventListener("keydown",ev=>{ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); go(); } });
+  g.addEventListener("mouseenter",()=>document.querySelectorAll("#svg-c4 .c4rel").forEach(x=>x.classList.toggle("hl",x.dataset.a===id||x.dataset.b===id)));
+  g.addEventListener("mouseleave",()=>document.querySelectorAll("#svg-c4 .c4rel.hl").forEach(x=>x.classList.remove("hl")));
+}
+function drawCard(svg,id,box){
+  const e=el(id), st=styleFor(e), [x,y,w,h]=box, g=mk("g",{class:"c4el"+(e.tags.includes("Planned")?" planned":""),tabindex:0,role:"button","data-id":id,"aria-label":e.name,opacity:(+st.opacity||100)/100},svg);
+  const dash=st.border==="dashed"?"6 4":st.border==="dotted"?"2 3":"none";
+  mk("rect",{class:"card",x,y,width:w,height:h,rx:7,"stroke-dasharray":dash},g);
+  mk("path",{class:"hdr",d:`M${x+7},${y} H${x+w-7} a7,7 0 0 1 7,7 V${y+30} H${x} V${y+7} a7,7 0 0 1 7,-7 Z`,fill:st.background},g);
+  glyph(g,e.type,x+10,y+8,st.color);
+  const name=mk("text",{x:x+30,y:y+20,class:"n",fill:st.color},g); name.textContent=fit(e.name,24);
+  txt(g,x+10,y+46,fit(`[${TYPE_LABEL[e.type]}${e.tech?" · "+e.tech:""}]`,38),"m");
+  const room=Math.floor((h-60-16)/12), lines=wrap(e.desc,38).slice(0,Math.max(0,room)); if(lines.length) txt(g,x+10,y+60,lines,"d",null,12);
+  const tags=e.tags.slice(2); if(tags.length) txt(g,x+10,y+h-7,fit(tags.join(" · "),40),"tg");
+  cardEvents(g,id);
+}
+/* The dynamic view is a sequence, so it is drawn as one: the elements as lifelines in order of first appearance, the steps as numbered messages. */
+function renderDynamic(R,svg){
+  const cols=R.els, X=i=>112+i*150, Y0=98, DY=44, H=Y0+R.rels.length*DY+14, W=112+(cols.length-1)*150+112;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  cols.forEach((id,i)=>{ const x=X(i); mk("line",{x1:x,y1:68,x2:x,y2:H-6,class:"c4life"+(el(id).tags.includes("Planned")?" planned":"")},svg); });
+  R.rels.forEach(r=>{
+    const i=cols.indexOf(r.a), j=cols.indexOf(r.b), y=Y0+(r.num-1)*DY, a=X(i), b=X(j), g=mk("g",{class:"c4rel"+(el(r.a).tags.includes("Planned")||el(r.b).tags.includes("Planned")?" planned":""),"data-a":r.a,"data-b":r.b,"data-num":r.num},svg);
+    if(i===j){ mk("path",{d:`M${a},${y-10} L${a+34},${y-10} L${a+34},${y+8} L${a+2},${y+8}`,"marker-end":"url(#c4arr)"},g); txt(g,a+42,y+2,fit(r.desc,40),""); }
+    else { const dir=b>a?1:-1; mk("path",{d:`M${a},${y} L${b-dir*3},${y}`,"marker-end":"url(#c4arr)"},g); const label=fit(r.desc.split(/[—;]/)[0].trim(),44), mx=(a+b)/2, lw=label.length*5.2+12; mk("rect",{class:"lbg",x:mx-lw/2,y:y-18,width:lw,height:14,rx:7},g); txt(g,mx,y-8,label,"","middle"); }
+    const nb=mk("g",{class:"num"},g); mk("circle",{cx:Math.min(a,b)-13,cy:y,r:9},nb); txt(nb,Math.min(a,b)-13,y+3.5,String(r.num),"","middle");
+    g.style.cursor="pointer"; g.addEventListener("click",()=>selectC4Step(r.num));
+  });
+  cols.forEach((id,i)=>{ const e=el(id), st=styleFor(e), x=X(i), g=mk("g",{class:"c4el"+(e.tags.includes("Planned")?" planned":""),tabindex:0,role:"button","data-id":id,"aria-label":e.name,opacity:(+st.opacity||100)/100},svg);
+    mk("rect",{class:"card",x:x-66,y:14,width:132,height:50,rx:6},g);
+    mk("path",{class:"hdr",d:`M${x-60},14 H${x+60} a6,6 0 0 1 6,6 V40 H${x-66} V20 a6,6 0 0 1 6,-6 Z`,fill:st.background},g);
+    glyph(g,e.type,x-60,20,st.color);
+    const n=mk("text",{x:x-42,y:32,class:"n",fill:st.color},g); n.textContent=fit(e.name,15);
+    txt(g,x,56,fit(`[${TYPE_LABEL[e.type]}]`,22),"m","middle");
+    cardEvents(g,id); });
+  return W;
+}
+
+let c4View=null, c4Sel=null, c4Zoom="fit";
+/* fit: the whole view scaled into the panel; 1:1: natural size, scrolling sideways inside the canvas. */
+function applyZoom(){ const svg=$("#svg-c4"); svg.style.width = c4Zoom==="fit" ? "100%" : (c4View&&c4View.width ? c4View.width+"px" : "100%"); document.querySelectorAll("#c4-head .zoom button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.z===c4Zoom))); }
+/* The C4 legend, drawn with each view (GUIDANCE.md §2): one swatch per DSL element style this view draws (element kinds, External,
+   Internal, Standalone, Planned), then the line encodings it draws: the planned arrow and the boundary frame only where they are. */
+function c4Key(R){
+  $("#c4-key").innerHTML=C4.styles.filter(s=>s.props.background&&R.els.some(id=>el(id).tags.includes(s.tag))).map(s=>`<span><i${s.tag==="Planned"?' class="pln"':""} style="background:${esc(s.props.background)};border-style:${esc(s.props.border||"solid")};opacity:${(+s.props.opacity||100)/100}"></i>${esc(s.tag)}</span>`).join("")+`<span><i class="arrow"></i>relationship, labelled with its DSL description</span>`+(document.querySelector("#svg-c4 .c4rel.dashed, #svg-c4 .c4rel.planned")?`<span><i class="arrow dashed"></i>to or from a Planned element</span>`:"")+(document.querySelector("#svg-c4 .c4bound")?`<span><i class="frame"></i>boundary: the view's scope</span>`:"");
+}
+function renderC4(vi){
+  const v=C4.views[vi], R=resolveView(v), svg=$("#svg-c4"); c4View={v,R}; c4Sel=null; svg.innerHTML="";
+  const d=mk("defs",{},svg); const m=mk("marker",{id:"c4arr",viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"8",markerHeight:"8",orient:"auto-start-reverse"},d); mk("path",{d:"M0,0 L10,5 L0,10 z",fill:"var(--rel)"},m);
+  const s=el(v.scope), [lv,lname]=LEVEL[v.type];
+  $("#c4-head").innerHTML=`<span class="lvl">LEVEL ${lv} · ${lname.toUpperCase()}</span><span class="ttl">${esc(s.name)} — ${esc(v.key)}</span><span class="desc">${esc(v.desc||"")}</span><span class="zoom" role="group" aria-label="Zoom"><button data-z="fit">fit</button><button data-z="1">1:1</button></span>`;
+  document.querySelectorAll("#c4-head .zoom button").forEach(b=>b.addEventListener("click",()=>{ c4Zoom=b.dataset.z; applyZoom(); }));
+  if(v.type==="dynamic") c4View.width=renderDynamic(R,svg);
+  else { const L=layoutC4(R,v.type); c4View.width=L.width; svg.setAttribute("viewBox",`0 0 ${L.width} ${L.height}`); drawFrame(svg,L); drawRoutes(svg,L); R.els.forEach(id=>drawCard(svg,id,L.pos[id])); }
+  document.querySelectorAll("#c4-ladder .rung").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(vi))));
+  $("#dsl-view").hidden=true; $("#c4-canvas").hidden=false; $("#c4-head").hidden=false; $("#c4-key").hidden=false;
+  c4Key(R); applyZoom(); inspectC4();
+}
+/* The inspector for what the C4 tab has on screen: the source, else the selected element or dynamic step, else the view itself. */
+function inspectC4(){
+  if(!$("#dsl-view").hidden) return showDsl();
+  const {v,R}=c4View, [lv,lname]=LEVEL[v.type], sel=$("#svg-c4 .c4el.sel"), cur=$("#svg-c4 .c4rel.cur");
+  if(sel) selectC4(sel.dataset.id); else if(cur) selectC4Step(+cur.dataset.num); else if(v.type==="dynamic") c4StepList();
+  else inspect(`<div class="kicker">C4 · LEVEL ${lv} · ${lname.toUpperCase()}</div><div class="name">${esc(v.key)}</div><div class="vis">${plural(R.els.length,"element")} · ${plural(R.rels.length,"relationship")} · from workspace.dsl</div><p>${esc(v.desc||"")}</p><p>Hover an element to trace its relationships; click it for its description, technology, tags and what it uses and is used by.</p>`);
+}
+function selectC4(id){
+  const e=el(id); c4Sel=id;
+  document.querySelectorAll("#svg-c4 .c4el").forEach(g=>{ g.classList.toggle("sel",g.dataset.id===id); g.classList.remove("dim"); });
+  document.querySelectorAll("#svg-c4 .c4rel").forEach(g=>{ g.classList.remove("cur"); g.classList.toggle("dim",g.dataset.a!==id&&g.dataset.b!==id); });
+  const out=C4.rels.filter(r=>r.from===id), inn=C4.rels.filter(r=>r.to===id);
+  const mapNode=Object.entries(MODEL.c4).filter(([,c])=>c===id).map(([n])=>n);
+  let html=`<div class="kicker">C4 ELEMENT · ${TYPE_LABEL[e.type].toUpperCase()}</div><div class="name">${esc(e.name)}</div><div class="vis">${esc(e.tech||"")}</div><p>${esc(e.desc)}</p><dl>`;
+  html+=`<dt>Tags</dt><dd>${e.tags.map(t=>`<span class="tchip">${esc(t)}</span>`).join("")}</dd>`;
+  html+=`<dt>Identifier</dt><dd><code>${e.id}</code></dd>`;
+  if(out.length) html+=`<dt>Uses</dt><dd>${out.map(r=>`→ <b>${esc(el(r.to).name)}</b> — ${esc(r.desc)}`).join("<br>")}</dd>`;
+  if(inn.length) html+=`<dt>Used by</dt><dd>${inn.map(r=>`← <b>${esc(el(r.from).name)}</b> — ${esc(r.desc)}`).join("<br>")}</dd>`;
+  if(mapNode.length) html+=`<dt>On the component map</dt><dd><button class="linkbtn" data-node="${mapNode[0]}">${esc(MODEL.structure.nodes.find(n=>n.id===mapNode[0]).t)} → open in Structure</button></dd>`;
+  inspect(html+"</dl>");
+  const b=$("#insp-body .linkbtn[data-node]"); if(b) b.addEventListener("click",()=>{ show("t-structure"); selectNode(b.dataset.node); });
+}
+function c4StepList(){
+  const {v}=c4View;
+  inspect(`<div class="kicker">C4 · DYNAMIC VIEW</div><div class="name">${esc(v.key)}</div><div class="vis">${v.steps.length} numbered steps · click one</div><p>${esc(v.desc)}</p><ol class="steps-list" id="c4steps">${v.steps.map((s,i)=>`<li data-step="${i+1}"><b>${i+1}</b><span>${esc(el(s.from).name)} → ${esc(el(s.to).name)}</span></li>`).join("")}</ol>`);
+  document.querySelectorAll("#c4steps li").forEach(li=>li.addEventListener("click",()=>selectC4Step(+li.dataset.step)));
+}
+function selectC4Step(n){
+  const {v}=c4View, s=v.steps[n-1];
+  document.querySelectorAll("#svg-c4 .c4rel").forEach(g=>{ const on=+g.dataset.num===n; g.classList.toggle("cur",on); g.classList.toggle("dim",!on); });
+  document.querySelectorAll("#svg-c4 .c4el").forEach(g=>{ g.classList.remove("sel"); g.classList.toggle("dim",g.dataset.id!==s.from&&g.dataset.id!==s.to); });
+  if(!document.getElementById("c4steps")) c4StepList();
+  document.querySelectorAll("#c4steps li").forEach(li=>li.classList.toggle("on",+li.dataset.step===n));
+  const old=document.getElementById("c4stepnote"); if(old) old.remove();
+  const p=document.createElement("p"); p.id="c4stepnote"; p.innerHTML=`<b>${n}.</b> ${esc(el(s.from).name)} → ${esc(el(s.to).name)}: ${esc(s.desc)}`; $("#insp-body").appendChild(p);
+}
+function showDsl(){
+  document.querySelectorAll("#c4-ladder .rung").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v==="dsl")));
+  $("#c4-canvas").hidden=true; $("#c4-head").hidden=true; $("#c4-key").hidden=true; const pre=$("#dsl-view"); pre.hidden=false;
+  if(!pre.dataset.done){ pre.dataset.done="1"; pre.innerHTML=document.getElementById("dsl").textContent.trim().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/(\/\/.*)$/gm,'<span class="c">$1</span>').replace(/^(\s*)(workspace|model|views|styles|element|person|softwareSystem|container|component|systemContext|dynamic|include|autoLayout|!identifiers)\b/gm,'$1<span class="k">$2</span>').replace(/("[^"]*")/g,'<span class="s">$1</span>'); }
+  inspect(`<div class="kicker">C4 · SOURCE</div><div class="name">workspace.dsl</div><div class="vis">${plural(C4.order.length,"element")} · ${plural(C4.rels.length,"relationship")} · ${plural(C4.views.length,"view")} · ${plural(C4.styles.length,"style")}</div><p>The committed file. It is edited when a run changes the structure and re-embedded here verbatim, and the views above follow. <code>structurizr-cli export -workspace workspace.dsl -format plantuml</code> renders the same model outside this board.</p>`);
+}
+(function buildLadderAndKey(){
+  const host=$("#c4-ladder"), levels=C4.views.filter(v=>v.type!=="dynamic");
+  C4.views.forEach((v,i)=>{ const b=document.createElement("button"); const isLevel=v.type!=="dynamic"; b.className="rung"+(isLevel?" lvl":" sep")+(isLevel&&levels[levels.length-1]===v?" last":""); b.dataset.v=String(i); b.setAttribute("aria-pressed","false"); const [lv,nm]=LEVEL[v.type]; b.innerHTML=`<span class="lv">${lv}</span><span class="nm">${nm}</span><span class="sc">${esc(v.type==="dynamic"?v.key:el(v.scope).name)}</span>`; b.addEventListener("click",()=>renderC4(i)); host.appendChild(b); });
+  const d=document.createElement("button"); d.className="rung sep"; d.dataset.v="dsl"; d.setAttribute("aria-pressed","false"); d.innerHTML=`<span class="lv">{ }</span><span class="nm">Source</span><span class="sc">workspace.dsl</span>`; d.addEventListener("click",showDsl); host.appendChild(d);
+})();
+function openC4(elementId){ show("t-c4"); const vi=C4.views.findIndex(v=>v.type==="component"&&isWithin(elementId,v.scope)); renderC4(vi>=0?vi:0); selectC4(elementId); }
+
+/* ---------- Structure ---------- */
+function renderStructure(){
+  const svg=$("#svg-structure"); if(svg.dataset.done) return; svg.dataset.done="1";
+  /* the canvas: 1000 wide, its height recorded on the board (MODEL.structure.h: 612 by default, at most 812; dashboards-skill/35) */
+  const SH=Math.min(812,Math.max(200,Number(MODEL.structure.h)||612)); svg.setAttribute("viewBox",`0 0 1000 ${SH}`);
+  /* a neutral band behind a lane (the wire between two sides, say), only where MODEL.structure.band asks for one: [x, y, w, h] */
+  const band=MODEL.structure.band; if(Array.isArray(band)&&band.length===4) mk("rect",{x:band[0],y:band[1],width:band[2],height:band[3],rx:6,class:"band"},svg);
+  MODEL.structure.lanes.forEach(([l,x,y,a])=>txt(svg,x,y,l,"lane",a));
+  MODEL.structure.nodes.forEach(n=>{
+    const pl=isPlanned(n)||dslPlanned(MODEL.c4[n.id]);
+    const g=mk("g",{class:`node ${n.side} ${n.vis}${n.container?" container":""}${n.chip?" chip":""}${n.kind&&n.kind!=="planned"?" "+n.kind:""}${pl?" planned":""}`,tabindex:0,role:"button","data-id":n.id,"aria-label":n.t},svg);
+    mk("rect",{x:n.x,y:n.y,width:n.w,height:n.h,rx:n.chip?17:5},g);
+    const subs=Array.isArray(n.s)?n.s:[n.s];
+    if(n.chip){ txt(g,n.x+n.w/2,n.y+14,n.t,"t","middle"); txt(g,n.x+n.w/2,n.y+26,subs,"s","middle"); }
+    else if(n.container){ txt(g,n.x+10,n.y+18,n.t,"t"); txt(g,n.x+10,n.y+32,subs,"s"); }
+    else { txt(g,n.x+8,n.y+16,n.t,"t"); txt(g,n.x+8,n.y+29,subs,"s",null,11); }
+    const go=()=>selectNode(n.id);
+    g.addEventListener("click",go);
+    g.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } });
+  });
+  MODEL.structure.notes.forEach(nt=>txt(svg,nt.x,nt.y,nt.lines,"note",null,13));
+}
+function selectNode(id){
+  const n=MODEL.structure.nodes.find(x=>x.id===id); if(!n) return;
+  document.querySelectorAll("#svg-structure .node").forEach(g=>g.classList.toggle("sel",g.dataset.id===id));
+  const d=n.d||{}; const sideName=(MODEL.sides||{})[n.side]||n.side||"";
+  let html=`<div class="kicker">${n.chip?"DATAGRAM TAG":"COMPONENT"} · ${sideName.toUpperCase()}</div><div class="name">${esc(n.t)}</div><div class="vis">${esc(d.vis||"")}</div><p>${esc(d.role||"")}</p><dl>`;
+  if(d.files&&d.files.length) html+=`<dt>Source</dt><dd>${d.files.map(flink).join("<br>")}</dd>`;
+  if(d.threads&&d.threads.length) html+=`<dt>Runs on</dt><dd>${d.threads.map(t=>`<span class="tchip ${MODEL.threads[t].side}">${t}</span>`).join("")}</dd>`;
+  const c4id=MODEL.c4[id]; if(c4id&&el(c4id)){ const e=el(c4id); html+=`<dt>In the C4 model</dt><dd><button class="linkbtn" data-c4="${c4id}">${esc(e.name)} · ${e.tags.slice(2).map(esc).join(", ")||"component"} → open</button></dd>`; }
+  inspect(html+(typeof hook==="function"?hook("structure-inspector",n):"")+"</dl>");
+  const b=$("#insp-body .linkbtn[data-c4]"); if(b) b.addEventListener("click",()=>openC4(b.dataset.c4));
+}
+
+/* ---------- Threads ---------- */
+function selectThread(id){
+  const t=MODEL.threads[id]; if(!t) return;
+  document.querySelectorAll(".thread").forEach(x=>x.classList.toggle("sel",x.dataset.t===id));
+  let html=`<div class="kicker">${esc((t.kind||"thread").toUpperCase())} · ${esc(((MODEL.sides||{})[t.side]||t.side).toUpperCase())}${t.daemon===false?"":" · DAEMON"}</div><div class="name">${id}</div><div class="vis">created ${esc(t.created)}</div><p>${esc(t.runs)}</p><dl>`;
+  if(t.sends.length) html+=`<dt>Puts on the wire</dt><dd>${t.sends.map(esc).join("<br>")}</dd>`;
+  if(t.note) html+=`<dt>Note</dt><dd>${esc(t.note)}</dd>`;
+  inspect(html+"</dl>");
+}
+document.querySelectorAll(".thread").forEach(x=>{ x.addEventListener("click",()=>selectThread(x.dataset.t)); x.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); selectThread(x.dataset.t); } }); });
+
+/* ---------- Decision path (MODEL.flows) ----------
+   Each flow variant carries its own controls, nodes, edges and a rules(state) function; the board draws the
+   grid, builds the controls, and lights the path the rules return. Nothing here is specific to one system. */
+const CW=138,CH=70,NW=118,NH=50,X0=12,Y0=12;
+const fx=n=>X0+n.c*CW, fy=n=>Y0+n.r*CH;
+// An end's stripe is status-coloured by its level, and always drawn with the level's name beside it.
+const lvlCol=l=>l==="DELIVER"?"var(--good)":l==="WARN"?"var(--serious)":"var(--muted)";
+const flowState={}; let flowVariant=MODEL.flows[0].id;
+const flowOf=()=>MODEL.flows.find(v=>v.id===flowVariant);
+function flowStateFor(v){ if(!flowState[v.id]){ flowState[v.id]={}; v.controls.forEach(c=>flowState[v.id][c.key]=c.def); } return flowState[v.id]; }
+function seg(label,id,options,current){ return `<label>${esc(label)} <span class="seg" id="${id}">${options.map(([v,l])=>`<button data-v="${esc(v)}" aria-pressed="${String(v===current)}">${esc(l)}</button>`).join("")}</span></label>`; }
+function buildFlowControls(){
+  const v=flowOf(), s=flowStateFor(v), host=$("#flow-ctl");
+  host.innerHTML=(MODEL.flows.length>1?seg("Variant","seg-variant",MODEL.flows.map(f=>[f.id,f.label]),v.id):"")+v.controls.map(c=>seg(c.label,"seg-"+c.key,c.options,s[c.key])).join("");
+  if(MODEL.flows.length>1) document.querySelectorAll("#seg-variant button").forEach(b=>b.addEventListener("click",()=>{ flowVariant=b.dataset.v; renderFlow(); }));
+  v.controls.forEach(c=>document.querySelectorAll("#seg-"+c.key+" button").forEach(b=>b.addEventListener("click",()=>{ s[c.key]=b.dataset.v; document.querySelectorAll("#seg-"+c.key+" button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); highlightFlow(); })));
+}
+function renderFlow(){
+  const F=flowOf(), svg=$("#svg-flow"); svg.innerHTML=""; buildFlowControls();
+  arrowDefs(svg,"farr","var(--line)");
+  let maxC=0,maxR=0; Object.values(F.nodes).forEach(n=>{ maxC=Math.max(maxC,n.c); maxR=Math.max(maxR,n.r); });
+  svg.setAttribute("viewBox",`0 0 ${X0*2+(maxC+1)*CW} ${Y0+(maxR+1)*CH+22}`);
+  F.edges.forEach(([a,b,label])=>{
+    const A=F.nodes[a],B=F.nodes[b]; let d, lx, ly, anchor="start";
+    if(A.r===B.r){ d=`M${fx(A)+NW},${fy(A)+NH/2} L${fx(B)},${fy(B)+NH/2}`; lx=(fx(A)+NW+fx(B))/2; ly=fy(A)+NH/2-5; anchor="middle"; }
+    else if(A.c===B.c){ d=`M${fx(A)+NW/2},${fy(A)+NH} L${fx(B)+NW/2},${fy(B)}`; lx=fx(A)+NW/2+6; ly=(fy(A)+NH+fy(B))/2+3; }
+    else { const tx=fx(A)+NW+10, ty=fy(B)+NH/2; d=`M${fx(A)+NW},${fy(A)+NH/2} L${tx},${fy(A)+NH/2} L${tx},${ty} L${fx(B)},${ty}`; lx=tx+4; ly=ty-5; }
+    mk("path",{d,class:"fedge"+(isPlanned(A)||isPlanned(B)?" planned":""),"marker-end":"url(#farr)","data-e":a+">"+b},svg);
+    if(label){ const t=txt(svg,lx,ly,label,"flabel",anchor); t.dataset.e=a+">"+b; }
+  });
+  Object.entries(F.nodes).forEach(([id,n])=>{
+    const x=fx(n),y=fy(n), g=mk("g",{class:"fnode "+n.k+(isPlanned(n)?" planned":""),"data-id":id},svg);
+    if(n.k==="d") mk("polygon",{points:`${x+12},${y} ${x+NW-12},${y} ${x+NW},${y+NH/2} ${x+NW-12},${y+NH} ${x+12},${y+NH} ${x},${y+NH/2}`},g);
+    else mk("rect",{x,y,width:NW,height:NH,rx:n.k==="t"?3:6},g);
+    // The stripe's colour goes in style, not the fill attribute: .fnode.t rect would otherwise repaint it surface-grey.
+    if(n.k==="t"){ mk("rect",{x,y,width:4,height:NH,rx:1,class:"stripe",style:`fill:${lvlCol(n.lvl)}`},g); if(n.lvl) txt(g,x+NW-6,y+10,n.lvl,"lvl","end"); }
+    txt(g,x+NW/2+(n.k==="t"?2:0),y+(n.t.length>1?21:28),n.t,"","middle",12);
+  });
+  if(F.foot) txt(svg,X0,Y0+(maxR+1)*CH+12,F.foot,"flabel");
+  flowKey(F);
+  highlightFlow();
+}
+/* The legend for the flow on screen: its shapes, the outcome levels its ends use (grouped by stripe colour), lit and faded, and planned
+   only where a node is (an edge is drawn planned only beside a planned node). */
+function flowKey(F){
+  const ends=new Map(); Object.values(F.nodes).filter(n=>n.k==="t").forEach(n=>{ const c=lvlCol(n.lvl), l=ends.get(c)||[]; if(n.lvl&&!l.includes(n.lvl)) l.push(n.lvl); ends.set(c,l); });
+  $("#flow-key").innerHTML=`<span><i class="hex"></i>decision</span><span><i></i>step</span>`+[...ends].map(([c,l])=>`<span><i class="end" style="border-left-color:${c}"></i>ends · ${esc(l.join(" · ")||"outcome")}</span>`).join("")+`<span><i class="ln on"></i>the path these inputs take</span><span><i class="ln off"></i>not taken</span>`+(Object.values(F.nodes).some(isPlanned)?`<span><i class="pln"></i>planned, not built</span>`:"");
+}
+function highlightFlow(){
+  const F=flowOf(), s=flowStateFor(F), res=F.rules(s), set=new Set(res.path), svg=$("#svg-flow"), irr=new Set(res.irrelevant||[]);
+  svg.querySelectorAll(".fnode").forEach(g=>{ const on=set.has(g.dataset.id); g.classList.toggle("on",on); g.classList.toggle("off",!on); });
+  const onEdges=new Set(); for(let i=0;i<res.path.length-1;i++) onEdges.add(res.path[i]+">"+res.path[i+1]);
+  svg.querySelectorAll(".fedge,.flabel").forEach(x=>{ if(!x.dataset.e) return; const on=onEdges.has(x.dataset.e); x.classList.toggle("on",on); x.classList.toggle("off",!on); if(x.classList.contains("fedge")) x.setAttribute("marker-end",on?"url(#farr-on)":"url(#farr)"); });
+  const first=F.controls[0], title=F.names&&F.names[s[first.key]] ? F.names[s[first.key]] : (first.options.find(o=>o[0]===s[first.key])||[,""])[1];
+  const facts=F.controls.slice(1).filter(c=>!irr.has(c.key)).map(c=>`${c.label.toLowerCase()} ${(c.options.find(o=>o[0]===s[c.key])||[,""])[1]}`);
+  $("#outcome").innerHTML=`<code>${esc(title)}</code>${facts.map(f=>" · "+esc(f)).join("")} → ${esc(res.outcome)}`;
+  inspect(`<div class="kicker">${esc(F.kicker||"PATH")} · ${esc(F.label.toUpperCase())}</div><div class="name">${esc(title)}</div><div class="vis">${F.runsOn?"on "+esc(F.runsOn):""}</div><p>${esc(res.outcome)}</p><dl><dt>Path</dt><dd>${res.path.join(" → ")}</dd></dl>`);
+  F.controls.forEach(c=>document.querySelectorAll("#seg-"+c.key+" button").forEach(b=>b.setAttribute("aria-disabled",String(irr.has(c.key)))));
+}
+
+/* ---------- Sequence ---------- */
+const seq={cur:0,timer:null};
+const lane=l=>typeof l==="string"?{n:l}:l;
+function renderSeq(){
+  const svg=$("#svg-seq"); if(svg.dataset.done) return; svg.dataset.done="1";
+  const S=MODEL.sequence, LX=i=>80+i*140, Y0=70, DY=40, H=Y0+S.steps.length*DY+10;
+  svg.setAttribute("viewBox",`0 0 1000 ${H}`);
+  arrowDefs(svg,"sarr2","var(--ink-2)");
+  S.phases.forEach(([label,a,b])=>{ const g=mk("g",{class:"phase"},svg); const y=Y0+a*DY-24, h=(b-a+1)*DY; mk("rect",{x:4,y,width:992,height:h,rx:4},g); txt(g,990,y+11,label,"","end"); });
+  S.lifelines.map(lane).forEach((l,i)=>{ mk("line",{x1:LX(i),y1:40,x2:LX(i),y2:H-4,class:"life"+(isPlanned(l)?" planned":"")},svg); const g=mk("g",{class:"lh"+(l.side?" "+l.side:"")+(isPlanned(l)?" planned":"")},svg); mk("rect",{x:LX(i)-64,y:8,width:128,height:28,rx:4},g); txt(g,LX(i),26,l.n,"","middle"); });
+  S.steps.forEach((s,i)=>{
+    const y=Y0+i*DY, g=mk("g",{class:"msg"+(s.ret?" ret":"")+(isPlanned(s)?" planned":""),"data-i":i,tabindex:0,role:"button","aria-label":`step ${i+1}: ${s.l}`},svg);
+    if(s.self){ const x=LX(s.f); mk("path",{d:`M${x},${y-10} L${x+34},${y-10} L${x+34},${y+8} L${x+2},${y+8}`,"marker-end":"url(#sarr2)"},g); txt(g,x+42,y+2,s.l,""); txt(g,x+42,y-8,`${i+1}`,"num"); }
+    else { const a=LX(s.f), b=LX(s.t), dir=b>a?1:-1; mk("line",{x1:a,y1:y,x2:b-dir*2,y2:y,"marker-end":s.ret?"url(#sarr2-open)":"url(#sarr2)"},g); const mx=(a+b)/2, w=s.l.length*5.3+10; mk("rect",{class:"lbg",x:mx-w/2,y:y-17,width:w,height:14,rx:2},g); txt(g,mx,y-6,s.l,"","middle"); txt(g,Math.min(a,b)-8,y+3,`${i+1}`,"num","end"); }
+    g.addEventListener("click",()=>gotoStep(i)); g.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); gotoStep(i); } });
+  });
+  seqKey(S);
+  gotoStep(0);
+}
+/* The legend for the sequence: the lifeline owners it shows (each in its side's hue), then the line encodings and planned. */
+function seqKey(S){
+  const sw={server:"pub srv",client:"pub cli",wire:"pub wir",consumer:"con",external:"ext"}, sides=[...new Set(S.lifelines.map(lane).map(l=>l.side).filter(Boolean))];
+  $("#seq-key").innerHTML=sides.map(k=>`<span><i class="${sw[k]||""}"></i>${esc((MODEL.sides||{})[k]||k)}</span>`).join("")+`<span><i class="ln"></i>call or send</span>`+(S.steps.some(s=>s.ret)?`<span><i class="ln ret"></i>return: open head, thin line</span>`:"")+(S.phases.length?`<span><i class="band"></i>phase</span>`:"")+(S.steps.some(isPlanned)||S.lifelines.map(lane).some(isPlanned)?`<span><i class="ln dash pln"></i>planned, not built (dashed, faded)</span>`:"");
+}
+function gotoStep(i){
+  const S=MODEL.sequence, L=S.lifelines.map(lane); seq.cur=(i+S.steps.length)%S.steps.length; const s=S.steps[seq.cur];
+  document.querySelectorAll("#svg-seq .msg").forEach(g=>{ const k=+g.dataset.i; g.classList.toggle("cur",k===seq.cur); g.classList.toggle("future",k>seq.cur); });
+  $("#seq-pos").textContent=`step ${seq.cur+1} of ${S.steps.length}`;
+  inspect(`<div class="kicker">${esc(S.kicker||"SEQUENCE")} · STEP ${seq.cur+1}${isPlanned(s)?" · PLANNED":""}</div><div class="name">${esc(L[s.f].n)} → ${esc(L[s.t].n)}</div><div class="vis">${esc(s.l)}</div><p>${esc(s.n)}</p>`);
+}
+$("#seq-prev").addEventListener("click",()=>gotoStep(seq.cur-1));
+$("#seq-next").addEventListener("click",()=>gotoStep(seq.cur+1));
+$("#seq-play").addEventListener("click",e=>{ const b=e.currentTarget; if(seq.timer){ clearInterval(seq.timer); seq.timer=null; b.textContent="play"; b.setAttribute("aria-pressed","false"); } else { seq.timer=setInterval(()=>gotoStep(seq.cur+1),1600); b.textContent="pause"; b.setAttribute("aria-pressed","true"); } });
+
+/* ---------- The stamps (state.json) ----------
+   The header's chips: the version (a system board), the as-is stamp ("<ref> @ <sha> · <date>")
+   and, while the panels were written at another commit than the stamp names, "written at <sha>". A chip
+   with nothing to say is removed. The last amendment names an issue, so it is said in the Context Panel, never in the header: the board
+   above Context is as-is and names no issue (system/RULES.md §2, §6); its number opens the GitHub issue, its title the issue board
+   (linkIssues() resolves it at load). A header chip for it left by an older template is removed. */
+function renderState(){
+  const S=STATE||{}, a=S.asIs||{}, la=S.lastAmended||{}, w=S.written||{};
+  const set=(id,html)=>{ const e=document.getElementById(id); if(!e) return; if(!html){ e.remove(); return; } e.hidden=false; e.innerHTML=html; };
+  set("chip-version",S.version?`<span class="ck">version</span> <b>${esc(S.version)}</b>`:"");
+  set("chip-asis",a.sha?`<span class="ck">as-is at</span> <b>${esc(a.ref||"?")} @ ${esc(a.sha)}</b> · ${when(a.date)}`:"");
+  set("chip-written",w.sha&&a.sha&&w.sha!==a.sha?`<span class="ck">written at</span> <b>${esc(w.sha)}</b>`:"");
+  const old=document.getElementById("chip-amended"); if(old) old.remove();
+  const ctx=document.querySelector("section.context"); let p=document.getElementById("ctx-amended");
+  if(!p&&ctx){ p=document.createElement("p"); p.className="amended"; p.id="ctx-amended"; const h2=ctx.querySelector(":scope>h2"); if(h2) h2.after(p); else ctx.prepend(p); }
+  if(p){ if(Number.isInteger(la.issue)&&la.issue>0){ p.hidden=false; p.innerHTML=`<span class="ck">last amended by</span> <a href="${ghIssue(la.issue)}" target="_blank" rel="noopener">#${la.issue}</a>${la.title?` <a data-board="${la.issue}">${esc(la.title).replace(/`([^`]*)`/g,"<code>$1</code>")}</a>`:""}${la.sha?` · <code>${esc(la.sha)}</code>`:""}`; } else p.remove(); }
+}
+renderState();
+
+/* ---------- The Guarantees' and the Context's legends (GUIDANCE.md §2) ----------
+   Generated from what each section draws, so a hand-written guarantee card or card needs no legend of its own: the system swatches present, a
+   planned (dashed, faded) row, a gap, the one neutral series of the test-set bars, the badges and their meaning, a tracking issue's
+   chain's StepBar. A section that draws no encoding shows no legend. */
+/* A tracking issue's chain on the roadmap (dashboards-skill/54; nomenclature/ui.md, StepBar), written <span class="chainprog"
+   data-landed="n" data-total="m"> holding one <span data-unit="done|current|todo">its name</span> per unit in landing order: drawn
+   "chain n of m landed" in its place and, on a line of its own under the roadmap item, a StepBar, one chevron per unit with the unit's name
+   inside, done (landed), current (in progress) or to come. A state board draws no work in progress, so the current unit carries no mark.
+   An ordered list, the current units aria-current="step", each state said in words to a screen reader. A chain written before the units
+   (data-landed and data-total alone) is drawn with its units numbered. */
+const SB_STATE={done:"landed",cur:"in progress",todo:"to come"};
+function chainBars(){ document.querySelectorAll(".chainprog[data-total]").forEach(e=>{ if(e.dataset.drawn) return; e.dataset.drawn="1";
+  const n=+e.dataset.landed||0, m=+e.dataset.total||0, named=[...e.querySelectorAll("[data-unit]")].map(u=>({html:u.innerHTML.trim(),st:({done:"done",landed:"done",current:"cur"})[u.dataset.unit]||"todo"}));
+  const us=named.length?named:Array.from({length:m},(x,k)=>({html:`unit ${k+1}`,st:k<n?"done":"todo"}));
+  e.textContent=`chain ${n} of ${m} landed`;
+  const ri=e.closest(".ri"), host=ri&&ri.parentElement; if(!host||!us.length) return;
+  const num=(ri.querySelector("a")||{}).textContent||"", bar=document.createElement("ol"); bar.className="stepbar"; bar.setAttribute("aria-label",`${num?num+": ":""}its units in landing order`);
+  bar.innerHTML=us.map(u=>`<li class="${u.st}"${u.st==="cur"?' aria-current="step"':""}>${u.html}<span class="sb-st">, ${SB_STATE[u.st]}</span></li>`).join("");
+  ri.after(bar); }); }
+function sectionKeys(){
+  chainBars();
+  const put=(sec,id,entries)=>{ if(!sec) return; let k=document.getElementById(id); const html=entries.filter(Boolean).join("");
+    if(!html){ if(k) k.remove(); return; } if(!k){ k=document.createElement("div"); k.className="legend"; k.id=id; sec.appendChild(k); } k.innerHTML=html; };
+  const G=document.querySelector("section.guarantees"), C=document.querySelector("section.context"), has=(s,q)=>!!(s&&s.querySelector(q));
+  const swatches=(s,cls)=>typeof sysKey==="function"&&s?sysKey([...new Set([...s.querySelectorAll("[data-sys]")].map(e=>e.dataset.sys))],cls):"";
+  put(G,"guarantees-key",[swatches(G,"swk"),
+    has(G,".bars")?`<span><i class="barsk"></i>test classes per set: one series, one neutral fill</span>`:"",
+    has(G,".planned")?`<span><i class="pln"></i>dashed, faded: about a planned part, nothing built yet</span>`:"",
+    has(G,".gap")?`<span><i class="gapk">gap</i>italic, muted: not established, said as a gap</span>`:"",
+    has(G,".badge")?`<span><span class="badge">tier</span>a fact: a stability tier, a marker, neutral</span>`:""]);
+  const states=C?[...new Set([...C.querySelectorAll(".tags .badge:not(.bug):not(.planned):not([data-sys])")].map(b=>b.textContent.trim()).filter(t=>/^(open|closed)$/.test(t)))]:[];
+  put(C,"context-key",[swatches(C,"sbar"),
+    states.length?`<span>${states.map(s=>`<span class="badge">${esc(s)}</span>`).join(" ")} the issue's state on the tracker</span>`:"",
+    has(C,".badge.bug")?`<span><span class="badge bug">bug</span>labelled a bug on the tracker</span>`:"",
+    has(C,".badge.planned")?`<span><span class="badge planned">planned</span>dashed: planned, not started</span>`:"",
+    ...(()=>{ const st=new Set(C?[...C.querySelectorAll(".stepbar>li")].map(l=>["done","cur"].find(k=>l.classList.contains(k))||"todo"):[]);
+      return [st.has("done")?`<span><i class="sbk"></i>a tracking issue's unit, in landing order: landed</span>`:"",st.has("cur")?`<span><i class="sbk cur"></i>bold: a unit in progress</span>`:"",st.has("todo")?`<span><i class="sbk todo"></i>dashed: a unit to come</span>`:""]; })()]);
+}
+sectionKeys();
+
+/* labels:begin. The labels of the Tabs the displays bring (verify/slots.json "tabs"): each a decided name, or null while it is undecided (the
+   Tab is then never added). In a working copy of the skill an undecided label holds a placeholder, "⟦T-n⟧", which cannot pass for a name: the
+   record of a verification refuses a template that holds one, and verify/slots.js labels --set writes the decided labels and nulls the rest. */
+const TAB_LABELS={"T-6":null,"T-7":null};
+/* labels:end */
+/* display-places:begin. Where the Tabs and the hosts of the displays go (JSON, read by verify/slots.js). A Tab: its label's key, its id ("t-<id>"
+   and "p-<id>"; a sub-Tab of Tests "t-tests-<id>"), its tablist and its place in it, its panel's place, its hosts in their order; "home" on a
+   Tab whose hosts may stand elsewhere instead, one setting ("tab", or "timeline": the Timeline Tab under its Timeline Tile, the inspector
+   beside it). A host outside a Tab: its id and its place. */
+const DISPLAY_TABS=[{"key":"T-6","id":"t6","list":".tabs[role=tablist]","hosts":["slot-s55"]},{"key":"T-7","id":"t7","list":".tabs[role=tablist]","hosts":["slot-s56"]}];
+const DISPLAY_HOSTS=[{"id":"slot-s57","before":[".kpis",".tabs[role=tablist]"]}];
+/* display-places:end */
+/* displays:begin. The displays the slots add (verify/slots.json; SKILL.md, "Files"). A slot's script registers its display with
+   addDisplay({id, host, draw, has, inspect, idle}): host, the id of the element it draws into (its slot's host, "slot-<slot id>"); draw(el),
+   its drawing; has(), whether the board's data gives it anything to draw (its Tab is added only then; none given: always); inspect(key), the
+   inspector's text for a key it drew; idle, the inspector's text on its Tab before anything is chosen. Each display is drawn through
+   safeDraw(): an error draws one line in its place saying it could not be drawn, and the rest of the board stands. A display is drawn only
+   while its host is shown, and again once it is shown after a redraw (draw-on-show: nothing is measured in a hidden Tab). The board has one
+   selection, kept across a live redraw: a key, or a list of keys, that any display may mark (data-sel-key="<key>") and choose
+   (selectKey(key or [keys], its id); selectedKeys() reads it), every element of a chosen key marked, and the choosing display's inspect()
+   given what was chosen (a key, or the list). An issue's key is the same on every board and in every display: issueKey(repo, n),
+   "<owner>/<name>#<n>", the issue's repository in full, its number after "#"; an issue or tracking board's Row the same in every display there, rowKey(id), "row:<id>". A slot adds to
+   what an existing renderer draws through addHook(name, fn): the renderer asks hook(name, ...) where a slot may add, each handler guarded
+   alike. The Tabs the displays bring are added at load (addDisplayPlaces(), from DISPLAY_TABS and TAB_LABELS), only where a display in them
+   has something to draw and the Tab's label is decided; the hosts DISPLAY_HOSTS names, outside a Tab, are added at load too. Every entry
+   point catches its own errors. The block is the same in every template: what differs is DISPLAY_TABS, DISPLAY_HOSTS and the glue after it. */
+var DISPLAYS=[], HOOKS={}, SELECTION=null, DISPLAY_IN_STEPS=false;
+const dEsc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const DRAW_FAILED="This part could not be drawn from the board's data; the rest of the board is unaffected.";
+function drawFailed(e,inline){ const why=dEsc(e&&e.message?e.message:String(e)); return inline?'<span class="draw-failed" role="note" title="'+why+'">not drawn</span>':'<p class="draw-failed" role="note" title="'+why+'">'+dEsc(DRAW_FAILED)+'</p>'; }
+function displayError(e){ try{ console.error(e); }catch(x){} }
+function addDisplay(d){ if(!d||typeof d.id!=="string"||typeof d.draw!=="function"||DISPLAYS.some(x=>x.id===d.id)) return false; DISPLAYS.push(Object.assign({},d,{stale:true})); return true; }
+function addHook(name,fn){ if(typeof name!=="string"||typeof fn!=="function") return false; (HOOKS[name]=HOOKS[name]||[]).push(fn); return true; }
+function hook(name){ const fs=HOOKS[name], a=Array.prototype.slice.call(arguments,1); if(!fs||!fs.length) return ""; return fs.map(fn=>{ try{ const h=fn.apply(null,a); return h==null?"":String(h); }catch(e){ displayError(e); return drawFailed(e,true); } }).join(""); }
+const hostIdOf=d=>d&&typeof d.host==="string"?d.host.replace(/^#/,""):null;
+function displayHost(d){ try{ const h=typeof d.host==="function"?d.host():hostIdOf(d)?document.getElementById(hostIdOf(d)):null; return h||null; }catch(e){ return null; } }
+function hostShown(el){ for(let e=el;e;e=e.parentElement){ if(e.hidden) return false; } return !!el; }
+function displayHas(d){ try{ return typeof d.has!=="function"||!!d.has(); }catch(e){ displayError(e); return true; } }
+function safeDraw(d,el){ el=el||displayHost(d); if(!d||!el) return false; d.stale=false; try{ d.draw(el); return true; }catch(e){ displayError(e); try{ el.innerHTML=drawFailed(e); }catch(x){} return false; } }
+function drawDisplays(all){ try{ DISPLAYS.forEach(d=>{ if(all) d.stale=true; if(!d.stale) return; const el=displayHost(d); if(el&&hostShown(el)) safeDraw(d,el); }); markSelection(); }catch(e){ displayError(e); } }
+function markSelection(){ try{ const ks=new Set(selectedKeys()); document.querySelectorAll("[data-sel-key]").forEach(e=>{ const on=ks.has(e.getAttribute("data-sel-key")); e.classList.toggle("sel",on); if(e.hasAttribute("aria-pressed")) e.setAttribute("aria-pressed",String(on)); }); }catch(e){ displayError(e); } }
+const selectedKeys=()=>SELECTION?SELECTION.keys.slice():[];
+const issueKey=(repo,n)=>`${String(repo==null?"":repo)}#${n}`;
+const rowKey=id=>`row:${id}`;
+function displayInspect(d,key){ if(!d||typeof d.inspect!=="function"||typeof inspect!=="function") return false; let h; try{ h=d.inspect(key); }catch(e){ displayError(e); h=drawFailed(e); } if(!h) return false; try{ displayInspected(d.id,key); inspect(h); }catch(e){ displayError(e); return false; } return true; }
+/* a key, or a list of keys (several marked at once; an empty list, or null, chooses nothing); what was chosen is kept as given (arg), for the inspector and its replay */
+function selectKey(key,from){ const many=Array.isArray(key), keys=(many?key:key==null?[]:[key]).filter(k=>k!=null).map(String);
+  SELECTION=keys.length?{key:keys[0],keys,many,arg:many?keys.slice():keys[0],from:typeof from==="string"?from:null}:null; markSelection();
+  if(SELECTION&&SELECTION.from) displayInspect(DISPLAYS.find(x=>x.id===SELECTION.from),SELECTION.arg); return SELECTION; }
+const selectKeys=(keys,from)=>selectKey(Array.isArray(keys)?keys:[],from);
+function reselect(){ return !!(SELECTION&&SELECTION.from)&&displayInspect(DISPLAYS.find(x=>x.id===SELECTION.from),SELECTION.arg); }
+function placeEl(el,spec){ const one=s=>{ try{ return s?document.querySelector(s):null; }catch(e){ return null; } }, many=v=>Array.isArray(v)?v:v?[v]:[];
+  for(const s of many(spec.before)){ const r=one(s); if(r&&r.parentNode){ r.parentNode.insertBefore(el,r); return true; } }
+  for(const s of many(spec.after)){ const r=one(s); if(r&&r.parentNode){ r.parentNode.insertBefore(el,r.nextSibling); return true; } }
+  for(const s of many(spec.in)){ const r=one(s); if(r){ r.appendChild(el); return true; } }
+  return false; }
+function hostEl(id){ const x=document.createElement("div"); x.className="slot-host"; x.id=id; return x; }
+function addDisplayPlaces(){ try{
+  DISPLAY_HOSTS.forEach(H=>{ if(!document.getElementById(H.id)) placeEl(hostEl(H.id),H); });
+  DISPLAY_TABS.forEach(T=>{ const mine=DISPLAYS.filter(d=>T.hosts.includes(hostIdOf(d))), any=mine.some(displayHas);
+    if(T.home==="timeline"){ if(!mine.length) return; const box=T.timeline||{}; T.hosts.forEach(h=>{ if(!document.getElementById(h)) placeEl(hostEl(h),box); }); if(any) DISPLAY_IN_STEPS=true; return; }
+    const label=TAB_LABELS[T.key]; if(label==null||!any) return;
+    const list=document.querySelector(T.list||".tabs[role=tablist]"); if(!list) return;
+    const id=(T.sub==="tests"?"tests-":"")+T.id, tabs=[...list.querySelectorAll('[role="tab"]')], last=tabs[tabs.length-1];
+    const btn=document.createElement("button"); btn.className=T.cls||"tab"; btn.setAttribute("role","tab"); btn.id="t-"+id; btn.setAttribute("aria-controls","p-"+id); btn.setAttribute("aria-selected","false"); btn.dataset.label=T.key; btn.textContent=String(label);
+    const ref=T.before&&list.querySelector(T.before), aft=T.after&&list.querySelector(T.after);
+    if(ref) list.insertBefore(btn,ref); else if(aft) list.insertBefore(btn,aft.nextSibling); else list.appendChild(btn);
+    const panel=document.createElement(T.panelTag||(T.sub?"div":"section")); panel.className=T.panelCls||"view"; panel.setAttribute("role","tabpanel"); panel.id="p-"+id; panel.setAttribute("aria-labelledby","t-"+id); panel.hidden=true;
+    if(T.heading!==false){ const h=document.createElement("h2"); h.textContent=String(label); panel.appendChild(h); }
+    T.hosts.forEach(h=>panel.appendChild(hostEl(h)));
+    const pref=T.panelBefore&&document.querySelector(T.panelBefore), paft=T.panelAfter&&document.querySelector(T.panelAfter), plast=last&&document.getElementById(last.getAttribute("aria-controls"));
+    if(pref&&pref.parentNode) pref.parentNode.insertBefore(panel,pref); else if(paft&&paft.parentNode) paft.parentNode.insertBefore(panel,paft.nextSibling); else if(plast&&plast.parentNode) plast.parentNode.insertBefore(panel,plast.nextSibling); else list.parentNode.insertBefore(panel,list.nextSibling);
+    displayTabWired(T,btn,panel); });
+}catch(e){ displayError(e); } }
+function displayIdle(D){ try{ DISPLAY_TABS.forEach(T=>{ const idle=DISPLAYS.filter(d=>T.hosts.includes(hostIdOf(d))&&typeof d.idle==="string"&&d.idle).map(d=>d.idle).join(""); if(!idle) return;
+  if(T.home==="timeline"){ if(DISPLAY_IN_STEPS&&!D.steps) D.steps=idle; return; }
+  if(document.getElementById("t-"+(T.sub==="tests"?"tests-":"")+T.id)&&!D[T.id]) D[T.id]=idle; }); }catch(e){ displayError(e); } }
+/* displays:end */
+/* the glue of the displays on a state board: no live redraw, so nothing to replay */
+function displayInspected(id,key){}
+function displayTabWired(T,btn){}
+/* the slots' scripts (verify/slots.json), each owned by one job: a display's registration and its hooks */
+/* slot s55 begin */
+/* slot s55 end */
+/* slot s56 begin */
+/* slot s56 end */
+/* slot s57 begin */
+/* slot s57 end */
+/* slot s58 begin */
+/* slot s58 end */
+addDisplayPlaces();
+
+/* ---------- Tabs ---------- */
+const tabs=[...document.querySelectorAll(".tab")];
+const DEFAULT_INSPECT={structure:"<p>Click a box for the classes it holds, their files and their place in the C4 model.</p>",threads:"<p>Click a runner for when it starts, what runs on it and what it prints.</p>",lifecycles:"<p>The lifecycle facts are on the cards themselves, each read from the build or the tests.</p>"};
+displayIdle(DEFAULT_INSPECT);
+function show(id){
+  tabs.forEach(t=>{ const on=t.id===id; t.setAttribute("aria-selected",String(on)); t.tabIndex=on?0:-1; document.getElementById(t.getAttribute("aria-controls")).hidden=!on; });
+  const name=id.replace("t-","");
+  if(name==="structure") renderStructure();
+  if(name==="c4" && !c4View) renderC4(C4.views.findIndex(v=>v.type==="component"));
+  if(name==="datagrams") renderFlow();
+  if(name==="reliable") renderSeq();
+  if(name!=="reliable" && seq.timer){ clearInterval(seq.timer); seq.timer=null; $("#seq-play").textContent="play"; $("#seq-play").setAttribute("aria-pressed","false"); }
+  // The inspector follows the tab it lands on: its kept selection, else its default text, else a generic hint, never the last
+  // tab's. renderFlow() above has already written the Decision path's.
+  const node=$("#svg-structure .node.sel"), thread=$("#p-threads .thread.sel");
+  if(name==="structure"&&node) selectNode(node.dataset.id); else if(name==="threads"&&thread) selectThread(thread.dataset.t);
+  else if(name==="c4") inspectC4(); else if(name==="reliable") gotoStep(seq.cur);
+  else if(name!=="datagrams") inspect(DEFAULT_INSPECT[name]||"<p>Select an item on this tab to see its details here.</p>");
+  try{ drawDisplays(); }catch(e){}
+  try{ localStorage.setItem("dash-tab-"+location.pathname,id); }catch(e){}
+}
+tabs.forEach((t,i)=>{ t.addEventListener("click",()=>show(t.id)); });
+/* The tablist's keys (WAI-ARIA tabs; GUIDANCE.md §6): Left and Right move to the previous and next tab, Home and End to the first and the
+   last, each shown at once; only the selected tab is in the Tab order (a roving tabindex), so Tab moves on to the panel. */
+function tabKeys(list,go){ list.forEach((t,i)=>{ t.tabIndex=t.getAttribute("aria-selected")==="true"?0:-1; t.addEventListener("keydown",e=>{ const n=list.length, j={ArrowRight:(i+1)%n,ArrowLeft:(i+n-1)%n,Home:0,End:n-1}[e.key]; if(j==null) return; e.preventDefault(); list[j].focus(); go(list[j].id); }); }); }
+tabKeys(tabs,id=>show(id));
+let start="t-structure";
+try{ const s=localStorage.getItem("dash-tab-"+location.pathname); if(s&&document.getElementById(s)) start=s; }catch(e){}
+const hash=location.hash.replace("#",""); if(hash&&document.getElementById("t-"+hash)) start="t-"+hash;
+show(start);
+
+/* ---------- The theme switch (GUIDANCE.md §1, Themes; §12, "Switch") ----------
+   A switch in the header (the renderer adds it when the board's header has none): ☀ light at its left end, ☾ night at its right, the
+   knob at the palette shown (aria-checked while night). Until it is clicked the board follows the system setting; a click picks the
+   other palette and remembers it (localStorage "dashboards-theme", shared by every dashboard of the same origin) across boards and
+   reloads. It only selects one of the two palettes the board defines: :root[data-theme]. The same code runs on every dashboard type. */
+(function themeSwitch(){ const KEY="dashboards-theme", root=document.documentElement, mq=window.matchMedia?matchMedia("(prefers-color-scheme: dark)"):null;
+  let btn=document.getElementById("theme");
+  if(!btn){ const hdr=document.querySelector("header"); if(!hdr) return; const tools=document.createElement("div"); tools.className="tools systools";
+    tools.innerHTML='<button class="switch" id="theme" type="button" role="switch" aria-checked="false"></button>'; hdr.prepend(tools); btn=document.getElementById("theme"); }
+  btn.className="switch"; btn.type="button"; btn.setAttribute("role","switch"); btn.removeAttribute("aria-pressed");
+  if(!btn.querySelector(".switch-track")) btn.innerHTML='<span class="switch-end off" aria-hidden="true">☀</span><span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span><span class="switch-end on" aria-hidden="true">☾</span>';
+  const chosen=()=>{ try{ const t=localStorage.getItem(KEY); return t==="light"||t==="dark"?t:null; }catch(e){ return null; } };
+  const now=()=>root.dataset.theme==="dark"||root.dataset.theme==="light"?root.dataset.theme:(mq&&mq.matches?"dark":"light");
+  const label=()=>{ const t=now(), word=t==="dark"?"night":"light"; btn.setAttribute("aria-checked",String(t==="dark"));
+    btn.title=`Theme: ${word}${chosen()?"":", as the system setting"}. Click for ${t==="dark"?"light":"night"}.`; btn.setAttribute("aria-label",`Night theme${chosen()?"":" (follows the system setting until clicked)"}`); };
+  btn.addEventListener("click",()=>{ const t=now()==="dark"?"light":"dark"; root.dataset.theme=t; try{ localStorage.setItem(KEY,t); }catch(e){} label(); });
+  if(mq&&mq.addEventListener) mq.addEventListener("change",label);
+  if(window.MutationObserver) new MutationObserver(label).observe(root,{attributes:true,attributeFilter:["data-theme"]});
+  label(); })();
+/* ---------- The inspector switch and the inspector's Hide button (GUIDANCE.md §6, "The inspector switch"; §12, "Switch") ----------
+   A switch in the header, left of the theme switch, that shows or hides the inspector (aria-checked while shown), and in the inspector's
+   head, right of its heading, the Hide button (an eye struck through and the word "Hide"), which hides it and moves the focus to the switch.
+   Both drive one state, so the switch is always in step. Shown when a board opens until hidden; the choice is remembered across boards
+   and reloads (localStorage "dashboards-inspector", shared by every dashboard of the same origin, applied in the head before the first
+   paint, and again here for a board whose head predates it). Hidden, the tab takes the inspector's width. An item clicked, or pressed with
+   Enter or Space, while the inspector is hidden shows it and flips the switch: whatever that gesture writes into the inspector, a tab, a
+   switch or the Hide button aside, brings it back. An inspector drawn before the Hide button gets it here, its heading wrapped with it. */
+(function inspectorSwitch(){ const KEY="dashboards-inspector", root=document.documentElement, ins=document.getElementById("inspector");
+  if(!ins) return;
+  let sw=document.getElementById("inspector-switch");
+  if(!sw){ const th=document.getElementById("theme"); if(!th||!th.parentElement) return; sw=document.createElement("button"); sw.id="inspector-switch"; th.parentElement.insertBefore(sw,th); }
+  sw.className="switch"; sw.type="button"; sw.setAttribute("role","switch"); sw.setAttribute("aria-controls","inspector");
+  if(!sw.querySelector(".switch-track")) sw.innerHTML='<span class="switch-word">inspector</span><span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>';
+  try{ if(localStorage.getItem(KEY)==="hidden") root.dataset.inspector="hidden"; }catch(e){}
+  const shown=()=>root.dataset.inspector!=="hidden";
+  const label=()=>{ const s=shown(); sw.setAttribute("aria-checked",String(s)); sw.title=s?"Inspector shown. Click to hide it.":"Inspector hidden. Click to show it, or click an item."; };
+  const set=s=>{ if(s) delete root.dataset.inspector; else root.dataset.inspector="hidden"; try{ localStorage.setItem(KEY,s?"shown":"hidden"); }catch(e){} label(); window.dispatchEvent(new Event("resize")); };
+  sw.addEventListener("click",()=>set(!shown()));
+  let hb=document.getElementById("inspector-hide");
+  if(!hb&&ins.querySelector){ const h2=ins.querySelector(":scope>h2"); if(h2&&h2.parentNode){ const hd=document.createElement("div"); hd.className="insp-head"; h2.parentNode.insertBefore(hd,h2); hd.appendChild(h2); hb=document.createElement("button"); hb.id="inspector-hide"; hd.appendChild(hb); } }
+  if(hb){ hb.className="hide-button"; hb.type="button"; hb.setAttribute("aria-controls","inspector"); hb.setAttribute("aria-label","Hide the inspector");
+    hb.title="Hide the inspector. The inspector switch in the header, or a click on an item, shows it again.";
+    if(!hb.querySelector("svg")) hb.innerHTML='<svg class="hide-eye" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M1.5 8s2.4-4.5 6.5-4.5 6.5 4.5 6.5 4.5-2.4 4.5-6.5 4.5S1.5 8 1.5 8z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 2.5l11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span class="hide-word">Hide</span>';
+    hb.addEventListener("click",()=>{ set(false); try{ sw.focus(); }catch(e){} }); }
+  let gesture=null;
+  const mark=e=>{ if(e.type==="keydown"&&e.key!=="Enter"&&e.key!==" ") return; gesture=e.target; setTimeout(()=>{ gesture=null; },0); };
+  document.addEventListener("click",mark,true); document.addEventListener("keydown",mark,true);
+  if(window.MutationObserver) new MutationObserver(()=>{ const g=gesture; if(!g||shown()||!g.closest||g.closest('[role="tab"],[role="switch"],.hide-button')) return; set(true); }).observe(ins,{childList:true,subtree:true,characterData:true});
+  label(); })();
+</script>
+</body>
+</html>
